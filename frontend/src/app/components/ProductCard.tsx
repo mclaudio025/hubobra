@@ -172,20 +172,20 @@ export default function ProductCard(props: ProductCardProps) {
 
   return (
     <div 
-      className={`group relative bg-white dark:bg-slate-900 border border-gray-200/80 dark:border-slate-800 rounded-xl p-3.5 sm:p-4 flex flex-col justify-between h-full transition-all duration-300 hover:shadow-xl hover:border-blue-300 dark:hover:border-blue-600/50 ${className}`}
+      className={`group relative bg-white dark:bg-slate-900 border border-gray-200/80 dark:border-slate-800 rounded-xl p-2.5 sm:p-4 flex flex-col justify-between h-full transition-all duration-300 hover:shadow-xl hover:border-blue-300 dark:hover:border-blue-600/50 ${className}`}
     >
       {/* Top Section: Badges & Wishlist */}
-      <div className="relative w-full mb-2">
-        <div className="flex items-start justify-between gap-2 z-10">
+      <div className="relative w-full mb-1 sm:mb-2">
+        <div className="flex items-start justify-between gap-1 sm:gap-2 z-10">
           {/* Tag / Badge */}
-          <div className="flex flex-col gap-1 items-start min-h-[22px]">
+          <div className="flex flex-col gap-1 items-start min-h-[18px] sm:min-h-[22px]">
             {isFeatured && (
-              <span className="bg-[#009de0] text-white text-[10px] font-black uppercase px-2 py-0.5 rounded tracking-wider shadow-xs">
+              <span className="bg-[#009de0] text-white text-[9px] sm:text-[10px] font-black uppercase px-1.5 sm:px-2 py-0.5 rounded tracking-wider shadow-xs">
                 OFERTA EXCLUSIVA
               </span>
             )}
             {!isFeatured && discountPercent >= 15 && (
-              <span className="bg-[#009de0] text-white text-[10px] font-black uppercase px-2 py-0.5 rounded tracking-wider shadow-xs">
+              <span className="bg-[#009de0] text-white text-[9px] sm:text-[10px] font-black uppercase px-1.5 sm:px-2 py-0.5 rounded tracking-wider shadow-xs">
                 FRETE GRÁTIS
               </span>
             )}
@@ -195,12 +195,12 @@ export default function ProductCard(props: ProductCardProps) {
           <button
             onClick={handleToggleFavorite}
             type="button"
-            className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-300 dark:text-gray-600 hover:text-red-500 transition-colors focus:outline-none"
+            className="p-1 sm:p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-300 dark:text-gray-600 hover:text-red-500 transition-colors focus:outline-none"
             title={isFav ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
             aria-label="Favoritar"
           >
             <Heart 
-              className={`w-5 h-5 transition-transform active:scale-125 ${
+              className={`w-4 h-4 sm:w-5 sm:h-5 transition-transform active:scale-125 ${
                 isFav ? 'fill-[#e52222] text-[#e52222]' : 'hover:text-red-400'
               }`} 
             />
@@ -208,14 +208,14 @@ export default function ProductCard(props: ProductCardProps) {
         </div>
 
         {/* Product Image */}
-        <Link href={`/produtos/${id}`} className="block relative w-full h-44 sm:h-48 my-1 overflow-hidden bg-white dark:bg-slate-900 rounded-lg">
-          <div className="relative w-full h-full flex items-center justify-center p-2.5">
+        <Link href={`/produtos/${id}`} className="block relative w-full aspect-square sm:aspect-auto sm:h-44 md:h-48 my-1 overflow-hidden bg-white dark:bg-slate-900 rounded-lg">
+          <div className="relative w-full h-full flex items-center justify-center p-1 sm:p-2.5">
             <Image
               src={imgSrc}
               alt={imageAlt}
               fill
               unoptimized={!imgSrc.includes('supabase.co')}
-              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
               placeholder="blur"
               blurDataURL={SHIMMER_BLUR_DATA_URL}
               className="object-contain transition-transform duration-300 ease-out group-hover:scale-105"
@@ -227,7 +227,7 @@ export default function ProductCard(props: ProductCardProps) {
 
           {stock <= 0 && (
             <div className="absolute inset-0 bg-white/70 dark:bg-slate-900/70 backdrop-blur-[1px] flex items-center justify-center">
-              <span className="bg-red-600 text-white text-[11px] font-bold px-2.5 py-1 rounded shadow">
+              <span className="bg-red-600 text-white text-[10px] sm:text-[11px] font-bold px-2 py-0.5 sm:px-2.5 sm:py-1 rounded shadow">
                 Esgotado
               </span>
             </div>
@@ -238,13 +238,13 @@ export default function ProductCard(props: ProductCardProps) {
       {/* Middle Section: Code, Brand & Title */}
       <div className="flex-1 flex flex-col justify-start">
         {/* Reference Code & Brand */}
-        <div className="flex items-center justify-between gap-1 text-[11px] text-gray-400 dark:text-gray-400 font-medium uppercase mb-1">
+        <div className="flex items-center justify-between gap-1 text-[10px] sm:text-[11px] text-gray-400 dark:text-gray-400 font-medium uppercase mb-0.5 sm:mb-1">
           <span>Cód.Ref: {sku}</span>
-          {brand && <span className="font-semibold text-gray-500 dark:text-gray-400 truncate max-w-[100px]">{brand}</span>}
+          {brand && <span className="font-semibold text-gray-500 dark:text-gray-400 truncate max-w-[80px] sm:max-w-[100px]">{brand}</span>}
         </div>
 
         {/* Product Title */}
-        <h3 className="text-[13px] sm:text-sm font-bold text-gray-800 dark:text-gray-100 line-clamp-2 leading-snug group-hover:text-[#009de0] transition-colors min-h-[2.5rem]">
+        <h3 className="text-xs sm:text-sm font-bold text-gray-800 dark:text-gray-100 line-clamp-2 leading-snug group-hover:text-[#009de0] transition-colors min-h-[2rem] sm:min-h-[2.5rem]">
           <Link href={`/produtos/${id}`}>
             {name}
           </Link>
@@ -252,40 +252,40 @@ export default function ProductCard(props: ProductCardProps) {
       </div>
 
       {/* Bottom Section: Price, PIX & CTA */}
-      <div className="mt-3 pt-2 border-t border-gray-100 dark:border-slate-800/80">
+      <div className="mt-2 sm:mt-3 pt-1.5 sm:pt-2 border-t border-gray-100 dark:border-slate-800/80">
         {/* Comparison Strikethrough Price + Discount Pill */}
-        <div className="flex items-center gap-2 min-h-[20px] mb-0.5">
+        <div className="flex items-center gap-1.5 min-h-[16px] sm:min-h-[20px] mb-0.5">
           {discountPercent > 0 && comparePrice > pixPrice ? (
             <>
-              <span className="line-through text-xs font-semibold text-gray-400 dark:text-gray-400">
+              <span className="line-through text-[10px] sm:text-xs font-semibold text-gray-400 dark:text-gray-400">
                 R$ {comparePrice.toFixed(2).replace('.', ',')}
               </span>
-              <span className="bg-[#e52222] text-white text-[10px] font-black px-1.5 py-0.2 rounded uppercase tracking-wider">
+              <span className="bg-[#e52222] text-white text-[9px] sm:text-[10px] font-black px-1.5 py-0.2 rounded uppercase tracking-wider">
                 {discountPercent}% OFF
               </span>
             </>
           ) : (
-            <span className="text-xs text-transparent select-none">-</span>
+            <span className="text-[10px] sm:text-xs text-transparent select-none">-</span>
           )}
         </div>
 
         {/* PIX Price (Prominent Bold Red) */}
         <div className="flex items-baseline gap-1 flex-wrap">
-          <span className="text-xl sm:text-2xl font-black text-[#e52222] dark:text-[#ff4b4b] tracking-tight leading-none">
+          <span className="text-base sm:text-2xl font-black text-[#e52222] dark:text-[#ff4b4b] tracking-tight leading-none">
             R$ {pixPrice > 0 ? pixPrice.toFixed(2).replace('.', ',') : '0,00'}
           </span>
           {unit && unit !== 'UN' && unit !== 'un' && (
-            <span className="text-xs sm:text-sm font-bold text-gray-500 dark:text-gray-400">
+            <span className="text-[10px] sm:text-sm font-bold text-gray-500 dark:text-gray-400">
               /{unit === 'M2' || unit === 'm2' ? 'm²' : unit.toLowerCase()}
             </span>
           )}
-          <span className="text-[11px] sm:text-xs font-black text-[#e52222] dark:text-[#ff4b4b] uppercase tracking-wide ml-0.5">
+          <span className="text-[9px] sm:text-xs font-black text-[#e52222] dark:text-[#ff4b4b] uppercase tracking-wide ml-0.5">
             NO PIX
           </span>
         </div>
 
         {/* Installments info */}
-        <p className="text-[11px] text-gray-500 dark:text-gray-400 font-normal mt-1 leading-tight">
+        <p className="text-[10px] sm:text-[11px] text-gray-500 dark:text-gray-400 font-normal mt-0.5 sm:mt-1 leading-tight line-clamp-1">
           {getInstallmentsText()}
         </p>
 
@@ -295,7 +295,7 @@ export default function ProductCard(props: ProductCardProps) {
             onClick={handleAddToCart}
             disabled={loading || stock <= 0}
             type="button"
-            className={`w-full mt-3 py-2.5 sm:py-3 px-3 rounded-lg font-black text-xs sm:text-[13px] uppercase tracking-wider flex items-center justify-center gap-2 transition-all duration-200 shadow-sm active:scale-[0.98] ${
+            className={`w-full mt-2 sm:mt-3 py-2 sm:py-2.5 px-2 sm:px-3 rounded-lg font-black text-[10px] sm:text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all duration-200 shadow-sm active:scale-[0.98] ${
               justAdded
                 ? 'bg-emerald-600 text-white'
                 : stock <= 0
@@ -304,18 +304,18 @@ export default function ProductCard(props: ProductCardProps) {
             }`}
           >
             {loading ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
             ) : justAdded ? (
               <>
-                <Check className="w-4 h-4" />
+                <Check className="w-3.5 h-3.5" />
                 <span>Adicionado!</span>
               </>
             ) : stock <= 0 ? (
               <span>Indisponível</span>
             ) : (
               <>
-                <ShoppingCart className="w-4 h-4" />
-                <span>ADICIONAR AO CARRINHO</span>
+                <ShoppingCart className="w-3.5 h-3.5" />
+                <span className="truncate">ADICIONAR AO CARRINHO</span>
               </>
             )}
           </button>

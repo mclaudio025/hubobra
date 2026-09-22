@@ -118,12 +118,12 @@ export default function WeeklyOfferCarousel() {
         </div>
 
         {/* Carousel */}
-        <div className="overflow-hidden" ref={emblaRef}>
-          <div className="flex gap-6">
+        <div className="overflow-hidden -mx-2 px-2 sm:mx-0 sm:px-0" ref={emblaRef}>
+          <div className="flex gap-2.5 sm:gap-4">
             {products.map((product) => (
               <div
                 key={product.id}
-                className="flex-[0_0_100%] sm:flex-[0_0_50%] lg:flex-[0_0_25%]"
+                className="flex-[0_0_46%] min-[400px]:flex-[0_0_46.5%] sm:flex-[0_0_31%] md:flex-[0_0_23.5%] lg:flex-[0_0_19%]"
               >
                 <ProductCard
                   id={product.id}

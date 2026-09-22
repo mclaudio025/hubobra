@@ -202,12 +202,12 @@ export default function FeaturedProductsCarousel() {
           variants={containerVariants}
           className="relative"
         >
-          <div className="overflow-hidden rounded-2xl" ref={emblaRef}>
-            <div className="flex gap-6">
+          <div className="overflow-hidden rounded-2xl -mx-2 px-2 sm:mx-0 sm:px-0" ref={emblaRef}>
+            <div className="flex gap-2.5 sm:gap-4">
               {products.map((product, index) => (
                 <motion.div 
                   key={product.id} 
-                  className="flex-[0_0_100%] md:flex-[0_0_50%] lg:flex-[0_0_33.333%]"
+                  className="flex-[0_0_46%] min-[400px]:flex-[0_0_46.5%] sm:flex-[0_0_31%] md:flex-[0_0_23.5%] lg:flex-[0_0_19%]"
                   variants={itemVariants}
                   whileHover={{ scale: 1.02 }}
                   transition={{ duration: 0.3 }}

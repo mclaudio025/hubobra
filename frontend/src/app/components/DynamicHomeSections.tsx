@@ -100,12 +100,12 @@ function ThematicProductCarousel({ section }: { section: HomeSection }) {
         </div>
 
         {/* Viewport do Carrossel */}
-        <div className="overflow-hidden" ref={emblaRef}>
-          <div className="flex gap-4 sm:gap-5 py-2">
+        <div className="overflow-hidden -mx-2 px-2 sm:mx-0 sm:px-0" ref={emblaRef}>
+          <div className="flex gap-2.5 sm:gap-4 py-2">
             {products.map((product) => (
               <div
                 key={product.id}
-                className="flex-[0_0_82%] sm:flex-[0_0_46%] md:flex-[0_0_31%] lg:flex-[0_0_23.5%] xl:flex-[0_0_19%]"
+                className="flex-[0_0_46%] min-[400px]:flex-[0_0_46.5%] sm:flex-[0_0_31%] md:flex-[0_0_23.5%] lg:flex-[0_0_19%]"
               >
                 <ProductCard
                   id={product.id}
