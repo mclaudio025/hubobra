@@ -2,12 +2,10 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import useEmblaCarousel from 'embla-carousel-react';
-import { ChevronLeft, ChevronRight, Sparkles, ArrowRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import ProductCard from './ProductCard';
 import DepartmentShortcuts from './DepartmentShortcuts';
-import PartnerNetworkBar from './PartnerNetworkBar';
 import ImmersiveHero from '../../components/ImmersiveHero';
 import { HomeSection, useHomeSections } from '../hooks/useHomeSections';
 
@@ -220,17 +218,17 @@ export default function DynamicHomeSections() {
     );
   }
 
+  // Filtra estritamente para garantir que a rede de parceiros nunca renderize na home
+  const homeSections = sections.filter(
+    (s) => s.enabled && s.type !== 'partner_bar' && s.id !== 'partner-network-bar'
+  );
+
   return (
     <div className="w-full space-y-2" suppressHydrationWarning>
-      {sections.map((section) => {
-        if (!section.enabled) return null;
-
+      {homeSections.map((section) => {
         switch (section.type) {
           case 'hero':
             return <ImmersiveHero key={section.id} />;
-
-          case 'partner_bar':
-            return <PartnerNetworkBar key={section.id} />;
 
           case 'department_shortcuts':
             return <DepartmentShortcuts key={section.id} />;

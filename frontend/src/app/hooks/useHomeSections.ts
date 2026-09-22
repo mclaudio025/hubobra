@@ -127,20 +127,37 @@ export function useHomeSections() {
     try {
       setLoading(true);
       setError(null);
-      const res = await fetch(`${apiBase}/components/home-sections`);
-      if (res.ok) {
-        const data = await res.json();
-        if (Array.isArray(data) && data.length > 0) {
-          setSections(data);
-          return data;
+      let res: Response | null = null;
+      try {
+        res = await fetch('/api/components/home-sections', { cache: 'no-store' });
+      } catch {
+        if (apiBase) {
+          res = await fetch(`${apiBase}/components/home-sections`, { cache: 'no-store' });
         }
       }
-      setSections(DEFAULT_SECTIONS);
-      return DEFAULT_SECTIONS;
+
+      if (res && res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          const filtered = data.filter(
+            (s: HomeSection) => s.type !== 'partner_bar' && s.id !== 'partner-network-bar'
+          );
+          setSections(filtered);
+          return filtered;
+        }
+      }
+      const defaultFiltered = DEFAULT_SECTIONS.filter(
+        (s) => s.type !== 'partner_bar' && s.id !== 'partner-network-bar'
+      );
+      setSections(defaultFiltered);
+      return defaultFiltered;
     } catch (err: any) {
       console.warn('Usando seções padrão para a home:', err);
-      setSections(DEFAULT_SECTIONS);
-      return DEFAULT_SECTIONS;
+      const defaultFiltered = DEFAULT_SECTIONS.filter(
+        (s) => s.type !== 'partner_bar' && s.id !== 'partner-network-bar'
+      );
+      setSections(defaultFiltered);
+      return defaultFiltered;
     } finally {
       setLoading(false);
     }
