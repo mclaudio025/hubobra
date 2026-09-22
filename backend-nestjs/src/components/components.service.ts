@@ -34,7 +34,7 @@ const DEFAULT_ACAL_SECTIONS: HomeSection[] = [
     id: "partner-network-bar",
     type: "partner_bar",
     title: "Rede de Lojas Parceiras & CEP",
-    enabled: true,
+    enabled: false,
     order: 2,
   },
   {

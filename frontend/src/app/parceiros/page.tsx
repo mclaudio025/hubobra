@@ -18,6 +18,7 @@ import {
   DollarSign
 } from 'lucide-react';
 import { STORE_CONFIG, getWhatsAppLink } from '@/config/store.config';
+import PartnerNetworkBar from '../components/PartnerNetworkBar';
 
 export default function PartnersLandingPage() {
   const [formData, setFormData] = useState({
@@ -35,12 +36,8 @@ export default function PartnersLandingPage() {
     setSubmitted(true);
   };
 
-  const whatsappMessage = encodeURIComponent(
-    `Olá! Tenho uma loja de materiais (${formData.storeName || 'Loja'}) em ${formData.city || 'minha cidade'} e quero conectar meu estoque à HubConstruções.`
-  );
-
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 selection:bg-orange-500 selection:text-white">
+    <div className="min-h-screen bg-slate-950 text-slate-100 selection:bg-orange-500 selection:text-white pb-16">
       {/* Top Banner Header */}
       <div className="container mx-auto px-4 py-6">
         <Link 
@@ -48,12 +45,12 @@ export default function PartnersLandingPage() {
           className="inline-flex items-center gap-2 text-slate-400 hover:text-orange-400 transition-colors text-sm font-semibold"
         >
           <ArrowLeft className="w-4 h-4" />
-          Voltar para a Loja HubConstruções
+          Voltar para a Loja HubObra
         </Link>
       </div>
 
       {/* Hero Section */}
-      <section className="container mx-auto px-4 py-12 lg:py-20">
+      <section className="container mx-auto px-4 py-8 lg:py-16">
         <div className="max-w-4xl mx-auto text-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -61,14 +58,14 @@ export default function PartnersLandingPage() {
             className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-orange-500/10 border border-orange-500/20 text-orange-400 text-xs font-bold uppercase tracking-wider mb-6"
           >
             <Sparkles className="w-4 h-4" />
-            Programa de Lojistas Parceiros HubConstruções
+            Programa de Lojistas Parceiros HubObra
           </motion.div>
 
           <motion.h1
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="text-4xl sm:text-6xl font-black tracking-tight text-white leading-tight"
+            className="text-3xl sm:text-5xl lg:text-6xl font-black tracking-tight text-white leading-tight"
           >
             Venda o estoque da sua loja física para centenas de{' '}
             <span className="bg-gradient-to-r from-orange-400 via-amber-400 to-yellow-300 bg-clip-text text-transparent">
@@ -80,14 +77,14 @@ export default function PartnersLandingPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="text-lg sm:text-xl text-slate-300 mt-6 max-w-2xl mx-auto leading-relaxed"
+            className="text-base sm:text-xl text-slate-300 mt-6 max-w-2xl mx-auto leading-relaxed"
           >
             Você cuida do estoque e do caminhão de entrega. Nós trazemos os clientes, processamos o pagamento com segurança e você só paga comissão quando vender.
           </motion.p>
         </div>
 
         {/* 3 Pillars */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto mt-16">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto mt-12">
           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 relative overflow-hidden">
             <div className="p-3 bg-orange-500/10 text-orange-400 rounded-xl w-fit mb-4">
               <TrendingUp className="w-6 h-6" />
@@ -104,7 +101,7 @@ export default function PartnersLandingPage() {
             </div>
             <h3 className="text-lg font-bold text-white mb-2">Pagamento 100% Garantido</h3>
             <p className="text-sm text-slate-400">
-              O cliente paga à vista no PIX ou cartão na plataforma HubConstruções antes de você despachar o material. Risco de inadimplência zero.
+              O cliente paga à vista no PIX ou cartão na plataforma HubObra antes de você despachar o material. Risco de inadimplência zero.
             </p>
           </div>
 
@@ -117,6 +114,11 @@ export default function PartnersLandingPage() {
               Otimize as rotas dos seus veículos de entrega atendendo bairros próximos que já fazem parte da sua logística diária.
             </p>
           </div>
+        </div>
+
+        {/* Lojas Parceiras Conectadas na Região */}
+        <div className="max-w-6xl mx-auto mt-14 rounded-3xl overflow-hidden shadow-2xl border border-slate-800">
+          <PartnerNetworkBar />
         </div>
 
         {/* Lead Capture Form & WhatsApp Direct */}
@@ -141,7 +143,7 @@ export default function PartnersLandingPage() {
                 href={getWhatsAppLink(`Olá! Tenho uma loja de materiais (${formData.storeName || 'Loja'}) em ${formData.city || 'minha cidade'} e quero conectar meu estoque à ${STORE_CONFIG.name}.`)}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-6 py-3 rounded-xl text-sm transition-all"
+                className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-6 py-3 rounded-xl text-sm transition-all shadow-md"
               >
                 <Phone className="w-4 h-4" />
                 Falar Agora pelo WhatsApp
@@ -227,7 +229,7 @@ export default function PartnersLandingPage() {
 
               <button
                 type="submit"
-                className="w-full mt-4 bg-gradient-to-r from-orange-500 via-amber-500 to-orange-600 hover:from-orange-600 hover:to-amber-600 text-slate-950 font-black py-3.5 rounded-xl transition-all shadow-lg shadow-orange-500/25 flex items-center justify-center gap-2"
+                className="w-full mt-4 bg-gradient-to-r from-orange-500 via-amber-500 to-orange-600 hover:from-orange-600 hover:to-amber-600 text-slate-950 font-black py-3.5 rounded-xl transition-all shadow-lg shadow-orange-500/25 flex items-center justify-center gap-2 active:scale-95"
               >
                 <span>Enviar Cadastro para Análise</span>
                 <ArrowRight className="w-5 h-5" />
