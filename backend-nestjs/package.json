@@ -5,6 +5,9 @@
   "author": "Equipe de Desenvolvimento",
   "private": true,
   "license": "MIT",
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "scripts": {
     "build": "npx prisma generate && nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
