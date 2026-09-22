@@ -1,6 +1,7 @@
 import { ImageResponse } from 'next/og';
 
-export const alt = 'HubConstruções - Marketplace da Construção Civil';
+export const dynamic = 'force-dynamic';
+export const alt = 'HubObra - Marketplace da Construção Civil';
 export const size = {
   width: 1200,
   height: 630,
