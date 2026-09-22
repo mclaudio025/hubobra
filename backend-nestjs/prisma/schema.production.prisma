@@ -1,0 +1,15 @@
+// Schema Prisma para Produção (PlusHost)
+// Este arquivo é uma cópia do schema principal com configurações otimizadas
+
+generator client {
+  provider = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Resto do schema igual ao principal
+// (será copiado automaticamente pelo script de deploy)

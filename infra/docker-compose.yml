@@ -1,0 +1,98 @@
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: postgres-ecommerce
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: ecommerce_db
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: redis-ecommerce
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Frontend
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - NEXT_PUBLIC_API_URL=http://localhost:3001
+      - NEXT_PUBLIC_IA_URL=http://localhost:8000
+    depends_on:
+      - backend-nestjs
+    volumes:
+      - ../frontend:/app
+      - /app/node_modules
+      - /app/.next
+
+  # Backend NestJS
+  backend-nestjs:
+    build:
+      context: ../backend-nestjs
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://postgres:password@postgres:5432/ecommerce_db?schema=public
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=your-jwt-secret-key-docker
+      - CORS_ORIGIN=http://localhost:3000
+      - PORT=3001
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ../backend-nestjs:/app
+      - /app/node_modules
+      - /app/dist
+    command: sh -c "npx prisma migrate deploy && npx prisma db seed && npm run start:dev"
+
+  # IA Service
+  ia-service:
+    build:
+      context: ../ia
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:password@postgres:5432/ecommerce_db?schema=public
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-test-key}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ../ia:/app
+
+volumes:
+  postgres_data:
+  redis_data:
+  node_modules_frontend:
+  node_modules_backend:
+  dist_backend:
