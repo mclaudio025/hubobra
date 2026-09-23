@@ -13,6 +13,7 @@ import SearchBar from './SearchBar';
 import MobileMenu from './MobileMenu';
 import MobileSearchBar from './MobileSearchBar';
 import MobileCategoryNav from './MobileCategoryNav';
+import PWAInstallButton from '../pwa/PWAInstallButton';
 import { getWhatsAppWholesaleLink } from '@/config/store.config';
 
 export default function MainHeader() {
@@ -87,6 +88,7 @@ export default function MainHeader() {
               <Link href="/atendimento" className="text-slate-400 hover:text-white transition-colors">
                 Suporte à Obra
               </Link>
+              <PWAInstallButton variant="header" />
               <ThemeToggle />
             </motion.div>
           </div>

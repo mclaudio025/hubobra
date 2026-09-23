@@ -19,6 +19,9 @@ const geistMono = Geist_Mono({
 });
 
 import HydrationHandler from "./components/HydrationHandler";
+import { PWAProvider } from "./contexts/PWAContext";
+import PWAInstallModal from "./components/pwa/PWAInstallModal";
+import PWAInstallBanner from "./components/pwa/PWAInstallBanner";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://hubconstrucoes.com.br';
 
@@ -172,10 +175,14 @@ export default function RootLayout({
           <AuthProvider>
             <CartProvider>
               <FavoritesProvider>
-                <ConditionalLayout>
-                  {children}
-                </ConditionalLayout>
-                <Toaster />
+                <PWAProvider>
+                  <ConditionalLayout>
+                    {children}
+                  </ConditionalLayout>
+                  <Toaster />
+                  <PWAInstallModal />
+                  <PWAInstallBanner />
+                </PWAProvider>
               </FavoritesProvider>
             </CartProvider>
           </AuthProvider>

@@ -11,6 +11,11 @@ import { CacheProducts, CacheEvict } from "../cache/cache.decorator";
 import { CreateProductDto } from "./dto/create-product.dto";
 import { UpdateProductDto } from "./dto/update-product.dto";
 import { BulkCreateProductDto } from "./dto/bulk-create-product.dto";
+import {
+  normalizeProductName,
+  normalizeDescription,
+  normalizeBrand,
+} from "../common/text-normalizer";
 
 @Injectable()
 export class ProductsService {
@@ -22,6 +27,11 @@ export class ProductsService {
   @CacheEvict("products:*")
   async create(createProductDto: CreateProductDto) {
     const { images, tags, categoryId, ...productData } = createProductDto;
+
+    // Normalização automática de texto para padrão Title Case / Sentence Case
+    if (productData.name) productData.name = normalizeProductName(productData.name);
+    if (productData.description) productData.description = normalizeDescription(productData.description);
+    if (productData.brand) productData.brand = normalizeBrand(productData.brand);
 
     // Verificar se categoria existe
     const category = await this.prisma.category.findUnique({
@@ -97,12 +107,29 @@ export class ProductsService {
   ) {
     const skip = (page - 1) * limit;
 
+    // Extrai palavras-chave relevantes removendo stopwords comuns
+    const stopWords = new Set(['foto', 'quero', 'fotos', 'imagem', 'imagens', 'vocês', 'voces', 'tem', 'qual', 'preco', 'preço', 'quanto', 'custa', 'para', 'com', 'uma', 'uns', 'ver', 'sobre']);
+    const searchWords = search
+      ? search
+          .trim()
+          .split(/\s+/)
+          .filter((w) => w.length >= 3 && !stopWords.has(w.toLowerCase()))
+      : [];
+
     const where: Prisma.ProductWhereInput = {
       ...(search && {
         OR: [
-          { name: { contains: search } },
-          { sku: { contains: search } },
-          { brand: { contains: search } },
+          { name: { contains: search.trim(), mode: 'insensitive' } },
+          { description: { contains: search.trim(), mode: 'insensitive' } },
+          { sku: { contains: search.trim(), mode: 'insensitive' } },
+          { brand: { contains: search.trim(), mode: 'insensitive' } },
+          { barcode: { contains: search.trim(), mode: 'insensitive' } },
+          ...searchWords.map((word) => ({
+            name: { contains: word, mode: 'insensitive' as const },
+          })),
+          ...searchWords.map((word) => ({
+            description: { contains: word, mode: 'insensitive' as const },
+          })),
         ],
       }),
       ...(categoryId && { categoryId }),
@@ -188,6 +215,11 @@ export class ProductsService {
   async update(id: string, updateProductDto: UpdateProductDto) {
     const product = await this.findById(id);
     const { images, tags, categoryId, ...productData } = updateProductDto;
+
+    // Normalização automática de texto para padrão Title Case / Sentence Case
+    if (productData.name) productData.name = normalizeProductName(productData.name);
+    if (productData.description) productData.description = normalizeDescription(productData.description);
+    if (productData.brand) productData.brand = normalizeBrand(productData.brand);
 
     // Verificar categoria se fornecida
     if (categoryId) {
@@ -459,5 +491,35 @@ export class ProductsService {
         active: !product.active,
       },
     });
+  }
+
+  @CacheEvict("products:*")
+  async normalizeAllExistingProducts() {
+    const allProducts = await this.prisma.product.findMany();
+    let updatedCount = 0;
+
+    for (const p of allProducts) {
+      const newName = normalizeProductName(p.name);
+      const newDescription = p.description ? normalizeDescription(p.description) : p.description;
+      const newBrand = p.brand ? normalizeBrand(p.brand) : p.brand;
+
+      if (newName !== p.name || newDescription !== p.description || newBrand !== p.brand) {
+        await this.prisma.product.update({
+          where: { id: p.id },
+          data: {
+            name: newName,
+            description: newDescription,
+            brand: newBrand,
+          },
+        });
+        updatedCount++;
+      }
+    }
+
+    return {
+      total: allProducts.length,
+      updatedCount,
+      message: `${updatedCount} produto(s) de ${allProducts.length} foram normalizados com sucesso para o padrão Title Case / Sentence Case.`,
+    };
   }
 }

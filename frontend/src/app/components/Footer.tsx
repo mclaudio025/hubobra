@@ -12,6 +12,7 @@ import {
   MapPin
 } from 'lucide-react';
 import { STORE_CONFIG, getWhatsAppLink } from '@/config/store.config';
+import PWAInstallButton from './pwa/PWAInstallButton';
 
 const Footer = () => {
   const containerVariants = {
@@ -315,6 +316,23 @@ const Footer = () => {
               </motion.div>
             </motion.div>
           </motion.div>
+        </motion.div>
+
+        {/* PWA App Download Bar */}
+        <motion.div 
+          className="mt-8 p-4 rounded-2xl bg-gradient-to-r from-orange-500/10 via-amber-500/10 to-orange-500/5 border border-orange-500/20 flex flex-col sm:flex-row items-center justify-between gap-4"
+          variants={itemVariants}
+        >
+          <div className="flex items-center gap-3 text-left">
+            <div className="w-10 h-10 rounded-xl bg-orange-500 text-white flex items-center justify-center font-bold shrink-0 shadow-md shadow-orange-500/20">
+              <span className="text-lg">📱</span>
+            </div>
+            <div>
+              <h4 className="font-bold text-sm text-white">Instale o App HubObra no seu celular</h4>
+              <p className="text-xs text-gray-300">Acesse cotações, catálogo e pedidos direto da tela inicial com 1 clique.</p>
+            </div>
+          </div>
+          <PWAInstallButton variant="footer" />
         </motion.div>
 
         {/* Copyright Section */}

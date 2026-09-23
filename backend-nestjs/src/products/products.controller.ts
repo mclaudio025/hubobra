@@ -49,6 +49,12 @@ export class ProductsController {
     private readonly specsEnrichmentService: SpecsEnrichmentService,
   ) {}
 
+  @Post("normalize-all")
+  @ApiOperation({ summary: "Normaliza todos os produtos existentes para o padrão Title Case e Sentence Case" })
+  async normalizeAll() {
+    return this.productsService.normalizeAllExistingProducts();
+  }
+
   @Post(":id/auto-specs")
   @ApiOperation({ summary: "Auto-preencher especificações técnicas do produto via inteligência de catálogo/web" })
   async autoEnrichSpecs(@Param("id") id: string) {

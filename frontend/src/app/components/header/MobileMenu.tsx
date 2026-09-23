@@ -31,6 +31,7 @@ import {
 import { useAuth } from '../../contexts/AuthContext';
 import { useCart } from '../../contexts/CartContext';
 import { useFavorites } from '../../contexts/FavoritesContext';
+import PWAInstallButton from '../pwa/PWAInstallButton';
 import { STORE_CONFIG, getWhatsAppWholesaleLink } from '@/config/store.config';
 
 export default function MobileMenu() {
@@ -164,6 +165,11 @@ export default function MobileMenu() {
                         <ChevronRight className="h-4 w-4 text-slate-400" />
                       </Link>
                     )}
+                  </div>
+
+                  {/* PWA Install Button Promo in Mobile Menu */}
+                  <div className="px-3 pt-3 pb-1">
+                    <PWAInstallButton variant="menu" />
                   </div>
 
                   {/* Main Quick Actions */}
