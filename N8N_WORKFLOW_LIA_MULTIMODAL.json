@@ -1,0 +1,185 @@
+{
+  "name": "HubObra - Atendimento Lia Multimodal (Áudio, Imagem e Texto)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "lia-chat",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook Lia (Site & WhatsApp)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [100, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.body.audioUrl || $json.body.audioBase64 || $json.body.mediaType }}",
+              "operation": "isNotEmpty"
+            }
+          ]
+        }
+      },
+      "id": "check-audio",
+      "name": "É Áudio?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [340, 200]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.body.imageUrl || $json.body.imageBase64 }}",
+              "operation": "isNotEmpty"
+            }
+          ]
+        }
+      },
+      "id": "check-image",
+      "name": "É Imagem / Foto?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [340, 420]
+    },
+    {
+      "parameters": {
+        "model": "whisper-1",
+        "options": {
+          "language": "pt"
+        }
+      },
+      "id": "whisper-transcribe",
+      "name": "OpenAI Whisper (Transcrever Áudio)",
+      "type": "@n8n/n8n-nodes-langchain.openAiAudio",
+      "typeVersion": 1,
+      "position": [580, 140]
+    },
+    {
+      "parameters": {
+        "model": "gemini-2.0-flash",
+        "prompt": "Analise esta imagem de material de construção, reforma ou obra. Identifique os produtos, marcas, medidas (ex: PVC 100mm, cimento CP II, tinta acrílica) e retorne uma lista clara do que o cliente precisa cotar."
+      },
+      "id": "gemini-vision",
+      "name": "Gemini Vision (Identificar Foto)",
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1,
+      "position": [580, 380]
+    },
+    {
+      "parameters": {
+        "model": "gpt-4o-mini",
+        "promptType": "define",
+        "text": "=Você é a LIA, especialista em atendimento e materiais de construção da HubObra (Marketplace da Construção em Fortaleza e Região).\n\nSua missão é responder com entusiasmo, tirar dúvidas sobre materiais, recomendar marcas de alta qualidade (Tigre, Coral, Votoran, Quartzolit) e sugerir produtos disponíveis no catálogo.\n\nPergunta / Pedido do Cliente: {{ $json.text || $json.body.message || $json.transcription || $json.imageAnalysis }}\n\nInstruções:\n1. Seja simpática, técnica e objetiva.\n2. Se o cliente pedir cotação ou fechar pedido, informe que aceitamos PIX com entrega rápida em até 24h na obra.\n3. Se precisar de cálculo estrutural complexo, mencione que o 'Zé da Obra' também pode auxiliar no cálculo exato.",
+        "options": {
+          "temperature": 0.7
+        }
+      },
+      "id": "lia-agent",
+      "name": "Agente IA Lia (HubObra)",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [880, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": true,\n  \"response\": \"{{ $json.output || $json.text }}\",\n  \"persona\": \"lia\",\n  \"source\": \"n8n-multimodal\",\n  \"timestamp\": \"{{ new Date().toISOString() }}\"\n}",
+        "options": {}
+      },
+      "id": "respond-to-webhook",
+      "name": "Responder ao Chat / WhatsApp",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1140, 300]
+    }
+  ],
+  "connections": {
+    "Webhook Lia (Site & WhatsApp)": {
+      "main": [
+        [
+          {
+            "node": "É Áudio?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "É Áudio?": {
+      "main": [
+        [
+          {
+            "node": "OpenAI Whisper (Transcrever Áudio)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "É Imagem / Foto?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "É Imagem / Foto?": {
+      "main": [
+        [
+          {
+            "node": "Gemini Vision (Identificar Foto)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Agente IA Lia (HubObra)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Whisper (Transcrever Áudio)": {
+      "main": [
+        [
+          {
+            "node": "Agente IA Lia (HubObra)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini Vision (Identificar Foto)": {
+      "main": [
+        [
+          {
+            "node": "Agente IA Lia (HubObra)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agente IA Lia (HubObra)": {
+      "main": [
+        [
+          {
+            "node": "Responder ao Chat / WhatsApp",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
