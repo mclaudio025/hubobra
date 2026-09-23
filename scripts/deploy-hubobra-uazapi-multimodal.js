@@ -656,7 +656,7 @@ return results;`
         },
         sendBody: true,
         specifyBody: "json",
-        jsonBody: "={{ { source_id: $('📝 Formatar Resposta WhatsApp').first().json.phone, inbox_id: " + CHATWOOT_INBOX_ID + ", contact_id: $json.payload ? $json.payload.contact.id : $json.id, status: 'pending' } }}",
+        jsonBody: "={{ { source_id: $('📝 Formatar Resposta WhatsApp').first().json.phone, inbox_id: " + CHATWOOT_INBOX_ID + ", contact_id: $json.payload ? $json.payload.contact.id : ($json.id || $json.contact_id), status: 'open', assignee_id: 1 } }}",
         options: {
           timeout: 10000
         }
