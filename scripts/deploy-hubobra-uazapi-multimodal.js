@@ -489,48 +489,14 @@ return items.map(item => ({
     },
     {
       parameters: {
-        jsCode: `// 📝 PREPARAR RESPOSTA FINAL DO WHATSAPP & SINCRONIZAR COM CHATWOOT CRM
+        jsCode: `// 📝 PREPARAR RESPOSTA FINAL DO WHATSAPP (TEXTO OU FOTO)
 const items = $input.all();
 const results = [];
-
-const https = require('https');
-const CHATWOOT_URL = 'https://atendimento-chatwoot.q6zw3x.easypanel.host';
-const CHATWOOT_TOKEN = 'EE8HZn79o6Hdp5h2gAcqbFgu';
-const ACCOUNT_ID = 1;
-
-function chatwootRequest(path, method, body) {
-  return new Promise(resolve => {
-    try {
-      const u = new URL(CHATWOOT_URL + path);
-      const r = https.request(u, {
-        method,
-        headers: {
-          'api_access_token': CHATWOOT_TOKEN,
-          'Content-Type': 'application/json'
-        },
-        timeout: 5000
-      }, res => {
-        let d = '';
-        res.on('data', c => d += c);
-        res.on('end', () => {
-          try { resolve(JSON.parse(d)); } catch(e) { resolve(d); }
-        });
-      });
-      r.on('error', () => resolve(null));
-      r.on('timeout', () => { r.destroy(); resolve(null); });
-      if (body) r.write(JSON.stringify(body));
-      r.end();
-    } catch(err) {
-      resolve(null);
-    }
-  });
-}
 
 for (const item of items) {
   const rawOutput = item.json.output || item.json.text || "Olá! Como posso ajudar você na sua obra hoje?";
   const phone = $('⚙️ Normalizar Mensagem').first().json.phone;
   const name = $('⚙️ Normalizar Mensagem').first().json.name;
-  const clientText = $('⚙️ Normalizar Mensagem').first().json.messageText;
   
   // Detecção de Foto na tag [FOTO: url]
   let imageUrl = '';
@@ -544,43 +510,6 @@ for (const item of items) {
   
   const hasImage = Boolean(imageUrl && imageUrl.startsWith('http'));
   
-  // Sincronização com Chatwoot CRM
-  (async () => {
-    try {
-      let contactRes = await chatwootRequest('/api/v1/accounts/' + ACCOUNT_ID + '/contacts/search?q=' + phone, 'GET');
-      let contact = contactRes?.payload?.[0];
-      if (!contact) {
-        const cRes = await chatwootRequest('/api/v1/accounts/' + ACCOUNT_ID + '/contacts', 'POST', {
-          name: name || 'Cliente WhatsApp',
-          phone_number: '+' + phone,
-          identifier: phone
-        });
-        contact = cRes?.payload?.contact || cRes;
-      }
-      if (contact?.id) {
-        let convRes = await chatwootRequest('/api/v1/accounts/' + ACCOUNT_ID + '/conversations', 'POST', {
-          source_id: phone,
-          inbox_id: 1,
-          contact_id: contact.id,
-          status: 'pending'
-        });
-        const convId = convRes?.id;
-        if (convId) {
-          if (clientText) {
-            await chatwootRequest('/api/v1/accounts/' + ACCOUNT_ID + '/conversations/' + convId + '/messages', 'POST', {
-              content: clientText,
-              message_type: 'incoming'
-            });
-          }
-          await chatwootRequest('/api/v1/accounts/' + ACCOUNT_ID + '/conversations/' + convId + '/messages', 'POST', {
-            content: cleanText + (hasImage ? '\\n[Foto enviada: ' + imageUrl + ']' : ''),
-            message_type: 'outgoing'
-          });
-        }
-      }
-    } catch(e) {}
-  })();
-
   results.push({
     json: {
       phone: phone,
