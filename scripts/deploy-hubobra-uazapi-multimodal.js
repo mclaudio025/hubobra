@@ -7,6 +7,11 @@ const WORKFLOW_ID = 'IL2N96Rp8RSv6Hyz';
 const UAZAPI_BASE = 'https://hubobra.uazapi.com';
 const UAZAPI_TOKEN = '2b8e068e-e174-4419-a64c-9b97f4760527';
 
+const CHATWOOT_URL = 'https://atendimento-chatwoot.q6zw3x.easypanel.host';
+const CHATWOOT_TOKEN = 'EE8HZn79o6Hdp5h2gAcqbFgu';
+const CHATWOOT_ACCOUNT_ID = 1;
+const CHATWOOT_INBOX_ID = 1;
+
 function request(endpoint, method = 'GET', body = null) {
   return new Promise((resolve, reject) => {
     const url = new URL(N8N_URL + endpoint);
@@ -57,14 +62,8 @@ const systemPrompt = `Você é o sistema de atendimento inteligente oficial da H
    - Quando o Zé da Obra entrar, ele explica a parte técnica primeiro com linguagem prática de mestre de obras.
    - Logo em seguida, a 🙋‍♀️ LIA assume imediatamente para passar os preços no PIX e fechar o pedido!
 
-══════════════════════════════════════════════════════════════
-📐 FÓRMULAS DE ENGENHARIA DO ZÉ DA OBRA:
-══════════════════════════════════════════════════════════════
-- Alvenaria/Paredes: 30 tijolos 8 furos por m² (já com 10% de margem de quebra) + 0.5 saco de cimento 50kg por m² + 0.1 m³ de areia média por m².
-- Reboco/Emboço: 0.25 saco cimento 50kg por m² + 0.04 m³ areia fina/média.
-- Contrapiso (5cm): 0.35 saco cimento 50kg por m² + 0.04 m³ areia + 0.04 m³ brita.
-- Argamassa Colante Piso: 1 saco ACII 20kg a cada 4.5 m² de piso.
-- Impermeabilização: Vedatop caixa 18kg rende de 6 a 9 m² com 3 demãos cruzadas.
+3. 👤 TRANSBORDO HUMANO:
+   - Se o cliente pedir explicitamente para falar com um atendente humano, vendedor ou dono da loja, a Lia responde com cordialidade: "🙋‍♀️ Com certeza! Estou transferindo seu atendimento para a nossa equipe humana agora mesmo. Um instante!"
 
 ══════════════════════════════════════════════════════════════
 📸 REGRA ESTRITA DE ENVIO DE FOTOS:
@@ -91,6 +90,15 @@ Exemplo de estrutura:
 Deseja que eu reserve esses materiais e gere seu pedido para entrega hoje?
 
 ══════════════════════════════════════════════════════════════
+📐 FÓRMULAS DE ENGENHARIA DO ZÉ DA OBRA:
+══════════════════════════════════════════════════════════════
+- Alvenaria/Paredes: 30 tijolos 8 furos por m² (já com 10% de margem de quebra) + 0.5 saco de cimento 50kg por m² + 0.1 m³ de areia média por m².
+- Reboco/Emboço: 0.25 saco cimento 50kg por m² + 0.04 m³ areia fina/média.
+- Contrapiso (5cm): 0.35 saco cimento 50kg por m² + 0.04 m³ areia + 0.04 m³ brita.
+- Argamassa Colante Piso: 1 saco ACII 20kg a cada 4.5 m² de piso.
+- Impermeabilização: Vedatop caixa 18kg rende de 6 a 9 m² com 3 demãos cruzadas.
+
+══════════════════════════════════════════════════════════════
 🛒 CATÁLOGO OFICIAL HUBOBRA COM FOTOS DO SUPABASE:
 ══════════════════════════════════════════════════════════════
 - Tinta Acrílica Standard Fosco Rende Muito Branco Neve 20L (Coral): R$ 299,90 (PIX) | [FOTO: https://zeywqzkmevytzkdbzwni.supabase.co/storage/v1/object/public/products/products/52519499-5c7a-45c7-86d0-c3ba0954f3a3.jpg]
@@ -114,7 +122,7 @@ Deseja que eu reserve esses materiais e gere seu pedido para entrega hoje?
   * Frete Grátis e entrega rápida direto na obra para Fortaleza e Região Metropolitana.`;
 
 const workflowPayload = {
-  name: "HubObra - Atendimento Inteligente IA (Lia + Zé da Obra) Multimodal Uazapi",
+  name: "HubObra - Atendimento Inteligente IA (Lia + Zé da Obra) Multimodal Uazapi + Chatwoot CRM",
   settings: {
     executionOrder: "v1"
   },
@@ -497,6 +505,7 @@ for (const item of items) {
   const rawOutput = item.json.output || item.json.text || "Olá! Como posso ajudar você na sua obra hoje?";
   const phone = $('⚙️ Normalizar Mensagem').first().json.phone;
   const name = $('⚙️ Normalizar Mensagem').first().json.name;
+  const clientText = $('⚙️ Normalizar Mensagem').first().json.messageText;
   
   // Detecção de Foto na tag [FOTO: url]
   let imageUrl = '';
@@ -514,6 +523,7 @@ for (const item of items) {
     json: {
       phone: phone,
       name: name,
+      clientText: clientText,
       respostaFormatada: cleanText,
       imageUrl: imageUrl,
       hasImage: hasImage,
@@ -607,6 +617,106 @@ return results;`
       type: "n8n-nodes-base.httpRequest",
       typeVersion: 4.3,
       position: [1100, 400]
+    },
+    {
+      parameters: {
+        method: "POST",
+        url: `${CHATWOOT_URL}/api/v1/accounts/${CHATWOOT_ACCOUNT_ID}/contacts`,
+        sendHeaders: true,
+        headerParameters: {
+          parameters: [
+            { name: "api_access_token", value: CHATWOOT_TOKEN },
+            { name: "Content-Type", value: "application/json" }
+          ]
+        },
+        sendBody: true,
+        specifyBody: "json",
+        jsonBody: "={{ { name: $json.name || 'Cliente WhatsApp', phone_number: '+' + $json.phone, identifier: $json.phone } }}",
+        options: {
+          timeout: 10000
+        }
+      },
+      id: "chatwoot-create-contact",
+      name: "💬 Chatwoot: Criar/Obter Contato",
+      type: "n8n-nodes-base.httpRequest",
+      typeVersion: 4.3,
+      position: [1400, 300],
+      continueOnFail: true
+    },
+    {
+      parameters: {
+        method: "POST",
+        url: `${CHATWOOT_URL}/api/v1/accounts/${CHATWOOT_ACCOUNT_ID}/conversations`,
+        sendHeaders: true,
+        headerParameters: {
+          parameters: [
+            { name: "api_access_token", value: CHATWOOT_TOKEN },
+            { name: "Content-Type", value: "application/json" }
+          ]
+        },
+        sendBody: true,
+        specifyBody: "json",
+        jsonBody: "={{ { source_id: $('📝 Formatar Resposta WhatsApp').first().json.phone, inbox_id: " + CHATWOOT_INBOX_ID + ", contact_id: $json.payload ? $json.payload.contact.id : $json.id, status: 'pending' } }}",
+        options: {
+          timeout: 10000
+        }
+      },
+      id: "chatwoot-create-conv",
+      name: "💬 Chatwoot: Abrir Conversa",
+      type: "n8n-nodes-base.httpRequest",
+      typeVersion: 4.3,
+      position: [1650, 300],
+      continueOnFail: true
+    },
+    {
+      parameters: {
+        method: "POST",
+        url: `=${CHATWOOT_URL}/api/v1/accounts/${CHATWOOT_ACCOUNT_ID}/conversations/{{ $json.id }}/messages`,
+        sendHeaders: true,
+        headerParameters: {
+          parameters: [
+            { name: "api_access_token", value: CHATWOOT_TOKEN },
+            { name: "Content-Type", value: "application/json" }
+          ]
+        },
+        sendBody: true,
+        specifyBody: "json",
+        jsonBody: "={{ { content: $('📝 Formatar Resposta WhatsApp').first().json.clientText, message_type: 'incoming' } }}",
+        options: {
+          timeout: 10000
+        }
+      },
+      id: "chatwoot-post-client-msg",
+      name: "💬 Chatwoot: Mensagem Cliente",
+      type: "n8n-nodes-base.httpRequest",
+      typeVersion: 4.3,
+      position: [1900, 200],
+      continueOnFail: true
+    },
+    {
+      parameters: {
+        method: "POST",
+        url: `=${CHATWOOT_URL}/api/v1/accounts/${CHATWOOT_ACCOUNT_ID}/conversations/{{ $('💬 Chatwoot: Abrir Conversa').first().json.id }}/messages`,
+        sendHeaders: true,
+        headerParameters: {
+          parameters: [
+            { name: "api_access_token", value: CHATWOOT_TOKEN },
+            { name: "Content-Type", value: "application/json" }
+          ]
+        },
+        sendBody: true,
+        specifyBody: "json",
+        jsonBody: "={{ { content: $('📝 Formatar Resposta WhatsApp').first().json.respostaFormatada, message_type: 'outgoing' } }}",
+        options: {
+          timeout: 10000
+        }
+      },
+      id: "chatwoot-post-lia-msg",
+      name: "💬 Chatwoot: Resposta Lia",
+      type: "n8n-nodes-base.httpRequest",
+      typeVersion: 4.3,
+      position: [2150, 200],
+      continueOnFail: true
     }
   ],
   connections: {
@@ -796,6 +906,11 @@ return results;`
             node: "Tem Foto para Enviar?",
             type: "main",
             index: 0
+          },
+          {
+            node: "💬 Chatwoot: Criar/Obter Contato",
+            type: "main",
+            index: 0
           }
         ]
       ]
@@ -817,16 +932,49 @@ return results;`
           }
         ]
       ]
+    },
+    "💬 Chatwoot: Criar/Obter Contato": {
+      main: [
+        [
+          {
+            node: "💬 Chatwoot: Abrir Conversa",
+            type: "main",
+            index: 0
+          }
+        ]
+      ]
+    },
+    "💬 Chatwoot: Abrir Conversa": {
+      main: [
+        [
+          {
+            node: "💬 Chatwoot: Mensagem Cliente",
+            type: "main",
+            index: 0
+          }
+        ]
+      ]
+    },
+    "💬 Chatwoot: Mensagem Cliente": {
+      main: [
+        [
+          {
+            node: "💬 Chatwoot: Resposta Lia",
+            type: "main",
+            index: 0
+          }
+        ]
+      ]
     }
   }
 };
 
 async function deploy() {
-  console.log('🚀 Atualizando workflow com pipeline multimodal completo (Áudio Whisper + Imagem GPT-4o + Texto Lia)...');
+  console.log('🚀 Atualizando workflow com pipeline multimodal + Chatwoot CRM HTTP Nodes...');
   const res = await request('/workflows/' + WORKFLOW_ID, 'PUT', workflowPayload);
   console.log('Status do PUT:', res.status);
   if (res.status === 200) {
-    console.log('✅ WORKFLOW MULTIMODAL UAZAPI ATUALIZADO COM SUCESSO!');
+    console.log('✅ WORKFLOW MULTIMODAL + CHATWOOT ATUALIZADO COM SUCESSO!');
     const act = await request('/workflows/' + WORKFLOW_ID + '/activate', 'POST');
     console.log('Status de Ativação:', act.status);
   } else {
