@@ -28,10 +28,11 @@ export default function WeeklyOfferCarousel() {
     slidesToScroll: 1, 
     align: 'start', 
     containScroll: 'trimSnaps',
-    loop: true,
+    loop: false,
+    dragFree: true,
     breakpoints: {
-      '(min-width: 640px)': { slidesToScroll: 2 },
-      '(min-width: 1024px)': { slidesToScroll: 4 }
+      '(min-width: 640px)': { slidesToScroll: 2, dragFree: false },
+      '(min-width: 1024px)': { slidesToScroll: 4, dragFree: false }
     }
   });
   

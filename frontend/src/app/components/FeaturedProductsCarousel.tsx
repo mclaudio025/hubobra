@@ -25,12 +25,14 @@ export default function FeaturedProductsCarousel() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [emblaRef, emblaApi] = useEmblaCarousel({ 
-    loop: true,
+    loop: false,
     align: 'start',
+    containScroll: 'trimSnaps',
+    dragFree: true,
     slidesToScroll: 1,
     breakpoints: {
-      '(min-width: 768px)': { slidesToScroll: 2 },
-      '(min-width: 1024px)': { slidesToScroll: 3 }
+      '(min-width: 768px)': { slidesToScroll: 2, dragFree: false },
+      '(min-width: 1024px)': { slidesToScroll: 3, dragFree: false }
     }
   });
   

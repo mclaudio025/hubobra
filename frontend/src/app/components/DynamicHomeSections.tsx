@@ -19,11 +19,12 @@ function ThematicProductCarousel({ section }: { section: HomeSection }) {
     align: 'start',
     containScroll: 'trimSnaps',
     loop: false,
+    dragFree: true,
     slidesToScroll: 1,
     breakpoints: {
-      '(min-width: 640px)': { slidesToScroll: 2 },
-      '(min-width: 1024px)': { slidesToScroll: 4 },
-      '(min-width: 1280px)': { slidesToScroll: 5 },
+      '(min-width: 640px)': { slidesToScroll: 2, dragFree: false },
+      '(min-width: 1024px)': { slidesToScroll: 4, dragFree: false },
+      '(min-width: 1280px)': { slidesToScroll: 5, dragFree: false },
     },
   });
 
@@ -98,7 +99,7 @@ function ThematicProductCarousel({ section }: { section: HomeSection }) {
         </div>
 
         {/* Viewport do Carrossel */}
-        <div className="overflow-hidden -mx-2 px-2 sm:mx-0 sm:px-0" ref={emblaRef}>
+        <div className="overflow-hidden -mx-2 px-2 sm:mx-0 sm:px-0 select-none" ref={emblaRef} style={{ touchAction: 'pan-y' }}>
           <div className="flex gap-2.5 sm:gap-4 py-2">
             {products.map((product) => (
               <div
