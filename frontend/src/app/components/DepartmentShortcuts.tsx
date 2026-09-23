@@ -18,15 +18,23 @@ interface Category {
   };
 }
 
-// Fallback high-res curated photos for Brazilian building materials & home center categories
+// Fotos de alta resolução curadas para todas as categorias e departamentos de construção civil
 const categoryPhotos: Record<string, string> = {
   'pisos-e-revestimentos': 'https://images.unsplash.com/photo-1581858726788-75bc0f6a952d?w=300&auto=format&fit=crop&q=80',
   'tintas-e-vernizes': 'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=300&auto=format&fit=crop&q=80',
+  'tintas-acrilicas': 'https://images.unsplash.com/photo-1562259949-e8e7689d7828?w=300&auto=format&fit=crop&q=80',
+  'esmaltes': 'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=300&auto=format&fit=crop&q=80',
+  'vernizes': 'https://images.unsplash.com/photo-1562259949-e8e7689d7828?w=300&auto=format&fit=crop&q=80',
   'ferramentas': 'https://images.unsplash.com/photo-1581244277943-fe4a9c777189?w=300&auto=format&fit=crop&q=80',
   'eletrica': 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=300&auto=format&fit=crop&q=80',
-  'hidraulica': 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=300&auto=format&fit=crop&q=80',
+  'hidraulica': 'https://images.unsplash.com/photo-1585704032915-c3400ca199e7?w=300&auto=format&fit=crop&q=80',
   'cimento-e-argamassa': 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=300&auto=format&fit=crop&q=80',
+  'cimento-portland': 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=300&auto=format&fit=crop&q=80',
+  'argamassa': 'https://images.unsplash.com/photo-1621905252507-b35492cc74b4?w=300&auto=format&fit=crop&q=80',
   'tijolos-e-blocos': 'https://images.unsplash.com/photo-1590381105924-c72589b9ef3f?w=300&auto=format&fit=crop&q=80',
+  'tijolos-ceramicos': 'https://images.unsplash.com/photo-1590381105924-c72589b9ef3f?w=300&auto=format&fit=crop&q=80',
+  'blocos-concreto': 'https://images.unsplash.com/photo-1541888946425-d0fbb186156a?w=300&auto=format&fit=crop&q=80',
+  'aditivos': 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=300&auto=format&fit=crop&q=80',
   'telhas-e-coberturas': 'https://images.unsplash.com/photo-1632759145351-1d592919f522?w=300&auto=format&fit=crop&q=80',
   'madeiras': 'https://images.unsplash.com/photo-1533090161767-e6ffed986c88?w=300&auto=format&fit=crop&q=80',
   'ferragens': 'https://images.unsplash.com/photo-1586864387967-d02ef85d93e8?w=300&auto=format&fit=crop&q=80',
