@@ -75,9 +75,12 @@ const systemPrompt = `Você é o sistema de atendimento inteligente oficial da H
 ══════════════════════════════════════════════════════════════
 📸 REGRA ESTRITA DE ENVIO DE FOTOS:
 ══════════════════════════════════════════════════════════════
-- Quando o cliente pedir para ver foto (ex: "tem foto?", "manda a foto", "manda foto da lamina", "como ele é?", "envia foto do engate", "foto da antena"), você DEVE INCLUIR A TAG [FOTO: url] exatamente com o link da foto do produto que consta na lista de estoque em tempo real!
-- NUNCA invente links de foto! Use EXATAMENTE os links [FOTO: ...] fornecidos no catálogo em tempo real.
-- Se o cliente apenas perguntou preço sem pedir foto, responda apenas em texto.
+- ⚠️ PROIBIDO USAR SINTAXE MARKDOWN DE IMAGEM COMO ![texto](url)! O WhatsApp NÃO suporta markdown de fotos e isso quebra o layout.
+- ⚠️ NUNCA cole links de fotos soltos no meio do texto.
+- Quando o cliente pedir foto (ex: "tem foto?", "manda a foto", "manda foto da lamina", "como ele é?", "envia foto"), ou ao apresentar o produto com foto, coloque SEMPRE no final da resposta a tag:
+[FOTO: url]
+- Use EXATAMENTE a URL de foto que consta no catálogo em tempo real.
+- Se houver múltiplos produtos na resposta (ex: dois tamanhos de fita), liste os produtos e preços com clareza em texto e coloque no final da mensagem a tag [FOTO: url] do item principal, para que a foto oficial seja enviada pelo WhatsApp como imagem nativa com legenda.
 
 ══════════════════════════════════════════════════════════════
 📋 REGRA DE ORÇAMENTO / MÚLTIPLOS PRODUTOS (ORÇAMENTO FORMAL):
@@ -586,15 +589,33 @@ for (const item of items) {
     }
   } catch(_) {}
   
-  // Detecção de Foto na tag [FOTO: url]
+  // Detecção Inteligente e Extração de Fotos (Tag [FOTO:], Markdown ![alt](url) ou URL direta)
   let imageUrl = '';
   let cleanText = rawOutput;
   
-  const fotoMatch = rawOutput.match(/\\[FOTO:\\s*(https?:\\/\\/[^\\s\\]]+)\\]/i);
+  // 1. Tag oficial [FOTO: url]
+  const fotoMatch = cleanText.match(/\\[FOTO:\\s*(https?:\\/\\/[^\\s\\]]+)\\]/i);
   if (fotoMatch) {
     imageUrl = fotoMatch[1];
-    cleanText = rawOutput.replace(fotoMatch[0], '').trim();
+    cleanText = cleanText.replace(/\\[FOTO:\\s*(https?:\\/\\/[^\\s\\]]+)\\]/gi, '').trim();
   }
+  
+  // 2. Markdown de imagem ![alt](url)
+  const mdMatches = [...cleanText.matchAll(/!\\[.*?\\]\\((https?:\\/\\/[^\\s\\)]+)\\)/gi)];
+  if (mdMatches.length > 0) {
+    if (!imageUrl) imageUrl = mdMatches[0][1];
+    cleanText = cleanText.replace(/!\\[.*?\\]\\((https?:\\/\\/[^\\s\\)]+)\\)/gi, '').trim();
+  }
+  
+  // 3. URLs soltas de imagens com extensões comuns
+  const imgUrlMatches = [...cleanText.matchAll(/(https?:\\/\\/[^\\s]+\\.(?:jpg|jpeg|png|webp|avif)(?:\\?[^\\s]*)?)/gi)];
+  if (imgUrlMatches.length > 0) {
+    if (!imageUrl) imageUrl = imgUrlMatches[0][1];
+    cleanText = cleanText.replace(/(https?:\\/\\/[^\\s]+\\.(?:jpg|jpeg|png|webp|avif)(?:\\?[^\\s]*)?)/gi, '').trim();
+  }
+  
+  // Limpeza de linhas vazias extras e hífens órfãos deixados pela remoção das fotos
+  cleanText = cleanText.replace(/^[\\s-]*$/gm, '').replace(/\\n{3,}/g, '\\n\\n').trim();
   
   const hasImage = Boolean(imageUrl && imageUrl.startsWith('http'));
   
