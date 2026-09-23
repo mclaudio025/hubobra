@@ -1,107 +1,157 @@
 {
-  "name": "HubObra - Atendimento Lia Multimodal (Áudio, Imagem e Texto)",
+  "name": "HubObra - Atendimento Inteligente IA (Lia + Zé da Obra) Unificado",
   "nodes": [
     {
       "parameters": {
         "httpMethod": "POST",
-        "path": "lia-chat",
+        "path": "hubobra-chat",
         "responseMode": "responseNode",
         "options": {}
       },
-      "id": "webhook-trigger",
-      "name": "Webhook Lia (Site & WhatsApp)",
+      "id": "webhook-entrada",
+      "name": "Entrada WhatsApp / Site (HubObra)",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
       "position": [100, 300]
     },
     {
       "parameters": {
+        "jsCode": "// Normaliza a mensagem recebida de WhatsApp (Evolution/Wazapi) ou Site\nconst body = $input.first().json.body || $input.first().json;\n\nconst isAudio = Boolean(body.audioUrl || body.audioBase64 || (body.messageType === 'audioMessage') || (body.mediaType === 'audio') || (body.message && body.message.audioMessage));\nconst isImage = Boolean(body.imageUrl || body.imageBase64 || (body.messageType === 'imageMessage') || (body.mediaType === 'image') || (body.message && body.message.imageMessage));\n\nconst textMessage = body.message?.conversation || body.message?.extendedTextMessage?.text || body.text || body.message || '';\n\nreturn [{\n  json: {\n    ...body,\n    isAudio,\n    isImage,\n    textMessage,\n    senderPhone: body.senderPhone || body.phone || body.key?.remoteJid || 'cliente',\n    senderName: body.senderName || body.pushName || 'Cliente',\n    timestamp: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "normalizar-mensagem",
+      "name": "Normalizar Mensagem",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [320, 300]
+    },
+    {
+      "parameters": {
         "conditions": {
-          "string": [
+          "boolean": [
             {
-              "value1": "={{ $json.body.audioUrl || $json.body.audioBase64 || $json.body.mediaType }}",
-              "operation": "isNotEmpty"
+              "value1": "={{ $json.isAudio }}",
+              "value2": true
             }
           ]
         }
       },
-      "id": "check-audio",
+      "id": "verificar-audio",
       "name": "É Áudio?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
-      "position": [340, 200]
+      "position": [540, 200]
     },
     {
       "parameters": {
         "conditions": {
-          "string": [
+          "boolean": [
             {
-              "value1": "={{ $json.body.imageUrl || $json.body.imageBase64 }}",
-              "operation": "isNotEmpty"
+              "value1": "={{ $json.isImage }}",
+              "value2": true
             }
           ]
         }
       },
-      "id": "check-image",
+      "id": "verificar-imagem",
       "name": "É Imagem / Foto?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
-      "position": [340, 420]
+      "position": [540, 420]
     },
     {
       "parameters": {
-        "model": "whisper-1",
+        "resource": "audio",
+        "operation": "transcribe",
+        "binaryPropertyName": "data",
         "options": {
           "language": "pt"
         }
       },
-      "id": "whisper-transcribe",
-      "name": "OpenAI Whisper (Transcrever Áudio)",
-      "type": "@n8n/n8n-nodes-langchain.openAiAudio",
+      "id": "transcrever-audio",
+      "name": "Transcrever Áudio (Whisper)",
+      "type": "n8n-nodes-base.openAi",
       "typeVersion": 1,
-      "position": [580, 140]
+      "position": [780, 140]
     },
     {
       "parameters": {
-        "model": "gemini-2.0-flash",
-        "prompt": "Analise esta imagem de material de construção, reforma ou obra. Identifique os produtos, marcas, medidas (ex: PVC 100mm, cimento CP II, tinta acrílica) e retorne uma lista clara do que o cliente precisa cotar."
+        "modelName": "models/gemini-2.0-flash",
+        "options": {}
       },
-      "id": "gemini-vision",
-      "name": "Gemini Vision (Identificar Foto)",
+      "id": "gemini-vision-analise",
+      "name": "Identificar Material na Foto (Gemini Vision)",
       "type": "@n8n/n8n-nodes-langchain.googleGemini",
       "typeVersion": 1,
-      "position": [580, 380]
+      "position": [780, 400]
     },
     {
       "parameters": {
-        "model": "gpt-4o-mini",
         "promptType": "define",
-        "text": "=Você é a LIA, especialista em atendimento e materiais de construção da HubObra (Marketplace da Construção em Fortaleza e Região).\n\nSua missão é responder com entusiasmo, tirar dúvidas sobre materiais, recomendar marcas de alta qualidade (Tigre, Coral, Votoran, Quartzolit) e sugerir produtos disponíveis no catálogo.\n\nPergunta / Pedido do Cliente: {{ $json.text || $json.body.message || $json.transcription || $json.imageAnalysis }}\n\nInstruções:\n1. Seja simpática, técnica e objetiva.\n2. Se o cliente pedir cotação ou fechar pedido, informe que aceitamos PIX com entrega rápida em até 24h na obra.\n3. Se precisar de cálculo estrutural complexo, mencione que o 'Zé da Obra' também pode auxiliar no cálculo exato.",
+        "text": "=Cliente: {{ $json.senderName }} (Telefone: {{ $json.senderPhone }})\n\nMensagem / Pedido: {{ $json.text || $json.textMessage || $json.transcription || 'Olá' }}\n\nVocê é a LIA, especialista em atendimento e materiais de construção da HubObra (Marketplace da Construção Civil).\nAtue com entusiasmo, cordialidade e conhecimento prático sobre materiais (cimento, ferro, tintas, conexões PVC, ferramentas e acabamentos).\n\nInstruções:\n1. Tire dúvidas, sugira quantidades e confirme se o cliente precisa de entrega em até 24h na obra.\n2. Se o cliente solicitar cotação ou fechar pedido, oriente que aceitamos PIX e cartão.\n3. Se for cálculo técnico complexo de fundação ou estrutura, chame o 'Zé da Obra' para validar as quantidades.",
+        "options": {
+          "systemMessage": "Você é a LIA, assistente virtual oficial da HubObra (Marketplace de Materiais de Construção em Fortaleza e Região). Responda sempre em português brasileiro de forma prestativa, clara e técnica."
+        }
+      },
+      "id": "agente-ia-lia",
+      "name": "Agente IA (Lia + Zé da Obra)",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [1060, 300]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o-mini"
+        },
         "options": {
           "temperature": 0.7
         }
       },
-      "id": "lia-agent",
-      "name": "Agente IA Lia (HubObra)",
-      "type": "@n8n/n8n-nodes-langchain.agent",
-      "typeVersion": 1.7,
-      "position": [880, 300]
+      "id": "modelo-openai",
+      "name": "Modelo de bate-papo da OpenAI",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [960, 520]
+    },
+    {
+      "parameters": {
+        "sessionIdKey": "={{ $json.senderPhone }}",
+        "contextWindowLength": 10
+      },
+      "id": "memoria-conversa",
+      "name": "Memória da Conversa",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [1160, 520]
     },
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={\n  \"success\": true,\n  \"response\": \"{{ $json.output || $json.text }}\",\n  \"persona\": \"lia\",\n  \"source\": \"n8n-multimodal\",\n  \"timestamp\": \"{{ new Date().toISOString() }}\"\n}",
+        "responseBody": "={\n  \"success\": true,\n  \"response\": \"{{ $json.output || $json.text }}\",\n  \"persona\": \"lia\",\n  \"senderPhone\": \"{{ $json.senderPhone }}\",\n  \"timestamp\": \"{{ new Date().toISOString() }}\"\n}",
         "options": {}
       },
-      "id": "respond-to-webhook",
+      "id": "responder-chat",
       "name": "Responder ao Chat / WhatsApp",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [1140, 300]
+      "position": [1360, 300]
     }
   ],
   "connections": {
-    "Webhook Lia (Site & WhatsApp)": {
+    "Entrada WhatsApp / Site (HubObra)": {
+      "main": [
+        [
+          {
+            "node": "Normalizar Mensagem",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalizar Mensagem": {
       "main": [
         [
           {
@@ -116,7 +166,7 @@
       "main": [
         [
           {
-            "node": "OpenAI Whisper (Transcrever Áudio)",
+            "node": "Transcrever Áudio (Whisper)",
             "type": "main",
             "index": 0
           }
@@ -134,43 +184,65 @@
       "main": [
         [
           {
-            "node": "Gemini Vision (Identificar Foto)",
+            "node": "Identificar Material na Foto (Gemini Vision)",
             "type": "main",
             "index": 0
           }
         ],
         [
           {
-            "node": "Agente IA Lia (HubObra)",
+            "node": "Agente IA (Lia + Zé da Obra)",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "OpenAI Whisper (Transcrever Áudio)": {
+    "Transcrever Áudio (Whisper)": {
       "main": [
         [
           {
-            "node": "Agente IA Lia (HubObra)",
+            "node": "Agente IA (Lia + Zé da Obra)",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Gemini Vision (Identificar Foto)": {
+    "Identificar Material na Foto (Gemini Vision)": {
       "main": [
         [
           {
-            "node": "Agente IA Lia (HubObra)",
+            "node": "Agente IA (Lia + Zé da Obra)",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Agente IA Lia (HubObra)": {
+    "Modelo de bate-papo da OpenAI": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Agente IA (Lia + Zé da Obra)",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Memória da Conversa": {
+      "ai_memory": [
+        [
+          {
+            "node": "Agente IA (Lia + Zé da Obra)",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agente IA (Lia + Zé da Obra)": {
       "main": [
         [
           {
