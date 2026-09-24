@@ -61,7 +61,16 @@ export default function AdminCategorias() {
       setLoading(true);
       
       const response = await categoriesApi.getCategories();
-      setCategories(response || []);
+      const list: Category[] = response || [];
+      setCategories(list);
+      
+      // Expandir automaticamente todas as categorias principais que possuem subcategorias
+      const parentIdsWithChildren = new Set(
+        list
+          .filter(c => !c.parentId && c.children && c.children.length > 0)
+          .map(c => c.id)
+      );
+      setExpandedCategories(parentIdsWithChildren);
     } catch (error) {
       console.error('Erro ao carregar categorias:', error);
       addToast({
@@ -140,6 +149,11 @@ export default function AdminCategorias() {
   };
 
   const filteredCategories = categories.filter(category => {
+    // Se não estiver pesquisando por termo, mostrar apenas categorias principais no nível raiz (subcategorias aparecem aninhadas dentro delas)
+    if (!searchTerm && category.parentId) {
+      return false;
+    }
+
     const matchesSearch = category.name.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === '' || 
       (statusFilter === 'active' && category.active) ||
