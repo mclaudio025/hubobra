@@ -78,7 +78,7 @@ export default function MobileMenu() {
       {mounted && createPortal(
         <AnimatePresence>
           {isOpen && (
-            <div className="fixed inset-0 z-[99999] lg:hidden">
+            <div className="fixed inset-0 z-[99999]">
               {/* Solid Backdrop */}
               <motion.div 
                 className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs"
