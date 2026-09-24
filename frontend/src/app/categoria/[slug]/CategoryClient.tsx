@@ -63,6 +63,15 @@ export default function CategoryClient({ slug }: { slug: string }) {
     }
   }, [slug]);
 
+  const normalizeSlug = (str: string): string => {
+    return (str || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+  };
+
   const loadCategoryData = async () => {
     try {
       setLoading(true);
@@ -70,7 +79,18 @@ export default function CategoryClient({ slug }: { slug: string }) {
       const catList: Category[] = Array.isArray(categoriesRes) ? categoriesRes : [];
       setAllCategories(catList);
 
-      const found = catList.find((c: any) => c.slug === slug);
+      const targetSlug = normalizeSlug(slug);
+
+      const found = catList.find((c: any) => {
+        const cSlug = normalizeSlug(c.slug);
+        const cNameSlug = normalizeSlug(c.name);
+        return (
+          c.slug === slug ||
+          cSlug === targetSlug ||
+          cNameSlug === targetSlug ||
+          cSlug.replace(/-sub$/, '') === targetSlug.replace(/-sub$/, '')
+        );
+      });
 
       if (found) {
         setCategory(found);
@@ -82,31 +102,18 @@ export default function CategoryClient({ slug }: { slug: string }) {
           : [];
         setProducts(prods);
       } else {
-        const formattedSlug = slug.replace(/-/g, ' ').toLowerCase();
-        const foundByName = catList.find((c: any) => c.name?.toLowerCase() === formattedSlug);
-        if (foundByName) {
-          setCategory(foundByName);
-          const res = await getProducts({ categoryId: foundByName.id, active: true, limit: 100 });
-          const prods = Array.isArray(res?.products)
-            ? res.products
-            : Array.isArray(res)
-            ? res
-            : [];
-          setProducts(prods);
-        } else {
-          setCategory({
-            id: 'generic',
-            name: slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
-            slug: slug
-          });
-          const res = await getProducts({ active: true, limit: 100 });
-          const prods = Array.isArray(res?.products)
-            ? res.products
-            : Array.isArray(res)
-            ? res
-            : [];
-          setProducts(prods);
-        }
+        setCategory({
+          id: 'generic',
+          name: slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+          slug: slug
+        });
+        const res = await getProducts({ active: true, limit: 100 });
+        const prods = Array.isArray(res?.products)
+          ? res.products
+          : Array.isArray(res)
+          ? res
+          : [];
+        setProducts(prods);
       }
     } catch (error) {
       console.error('Erro ao carregar categoria:', error);

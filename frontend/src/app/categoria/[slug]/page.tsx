@@ -12,6 +12,15 @@ interface CategoryData {
   image?: string;
 }
 
+function normalizeSlug(str: string): string {
+  return (str || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
 async function fetchCategory(slug: string): Promise<CategoryData | null> {
   try {
     const res = await fetch(`${API_BASE}/categories`, {
@@ -21,11 +30,20 @@ async function fetchCategory(slug: string): Promise<CategoryData | null> {
     const categories: CategoryData[] = await res.json();
     if (!Array.isArray(categories)) return null;
 
-    const found = categories.find((c) => c.slug === slug);
-    if (found) return found;
+    const targetSlug = normalizeSlug(slug);
 
-    const formattedSlug = slug.replace(/-/g, ' ').toLowerCase();
-    return categories.find((c) => c.name?.toLowerCase() === formattedSlug) || null;
+    const found = categories.find((c) => {
+      const cSlug = normalizeSlug(c.slug);
+      const cNameSlug = normalizeSlug(c.name);
+      return (
+        c.slug === slug ||
+        cSlug === targetSlug ||
+        cNameSlug === targetSlug ||
+        cSlug.replace(/-sub$/, '') === targetSlug.replace(/-sub$/, '')
+      );
+    });
+
+    return found || null;
   } catch (err) {
     console.warn(`Erro ao carregar categoria ${slug}:`, err);
     return null;

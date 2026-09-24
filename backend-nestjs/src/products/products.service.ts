@@ -116,6 +116,19 @@ export class ProductsService {
           .filter((w) => w.length >= 3 && !stopWords.has(w.toLowerCase()))
       : [];
 
+    // Se categoryId for fornecido, buscamos produtos dessa categoria E de todas as suas subcategorias (filhos)
+    let categoryCondition: Prisma.ProductWhereInput = {};
+    if (categoryId) {
+      const childCategories = await this.prisma.category.findMany({
+        where: { parentId: categoryId },
+        select: { id: true },
+      });
+      const allCategoryIds = [categoryId, ...childCategories.map((c) => c.id)];
+      categoryCondition = {
+        categoryId: { in: allCategoryIds },
+      };
+    }
+
     const where: Prisma.ProductWhereInput = {
       ...(search && {
         OR: [
@@ -132,7 +145,7 @@ export class ProductsService {
           })),
         ],
       }),
-      ...(categoryId && { categoryId }),
+      ...categoryCondition,
       ...(active !== undefined && { active }),
       ...(featured !== undefined && { featured }),
     };

@@ -74,10 +74,9 @@ export class CategoriesService {
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/^-+|-+$/g, "");
 
-    const rootSlug = parentId ? `${baseSlug}-sub` : baseSlug;
-    const fallbackSlug = rootSlug || "categoria";
+    const rootSlug = baseSlug || "categoria";
 
-    let candidate = fallbackSlug;
+    let candidate = rootSlug;
     let count = 0;
 
     while (true) {
@@ -93,7 +92,7 @@ export class CategoriesService {
       }
 
       count++;
-      candidate = `${fallbackSlug}-${count}`;
+      candidate = `${rootSlug}-${count}`;
     }
   }
 
@@ -101,7 +100,7 @@ export class CategoriesService {
   async findAll(active?: boolean, includeChildren = true) {
     const where = active !== undefined ? { active } : {};
 
-    return this.prisma.category.findMany({
+    const categories = await this.prisma.category.findMany({
       where,
       include: {
         parent: true,
@@ -126,6 +125,22 @@ export class CategoriesService {
       },
       orderBy: [{ order: "asc" }, { name: "asc" }],
     });
+
+    return categories.map((cat) => {
+      const directProducts = cat._count?.products || 0;
+      const childrenProducts = (cat.children || []).reduce(
+        (sum: number, child: any) => sum + (child._count?.products || 0),
+        0
+      );
+      return {
+        ...cat,
+        _count: {
+          ...cat._count,
+          products: directProducts + childrenProducts,
+          directProducts,
+        },
+      };
+    });
   }
 
   async findMainCategories(active?: boolean) {
@@ -134,7 +149,7 @@ export class CategoriesService {
       ...(active !== undefined ? { active } : {}),
     };
 
-    return this.prisma.category.findMany({
+    const categories = await this.prisma.category.findMany({
       where,
       include: {
         children: {
@@ -156,6 +171,22 @@ export class CategoriesService {
         },
       },
       orderBy: [{ order: "asc" }, { name: "asc" }],
+    });
+
+    return categories.map((cat) => {
+      const directProducts = cat._count?.products || 0;
+      const childrenProducts = (cat.children || []).reduce(
+        (sum: number, child: any) => sum + (child._count?.products || 0),
+        0
+      );
+      return {
+        ...cat,
+        _count: {
+          ...cat._count,
+          products: directProducts + childrenProducts,
+          directProducts,
+        },
+      };
     });
   }
 
@@ -207,26 +238,95 @@ export class CategoriesService {
       throw new NotFoundException("Categoria não encontrada");
     }
 
-    return category;
+    const directProducts = category._count?.products || 0;
+    const childrenProducts = (category.children || []).reduce(
+      (sum: number, child: any) => sum + (child._count?.products || 0),
+      0
+    );
+
+    return {
+      ...category,
+      _count: {
+        ...category._count,
+        products: directProducts + childrenProducts,
+        directProducts,
+      },
+    };
   }
 
   async findBySlug(slug: string) {
-    const category = await this.prisma.category.findUnique({
+    let category = await this.prisma.category.findUnique({
       where: { slug },
       include: {
+        parent: true,
+        children: {
+          include: {
+            _count: {
+              select: {
+                products: true,
+              },
+            },
+          },
+          orderBy: [{ order: "asc" }, { name: "asc" }],
+        },
         _count: {
           select: {
             products: true,
+            children: true,
           },
         },
       },
     });
 
     if (!category) {
+      const cleanSlug = slug.replace(/-sub$/, "");
+      category = await this.prisma.category.findFirst({
+        where: {
+          OR: [
+            { slug: cleanSlug },
+            { slug: `${cleanSlug}-sub` },
+          ],
+        },
+        include: {
+          parent: true,
+          children: {
+            include: {
+              _count: {
+                select: {
+                  products: true,
+                },
+              },
+            },
+            orderBy: [{ order: "asc" }, { name: "asc" }],
+          },
+          _count: {
+            select: {
+              products: true,
+              children: true,
+            },
+          },
+        },
+      });
+    }
+
+    if (!category) {
       throw new NotFoundException("Categoria não encontrada");
     }
 
-    return category;
+    const directProducts = category._count?.products || 0;
+    const childrenProducts = (category.children || []).reduce(
+      (sum: number, child: any) => sum + (child._count?.products || 0),
+      0
+    );
+
+    return {
+      ...category,
+      _count: {
+        ...category._count,
+        products: directProducts + childrenProducts,
+        directProducts,
+      },
+    };
   }
 
   @CacheEvict("categories:*")

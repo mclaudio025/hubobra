@@ -10,8 +10,11 @@ interface Category {
   name: string;
   slug: string;
   description?: string;
+  parentId?: string | null;
+  children?: Category[];
   _count: {
     products: number;
+    directProducts?: number;
   };
 }
 
@@ -98,6 +101,8 @@ export default function CategoryMenu() {
     loadCategories();
   };
 
+  const mainCategories = categories.filter(c => !c.parentId);
+
   return (
     <div className="bg-orange-600 text-white">
       <div className="container mx-auto px-4">
@@ -115,8 +120,8 @@ export default function CategoryMenu() {
 
             {/* Dropdown de Categorias */}
             {isOpen && (
-              <div className="absolute top-full left-0 w-80 bg-white text-gray-900 shadow-xl z-50 rounded-b-lg">
-                <div className="max-h-96 overflow-y-auto">
+              <div className="absolute top-full left-0 w-80 sm:w-96 bg-white text-gray-900 shadow-xl z-50 rounded-b-lg border border-gray-100">
+                <div className="max-h-[32rem] overflow-y-auto">
                   {loading || isRetrying ? (
                     <div className="p-4 text-center">
                       <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-orange-500 mx-auto"></div>
@@ -146,25 +151,40 @@ export default function CategoryMenu() {
                           </div>
                         </div>
                       )}
-                      {categories.map((category) => (
-                        <Link
-                          key={category.id}
-                          href={`/categoria/${category.slug}`}
-                          className="block px-4 py-3 hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
-                          onClick={() => setIsOpen(false)}
-                        >
-                          <div className="flex justify-between items-center">
+                      {mainCategories.map((category) => (
+                        <div key={category.id} className="border-b border-gray-100 last:border-b-0">
+                          <Link
+                            href={`/categoria/${category.slug}`}
+                            className="flex justify-between items-center px-4 py-3 hover:bg-orange-50 transition-colors"
+                            onClick={() => setIsOpen(false)}
+                          >
                             <div>
-                              <h3 className="font-medium text-gray-900">{category.name}</h3>
+                              <h3 className="font-semibold text-gray-900 text-sm hover:text-orange-600">{category.name}</h3>
                               {category.description && (
-                                <p className="text-sm text-gray-600 mt-1">{category.description}</p>
+                                <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">{category.description}</p>
                               )}
                             </div>
-                            <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                              {category._count.products}
+                            <span className="text-xs font-medium text-orange-600 bg-orange-100 px-2 py-0.5 rounded-full ml-2">
+                              {category._count?.products || 0}
                             </span>
-                          </div>
-                        </Link>
+                          </Link>
+
+                          {/* Subcategorias */}
+                          {category.children && category.children.length > 0 && (
+                            <div className="bg-gray-50 px-4 py-1.5 flex flex-wrap gap-1.5 border-t border-gray-100">
+                              {category.children.map((sub) => (
+                                <Link
+                                  key={sub.id}
+                                  href={`/categoria/${sub.slug}`}
+                                  className="text-xs bg-white border border-gray-200 hover:border-orange-500 hover:text-orange-600 text-gray-700 px-2.5 py-1 rounded-md transition-colors"
+                                  onClick={() => setIsOpen(false)}
+                                >
+                                  {sub.name}
+                                </Link>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                       ))}
                     </div>
                   )}
@@ -174,19 +194,19 @@ export default function CategoryMenu() {
           </div>
 
           {/* Menu Horizontal de Categorias Principais */}
-          <nav className="flex-1 ml-8">
-            <ul className="flex items-center space-x-8">
+          <nav className="flex-1 ml-8 overflow-x-auto no-scrollbar">
+            <ul className="flex items-center space-x-6 whitespace-nowrap">
               {/* Calculadora de Materiais */}
               <li>
                 <Link
                   href="/calculadora"
-                  className="text-white hover:text-orange-200 py-3 block transition-colors text-sm font-medium flex items-center gap-2"
+                  className="text-white hover:text-orange-200 py-3 block transition-colors text-sm font-medium flex items-center gap-1.5"
                 >
-                  🧮 Calculadora
+                  <span>🧮</span> Calculadora
                 </Link>
               </li>
               
-              {categories.slice(0, 5).map((category) => (
+              {mainCategories.slice(0, 6).map((category) => (
                 <li key={category.id}>
                   <Link
                     href={`/categoria/${category.slug}`}
@@ -196,11 +216,11 @@ export default function CategoryMenu() {
                   </Link>
                 </li>
               ))}
-              {categories.length > 5 && (
+              {mainCategories.length > 6 && (
                 <li>
                   <button
                     onClick={() => setIsOpen(true)}
-                    className="text-white hover:text-orange-200 py-3 block transition-colors text-sm font-medium"
+                    className="text-white hover:text-orange-200 py-3 block transition-colors text-sm font-medium underline"
                   >
                     Ver Mais...
                   </button>
