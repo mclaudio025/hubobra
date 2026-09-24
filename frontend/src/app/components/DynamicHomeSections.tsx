@@ -13,7 +13,69 @@ import { HomeSection, useHomeSections } from '../hooks/useHomeSections';
  * Carrossel Temático de Produtos (Padrão Acal)
  */
 function ThematicProductCarousel({ section }: { section: HomeSection }) {
-  const products = section.products || [];
+  const [products, setProducts] = useState<any[]>(section.products || []);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (section.products && section.products.length > 0) {
+      setProducts(section.products);
+      return;
+    }
+
+    let isMounted = true;
+    const loadProducts = async () => {
+      try {
+        setLoading(true);
+        let url = '/api/products?limit=12';
+        if (section.productSource === 'category' && section.categorySlug) {
+          url += `&search=${encodeURIComponent(section.categorySlug)}`;
+        } else if (section.productSource === 'featured') {
+          url += '&featured=true';
+        }
+
+        let res = await fetch(url, { cache: 'no-store' });
+        if (!res.ok) {
+          res = await fetch('/api/products?limit=12', { cache: 'no-store' });
+        }
+
+        if (res.ok) {
+          const data = await res.json();
+          const items = Array.isArray(data?.products)
+            ? data.products
+            : Array.isArray(data?.data)
+            ? data.data
+            : Array.isArray(data)
+            ? data
+            : [];
+
+          if (isMounted) {
+            if (items.length > 0) {
+              setProducts(items);
+            } else {
+              // Fallback para todos os produtos se a categoria estiver vazia
+              const fallbackRes = await fetch('/api/products?limit=12', { cache: 'no-store' });
+              if (fallbackRes.ok) {
+                const fbData = await fallbackRes.json();
+                const fbItems = Array.isArray(fbData?.products) ? fbData.products : Array.isArray(fbData) ? fbData : [];
+                if (isMounted && fbItems.length > 0) setProducts(fbItems);
+              }
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('Erro ao carregar produtos para vitrine:', err);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+
+    loadProducts();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [section]);
+
 
   const [emblaRef, emblaApi] = useEmblaCarousel({
     align: 'start',
@@ -52,9 +114,25 @@ function ThematicProductCarousel({ section }: { section: HomeSection }) {
     emblaApi.on('reInit', onSelect);
   }, [emblaApi, onSelect]);
 
+  if (loading && products.length === 0) {
+    return (
+      <section className="py-6 sm:py-8 bg-transparent relative overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="h-8 w-64 bg-gray-200 dark:bg-slate-800 rounded-lg animate-pulse mb-4" />
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+            {[1, 2, 3, 4, 5].map((n) => (
+              <div key={n} className="h-64 bg-gray-100 dark:bg-slate-800/60 rounded-2xl animate-pulse border border-gray-200 dark:border-slate-700" />
+            ))}
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   if (products.length === 0) {
     return null;
   }
+
 
   const titleColor = section.titleColor || '#009de0';
 
