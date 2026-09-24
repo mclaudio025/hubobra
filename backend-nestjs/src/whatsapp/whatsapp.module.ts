@@ -4,7 +4,7 @@ import { ConfigModule } from "@nestjs/config";
 import { WhatsAppController } from "./whatsapp.controller";
 import { WhatsAppService } from "./whatsapp.service";
 import { WhatsAppAIService } from "./whatsapp-ai.service";
-import { AIPersonasService } from "../ai-personas/ai-personas.service";
+import { AIPersonasModule } from "../ai-personas/ai-personas.module";
 
 @Module({
   imports: [
@@ -13,9 +13,10 @@ import { AIPersonasService } from "../ai-personas/ai-personas.service";
       maxRedirects: 5,
     }),
     ConfigModule,
+    AIPersonasModule,
   ],
   controllers: [WhatsAppController],
-  providers: [WhatsAppService, WhatsAppAIService, AIPersonasService],
-  exports: [WhatsAppService, WhatsAppAIService, AIPersonasService],
+  providers: [WhatsAppService, WhatsAppAIService],
+  exports: [WhatsAppService, WhatsAppAIService],
 })
 export class WhatsAppModule {}
