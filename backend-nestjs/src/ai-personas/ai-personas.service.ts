@@ -1,7 +1,7 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { HttpService } from "@nestjs/axios";
 import { ConfigService } from "@nestjs/config";
-import { firstValueFrom } from "rxjs";
+import { ProductsService } from "../products/products.service";
 
 export interface ConversationContext {
   sessionId: string;
@@ -23,6 +23,7 @@ export interface PersonaResponse {
   transferReason?: string;
   suggestedActions?: string[];
   products?: any[];
+  calculation?: any;
 }
 
 @Injectable()
@@ -36,6 +37,7 @@ export class AIPersonasService {
   constructor(
     private readonly httpService: HttpService,
     private readonly configService: ConfigService,
+    private readonly productsService: ProductsService,
   ) {}
 
   async processMessage(
@@ -58,18 +60,18 @@ export class AIPersonasService {
         this.conversationContexts.set(sessionId, context);
       }
 
-      // Analisar se precisa transferir para especialista
+      // Analisar se precisa transferir para especialista (Zé da Obra)
       const needsSpecialist = this.shouldTransferToSpecialist(message, context);
 
-      // Determinar persona atual
+      // Determinar persona alvo
       let targetPersona: "lia" | "ze" = context.currentPersona;
 
-      if (needsSpecialist && context.currentPersona === "lia") {
+      if (needsSpecialist) {
         targetPersona = "ze";
         context.needsSpecialist = true;
       }
 
-      // Gerar resposta baseada na persona
+      // Gerar resposta baseada na persona com busca de produtos
       const response = await this.generatePersonaResponse(
         targetPersona,
         message,
@@ -108,9 +110,11 @@ export class AIPersonasService {
   ): boolean {
     const lowerMessage = message.toLowerCase();
 
-    // Palavras-chave que indicam necessidade de especialista
+    // Palavras-chave que acionam o Zé da Obra
     const technicalKeywords = [
       "calcular",
+      "calculo",
+      "cálculo",
       "quantidade",
       "quanto preciso",
       "dimensionar",
@@ -120,38 +124,56 @@ export class AIPersonasService {
       "carga",
       "fundação",
       "estrutural",
-      "norma",
-      "abnt",
+      "m²",
+      "metro quadrado",
+      "metros",
+      "reboco",
+      "rebocar",
+      "alvenaria",
+      "muro",
+      "parede",
+      "contrapiso",
+      "laje",
+      "concreto",
+      "cimento",
+      "tijolo",
+      "bloco",
+      "areia",
+      "brita",
+      "argamassa",
+      "rejunte",
+      "impermeabilizante",
       "qual cimento",
       "tipo de tijolo",
-      "qual tinta",
-      "recomenda",
-      "melhor produto",
-      "diferença entre",
       "como aplicar",
-      "instalação",
-      "execução",
-      "problema",
-      "defeito",
       "rachadura",
       "infiltração",
     ];
 
-    const hasKeywords = technicalKeywords.some((keyword) =>
-      lowerMessage.includes(keyword),
-    );
+    return technicalKeywords.some((keyword) => lowerMessage.includes(keyword));
+  }
 
-    // Verificar se já tentou responder questões técnicas
-    const recentTechnicalQuestions = context.conversationHistory
-      .slice(-6) // Últimas 3 interações
-      .filter((msg) => msg.role === "user")
-      .some((msg) =>
-        technicalKeywords.some((keyword) =>
-          msg.content.toLowerCase().includes(keyword),
-        ),
-      );
-
-    return hasKeywords || recentTechnicalQuestions;
+  private async searchRelevantProducts(query: string): Promise<any[]> {
+    try {
+      if (!query || query.trim().length < 2) return [];
+      const result = await this.productsService.findAll(1, 4, query.trim());
+      const productList = result?.products || (result as any)?.data || [];
+      if (Array.isArray(productList)) {
+        return productList.map((p: any) => ({
+          id: p.id,
+          name: p.name,
+          price: p.price,
+          salePrice: p.salePrice || p.price,
+          sku: p.sku,
+          image: p.images?.[0]?.url || "/placeholder-product.png",
+          unit: p.unit || "un",
+        }));
+      }
+      return [];
+    } catch (err) {
+      this.logger.warn(`Erro ao buscar produtos para IA (${query}):`, err);
+      return [];
+    }
   }
 
   private async generatePersonaResponse(
@@ -175,101 +197,73 @@ export class AIPersonasService {
     const lowerMessage = message.toLowerCase();
     const userName = context.userProfile?.name || "cliente";
 
-    // Verificar se precisa transferir para o Zé
-    const needsSpecialist = this.shouldTransferToSpecialist(message, context);
-
-    if (needsSpecialist) {
-      return {
-        response: `Olá ${userName}! 😊 Vejo que você tem uma dúvida técnica sobre produtos. Vou chamar nosso engenheiro especialista, o *Zé da Obra*, para te ajudar melhor!\n\n🔄 Transferindo para o especialista...`,
-        persona: "lia",
-        shouldTransfer: true,
-        transferReason: "Questão técnica sobre produtos",
-        suggestedActions: ["Aguarde o Zé da Obra"],
-      };
-    }
-
-    // Respostas da Lia (atendimento geral)
+    // Saudação
     if (this.isGreeting(message)) {
+      const sampleProducts = await this.searchRelevantProducts("cimento");
       return {
-        response: `Olá ${userName}! 😊 Sou a *Lia*, sua atendente virtual da loja!\n\n✨ *Posso ajudar você com:*\n• Informações sobre pedidos\n• Horários e localização\n• Dúvidas sobre entrega\n• Navegação no site\n• Promoções e ofertas\n\n🔧 *Para questões técnicas sobre produtos*, posso chamar nosso engenheiro especialista, o *Zé da Obra*!\n\nComo posso ajudar você hoje?`,
+        response: `Olá, ${userName}! 😊 Seja muito bem-vindo à HubConstruções! Sou a *Lia*, sua consultora de atendimento e compras.\n\n✨ Posso te ajudar a encontrar produtos, verificar prazos de entrega e promoções ativas.\n\n💡 Se você precisar calcular materiais (cimento, areia, tijolos ou reboco), basta me dizer o tamanho da sua parede ou cômodo que eu chamo o *Zé da Obra* na hora para fazer o cálculo exato!\n\nO que você precisa para sua obra hoje?`,
         persona: "lia",
+        products: sampleProducts,
         suggestedActions: [
-          "Ver meus pedidos",
-          "Informações de entrega",
-          "Falar com especialista",
-          "Ver promoções",
+          "Ver promoções do dia",
+          "Calcular material com Zé",
+          "Consultar entrega",
+          "Falar sobre cimento e tijolos",
         ],
       };
     }
 
+    // Perguntas sobre pedidos e compras
     if (lowerMessage.includes("pedido") || lowerMessage.includes("compra")) {
       return {
-        response: `📦 *Sobre pedidos*, posso ajudar você com:\n\n• Consultar status do pedido\n• Informações de entrega\n• Alterar endereço de entrega\n• Cancelamentos (dentro do prazo)\n• Nota fiscal\n\nVocê tem o número do seu pedido? Ou precisa de ajuda para fazer um novo pedido?`,
+        response: `📦 *Sobre seus pedidos na HubConstruções:*\n\n• Pagamento no PIX com confirmação imediata e desconto de 5% à vista.\n• Entregas expressas em 24h a 48h na sua obra!\n• Você pode acompanhar seu pedido direto pelo menu "Meus Pedidos" ou me informar o código aqui.\n\nPrecisa de ajuda para montar um novo pedido agora?`,
         persona: "lia",
         suggestedActions: [
-          "Consultar pedido",
+          "Meus pedidos",
           "Fazer novo pedido",
-          "Alterar entrega",
-          "Falar com especialista",
-        ],
-      };
-    }
-
-    if (lowerMessage.includes("entrega") || lowerMessage.includes("prazo")) {
-      return {
-        response: `🚚 *Informações sobre entrega:*\n\n📍 *Região metropolitana:* 2-3 dias úteis\n📍 *Interior:* 5-7 dias úteis\n📍 *Produtos especiais:* Até 10 dias úteis\n\n💰 *Frete grátis* para compras acima de R$ 299,00!\n\nQuer consultar o prazo para seu CEP específico?`,
-        persona: "lia",
-        suggestedActions: [
           "Calcular frete",
-          "Rastrear pedido",
-          "Ver produtos",
-          "Falar com especialista",
         ],
       };
     }
 
-    if (
-      lowerMessage.includes("horário") ||
-      lowerMessage.includes("funcionamento")
-    ) {
+    // Perguntas sobre entrega e frete
+    if (lowerMessage.includes("entrega") || lowerMessage.includes("frete") || lowerMessage.includes("prazo")) {
       return {
-        response: `🕒 *Horários de funcionamento:*\n\n🏪 *Loja física:*\n• Segunda a sexta: 7h às 18h\n• Sábado: 7h às 16h\n• Domingo: 8h às 12h\n\n💻 *Site:* 24h por dia, 7 dias por semana\n\n📱 *Atendimento online:*\n• Segunda a sexta: 8h às 17h\n• Sábado: 8h às 14h`,
+        response: `🚚 *Prazos e Condições de Entrega:*\n\n📍 *Região Metropolitana:* Entrega rápida em até 24h úteis direto no canteiro da obra.\n📍 *Interior:* 2 a 4 dias úteis.\n\n💥 *Frete Grátis* para compras acima de R$ 299,00!\n\nQual produto você gostaria de receber na sua obra?`,
         persona: "lia",
-        suggestedActions: [
-          "Ver localização",
-          "Contatos",
-          "Ver produtos",
-          "Falar com especialista",
-        ],
+        suggestedActions: ["Ver produtos com frete grátis", "Calcular materiais", "Falar com especialista"],
       };
     }
 
-    if (
-      lowerMessage.includes("promoção") ||
-      lowerMessage.includes("oferta") ||
-      lowerMessage.includes("desconto")
-    ) {
+    // Promoções
+    if (lowerMessage.includes("promoção") || lowerMessage.includes("promocao") || lowerMessage.includes("oferta") || lowerMessage.includes("desconto")) {
+      const promoProducts = await this.searchRelevantProducts("tubo");
       return {
-        response: `🎉 *Promoções ativas:*\n\n💥 *Frete grátis* acima de R$ 299\n🏗️ *Kit construção* com 15% de desconto\n🎨 *Tintas* com até 20% off\n📦 *Compre 10, leve 12* em tijolos\n\n📱 Quer ver todas as ofertas ou tem interesse em algum produto específico?\n\n💡 *Dica:* Para recomendações técnicas, posso chamar o Zé da Obra!`,
+        response: `🎉 *Super Ofertas da Semana na HubConstruções:*\n\n💥 5% de desconto extra pagando no PIX!\n🏗️ Cimentos, tubos e conexões com preços especiais direto da fábrica.\n🚚 Frete Grátis acima de R$ 299!\n\nSeparei alguns destaques do nosso catálogo para você:`,
         persona: "lia",
-        suggestedActions: [
-          "Ver todas ofertas",
-          "Kit construção",
-          "Tintas em promoção",
-          "Falar com especialista",
-        ],
+        products: promoProducts,
+        suggestedActions: ["Ver tubos e conexões", "Ver cimento e argamassa", "Calcular minha obra"],
       };
     }
 
-    // Resposta padrão da Lia
+    // Busca geral de produtos mencionada pelo cliente
+    let searchTerm = "";
+    if (lowerMessage.includes("cimento")) searchTerm = "cimento";
+    else if (lowerMessage.includes("tubo") || lowerMessage.includes("conex")) searchTerm = "tubo";
+    else if (lowerMessage.includes("tinta")) searchTerm = "tinta";
+    else if (lowerMessage.includes("piso") || lowerMessage.includes("porcelanato")) searchTerm = "piso";
+    else if (lowerMessage.includes("argamassa")) searchTerm = "argamassa";
+
+    const matchedProducts = searchTerm ? await this.searchRelevantProducts(searchTerm) : [];
+
     return {
-      response: `Olá ${userName}! 😊 Sou a Lia, sua atendente virtual!\n\n✨ *Posso ajudar com:*\n• Pedidos e entregas\n• Informações da loja\n• Promoções e ofertas\n• Navegação no site\n\n🔧 *Para questões técnicas* sobre produtos, cálculos ou especificações, posso chamar nosso engenheiro *Zé da Obra*!\n\nO que você precisa hoje?`,
+      response: `Olá ${userName}! 😊 Sou a Lia. Encontrei ótimas opções para você na loja! Se precisar de ajuda para calcular quantidades ou escolher a especificação certa, nosso engenheiro Zé da Obra está a postos para te ajudar.`,
       persona: "lia",
+      products: matchedProducts,
       suggestedActions: [
-        "Ver produtos",
-        "Meus pedidos",
-        "Promoções",
-        "Falar com especialista",
+        "Calcular quantidade com Zé da Obra",
+        "Ver catálogo completo",
+        "Adicionar ao carrinho",
       ],
     };
   }
@@ -280,74 +274,117 @@ export class AIPersonasService {
     channel: string,
   ): Promise<PersonaResponse> {
     const lowerMessage = message.toLowerCase();
-    const userName = context.userProfile?.name || "cliente";
+    const userName = context.userProfile?.name || "amigo";
 
-    // Primeira vez que o Zé entra na conversa
-    if (context.needsSpecialist && context.conversationHistory.length <= 2) {
+    // Extrair números (área, comprimento, altura)
+    const numbers = message.match(/\d+([.,]\d+)?/g)?.map((n) => parseFloat(n.replace(",", "."))) || [];
+    const area = numbers[0] || 0;
+
+    // 1. Cálculo de Reboco / Emboço
+    if (lowerMessage.includes("reboco") || lowerMessage.includes("rebocar") || lowerMessage.includes("emboço")) {
+      const calcArea = area > 0 ? area : 10;
+      // Traço 1:3 reboco (~2cm espessura): ~0.25 sacos de cimento (50kg) e ~0.04m³ de areia por m²
+      const cimentoSacos = Math.max(1, Math.ceil(calcArea * 0.25));
+      const areiaM3 = (calcArea * 0.035).toFixed(2);
+      const matchedProducts = await this.searchRelevantProducts("cimento");
+
       return {
-        response: `🔧 Olá ${userName}! Sou o *Zé da Obra*, engenheiro especialista em materiais de construção!\n\nA Lia me passou sua dúvida técnica. Sou especializado em:\n\n🏗️ *Cálculos de materiais*\n📐 *Dimensionamento de projetos*\n🧱 *Especificações técnicas*\n💡 *Recomendações de produtos*\n⚡ *Soluções de problemas*\n🛡️ *Normas e segurança*\n\nMe conte mais detalhes sobre seu projeto para eu poder ajudar melhor!`,
+        response: `🔧 *Fala ${userName}, aqui é o Zé da Obra!* Fiz o cálculo para ${calcArea} m² de reboco:\n\n📐 *Insumos recomendados:*\n• *Cimento CP-II (50kg):* ${cimentoSacos} sacos\n• *Areia média lavada:* ${areiaM3} m³\n• *Aditivo plastificante:* 1 frasco de 1L (melhora a liga e evita trincas)\n\n💡 *Dica do Zé:* Sempre chapeie a alvenaria antes do reboco para garantir aderência perfeita. Já separei o Cimento em estoque abaixo com o melhor preço da loja!`,
         persona: "ze",
+        products: matchedProducts,
+        calculation: {
+          tipo: "Reboco de Parede",
+          areaM2: calcArea,
+          cimentoSacos,
+          areiaM3,
+        },
         suggestedActions: [
-          "Calcular materiais",
-          "Recomendar produtos",
-          "Resolver problema",
-          "Voltar para Lia",
+          `Adicionar ${cimentoSacos} sacos de cimento`,
+          "Calcular outra medida",
+          "Falar com a Lia",
         ],
       };
     }
 
-    // Respostas técnicas do Zé
-    if (lowerMessage.includes("cimento") || lowerMessage.includes("concreto")) {
+    // 2. Cálculo de Alvenaria / Tijolo / Muro
+    if (lowerMessage.includes("tijolo") || lowerMessage.includes("bloco") || lowerMessage.includes("muro") || lowerMessage.includes("parede")) {
+      const calcArea = area > 0 ? area : 12;
+      // Tijolo cerâmico 6 furos: ~25 un/m² | Bloco de concreto: ~12.5 un/m²
+      const tijolos6Furos = Math.ceil(calcArea * 25 * 1.1); // 10% perda
+      const argamassaAssentamentoSacos = Math.max(1, Math.ceil(calcArea * 0.3));
+      const matchedProducts = await this.searchRelevantProducts("argamassa");
+
       return {
-        response: `🏗️ *Sobre cimento*, ${userName}:\n\n📋 *Tipos principais:*\n• *CP II-E 32:* Uso geral, boa trabalhidade\n• *CP III-40:* Maior resistência, obras estruturais\n• *CP IV-32:* Econômico, baixo calor de hidratação\n• *CP V-ARI:* Alta resistência inicial\n\n📐 *Cálculo básico:*\n• Contrapiso: 1 saco (50kg) para 4-5m²\n• Concreto: 7 sacos por m³ (fck 20MPa)\n• Argamassa: 1 saco para 3-4m² de revestimento\n\nQue tipo de aplicação você tem em mente?`,
+        response: `🧱 *Cálculo de Alvenaria do Zé da Obra para ${calcArea} m²:*\n\n📐 *Quantidades estimadas (com 10% de margem de segurança):*\n• *Tijolo cerâmico 6 furos:* ~${tijolos6Furos} unidades\n• *Argamassa de assentamento:* ~${argamassaAssentamentoSacos} sacos de 50kg\n\n💡 *Dica do Zé:* Lembre-se de amarrar bem os cantos e usar impermeabilizante nas 3 primeiras fiadas do chão para evitar umidade subindo na parede!`,
         persona: "ze",
+        products: matchedProducts,
+        calculation: {
+          tipo: "Alvenaria e Muro",
+          areaM2: calcArea,
+          tijolos: tijolos6Furos,
+          argamassaSacos: argamassaAssentamentoSacos,
+        },
         suggestedActions: [
-          "Calcular quantidade",
-          "Ver preços",
-          "Outras dúvidas técnicas",
-          "Voltar para Lia",
+          "Ver opções de tijolo e argamassa",
+          "Calcular reboco para essa parede",
+          "Voltar para a Lia",
         ],
       };
     }
 
-    if (lowerMessage.includes("tijolo") || lowerMessage.includes("bloco")) {
+    // 3. Cálculo de Contrapiso / Concreto
+    if (lowerMessage.includes("contrapiso") || lowerMessage.includes("piso") || lowerMessage.includes("concreto") || lowerMessage.includes("laje")) {
+      const calcArea = area > 0 ? area : 15;
+      const cimentoSacos = Math.max(1, Math.ceil(calcArea * 0.28));
+      const areiaM3 = (calcArea * 0.04).toFixed(2);
+      const britaM3 = (calcArea * 0.045).toFixed(2);
+      const matchedProducts = await this.searchRelevantProducts("cimento");
+
       return {
-        response: `🧱 *Sobre tijolos e blocos*, ${userName}:\n\n📋 *Opções disponíveis:*\n• *Tijolo cerâmico 6 furos:* Tradicional, boa isolação\n• *Bloco cerâmico 8 furos:* Maior resistência\n• *Bloco de concreto:* Estrutural, alta resistência\n• *Tijolo maciço:* Muros e pilares\n\n📐 *Quantidades:*\n• Tijolo 6 furos: 25 unidades/m²\n• Bloco cerâmico: 12,5 unidades/m²\n• Bloco concreto: 12,5 unidades/m²\n\n💡 *Dica:* Sempre calcule 10% a mais para perdas!\n\nQual o tipo de parede você vai construir?`,
+        response: `🏗️ *Cálculo de Concreto/Contrapiso do Zé para ${calcArea} m² (espessura média 5cm):*\n\n📐 *Materiais necessários:*\n• *Cimento CP-II:* ${cimentoSacos} sacos de 50kg\n• *Areia média/grossa:* ${areiaM3} m³\n• *Brita 1:* ${britaM3} m³\n\n💡 *Dica do Zé:* Mantenha o concreto curando com água por pelo menos 3 a 5 dias para atingir a máxima resistência mecânica!`,
         persona: "ze",
+        products: matchedProducts,
+        calculation: {
+          tipo: "Contrapiso e Concreto",
+          areaM2: calcArea,
+          cimentoSacos,
+          areiaM3,
+          britaM3,
+        },
         suggestedActions: [
-          "Calcular tijolos",
-          "Comparar tipos",
-          "Ver argamassa",
-          "Voltar para Lia",
+          `Comprar ${cimentoSacos} sacos de Cimento`,
+          "Calcular rejunte e piso",
+          "Voltar para a Lia",
         ],
       };
     }
 
-    if (
-      lowerMessage.includes("calcular") ||
-      lowerMessage.includes("quantidade")
-    ) {
+    // 4. Cálculo de Pintura e Tinta
+    if (lowerMessage.includes("tinta") || lowerMessage.includes("pintar") || lowerMessage.includes("pintura")) {
+      const calcArea = area > 0 ? area : 30;
+      // Lata de 18L rende ~100m² com 2 demãos. Galão de 3.6L rende ~20m²
+      const latas18L = Math.max(1, Math.ceil(calcArea / 100));
+      const matchedProducts = await this.searchRelevantProducts("tinta");
+
       return {
-        response: `📐 *Vamos calcular juntos*, ${userName}!\n\nPara fazer um cálculo preciso, preciso saber:\n\n🏗️ *Tipo de projeto:*\n• Casa, muro, laje, contrapiso?\n\n📏 *Dimensões:*\n• Comprimento, largura, altura?\n• Área total em m²?\n\n🎯 *Especificações:*\n• Tipo de material preferido?\n• Orçamento disponível?\n\nMe passe essas informações que faço todos os cálculos para você!`,
+        response: `🎨 *Cálculo de Tinta do Zé da Obra para ${calcArea} m² (2 demãos):*\n\n📐 *Rendimento estimado:*\n• *Lata de Tinta Acrílica (18L):* ${latas18L} lata(s)\n• *Selador Acrílico:* 1 galão (para fundo)\n• *Fita Crepe & Lixas:* 2 rolos e 5 lixas grão 120/150\n\n💡 *Dica do Zé:* Aplique sempre o fundo preparador ou selador para economizar tinta e ter acabamento uniforme!`,
         persona: "ze",
-        suggestedActions: [
-          "Casa completa",
-          "Muro/cerca",
-          "Contrapiso",
-          "Voltar para Lia",
-        ],
+        products: matchedProducts,
+        suggestedActions: ["Ver tintas e acessórios", "Calcular outra parede", "Voltar para a Lia"],
       };
     }
 
-    // Resposta padrão do Zé
+    // Resposta padrão do Zé da Obra
+    const defaultProducts = await this.searchRelevantProducts("cimento");
     return {
-      response: `🔧 Olá ${userName}! Sou o Zé da Obra, seu engenheiro especialista!\n\n🎯 *Posso ajudar com:*\n• Cálculos precisos de materiais\n• Especificações técnicas\n• Recomendações de produtos\n• Soluções para problemas\n• Normas e segurança\n\nQual sua dúvida técnica? Quanto mais detalhes você me der sobre seu projeto, melhor posso ajudar!`,
+      response: `🔧 Olá ${userName}! Sou o *Zé da Obra*, engenheiro especialista da HubConstruções!\n\nPosso calcular materiais para:\n• 🧱 *Alvenaria e Muros* (tijolos e argamassa)\n• 📐 *Reboco e Emboço* (cimento, areia e aditivo)\n• 🏗️ *Contrapiso e Lajes* (concreto e ferragens)\n• 🎨 *Pintura e Revestimento* (tintas, pisos e argamassa AC3)\n\nMe informe as medidas (ex: *"preciso rebocar 20 metros"* ou *"quantos tijolos para 15m²"*) que eu calculo tudo na hora!`,
       persona: "ze",
+      products: defaultProducts,
       suggestedActions: [
-        "Calcular materiais",
-        "Recomendar produtos",
-        "Resolver problema",
-        "Voltar para Lia",
+        "Calcular reboco para 15m²",
+        "Calcular tijolos para muro de 20m²",
+        "Calcular contrapiso para 30m²",
+        "Voltar para a Lia",
       ],
     };
   }
@@ -379,13 +416,12 @@ export class AIPersonasService {
     userName: string,
   ): PersonaResponse {
     return {
-      response: `Olá ${userName}! 😊 Sou a Lia, sua atendente virtual. Parece que tivemos um probleminha técnico, mas estou aqui para ajudar!\n\nPosso ajudar com informações gerais ou chamar nosso especialista Zé da Obra para questões técnicas. Como posso ajudar?`,
+      response: `Olá ${userName}! 😊 Sou a Lia, sua consultora na HubConstruções. Estou pronta para te ajudar com produtos, prazos e cálculos de materiais com o Zé da Obra. Como posso ajudar com seu projeto hoje?`,
       persona: "lia",
       suggestedActions: [
-        "Tentar novamente",
-        "Falar com especialista",
-        "Ver produtos",
-        "Contato humano",
+        "Ver cimento e tijolos",
+        "Calcular reboco",
+        "Consultar entregas",
       ],
     };
   }

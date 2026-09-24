@@ -25,8 +25,14 @@ import {
   Upload,
   Mic,
   MicOff,
-  Settings
+  Settings,
+  ShoppingCart,
+  Check,
+  Sparkles,
+  Volume2
 } from 'lucide-react';
+import { useCart } from '../contexts/CartContext';
+import LiveVoiceModal from './LiveVoiceModal';
 
 interface Message {
   id: string;
@@ -39,7 +45,10 @@ interface Message {
   attachments?: MessageAttachment[];
   context?: MessageContext;
   aiAnalysis?: AIAnalysis;
+  products?: any[];
+  calculation?: any;
 }
+
 
 interface MessageAttachment {
   id: string;
@@ -74,6 +83,7 @@ interface PersonasChatProps {
 }
 
 export default function PersonasChat({ isOpen, onClose }: PersonasChatProps) {
+  const { addToCart } = useCart();
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -82,12 +92,15 @@ export default function PersonasChat({ isOpen, onClose }: PersonasChatProps) {
   const [sessionId] = useState(`session_${Date.now()}`);
   const [activeTab, setActiveTab] = useState<'chat' | 'context' | 'analysis'>('chat');
   const [isRecording, setIsRecording] = useState(false);
+  const [isVoiceModalOpen, setIsVoiceModalOpen] = useState(false);
+  const [addedCartProductIds, setAddedCartProductIds] = useState<Set<string>>(new Set());
   const [attachments, setAttachments] = useState<MessageAttachment[]>([]);
   const [contextData, setContextData] = useState<MessageContext>({});
   const [aiInsights, setAiInsights] = useState<AIAnalysis | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -160,10 +173,9 @@ export default function PersonasChat({ isOpen, onClose }: PersonasChatProps) {
     });
   };
 
-  // Função para gravação de voz
+  // Função para gravação de voz / Live Voice
   const toggleRecording = () => {
-    setIsRecording(!isRecording);
-    // Implementar gravação de voz aqui
+    setIsVoiceModalOpen(true);
   };
 
   // Função para integração com Builder3D
@@ -243,7 +255,9 @@ export default function PersonasChat({ isOpen, onClose }: PersonasChatProps) {
         suggestedActions: data.suggestedActions,
         shouldTransfer: data.shouldTransfer,
         transferReason: data.transferReason,
-        context: data.context
+        context: data.context,
+        products: data.products,
+        calculation: data.calculation,
       };
 
       setMessages(prev => [...prev, botMessage]);
@@ -328,22 +342,32 @@ export default function PersonasChat({ isOpen, onClose }: PersonasChatProps) {
             )}
           </div>
           
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-1.5">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsVoiceModalOpen(true)}
+              className="text-xs h-7 px-2 bg-white/20 hover:bg-white/30 text-white border-white/30 flex items-center gap-1 shadow-sm"
+              title="Abrir Modo de Voz ao Vivo"
+            >
+              <Mic className="w-3 h-3 text-orange-200 animate-pulse" />
+              <span>Voz</span>
+            </Button>
             <Button
               variant="ghost"
               size="sm"
               onClick={() => setIsMinimized(!isMinimized)}
-              className="text-white hover:bg-white/20"
+              className="text-white hover:bg-white/20 h-7 w-7 p-0"
             >
-              {isMinimized ? <Maximize2 className="w-4 h-4" /> : <Minimize2 className="w-4 h-4" />}
+              {isMinimized ? <Maximize2 className="w-3.5 h-3.5" /> : <Minimize2 className="w-3.5 h-3.5" />}
             </Button>
             <Button
               variant="ghost"
               size="sm"
               onClick={onClose}
-              className="text-white hover:bg-white/20"
+              className="text-white hover:bg-white/20 h-7 w-7 p-0"
             >
-              <X className="w-4 h-4" />
+              <X className="w-3.5 h-3.5" />
             </Button>
           </div>
         </CardHeader>
@@ -458,6 +482,49 @@ export default function PersonasChat({ isOpen, onClose }: PersonasChatProps) {
                               {message.shouldTransfer && (
                                 <div className="mt-2 p-2 bg-yellow-100 border border-yellow-300 rounded text-xs">
                                   🔄 <strong>Transferindo:</strong> {message.transferReason}
+                                </div>
+                              )}
+
+                              {/* Produtos Sugeridos */}
+                              {message.products && message.products.length > 0 && (
+                                <div className="mt-3 space-y-2 pt-2 border-t border-slate-200/60">
+                                  <span className="text-[11px] font-semibold text-slate-700 flex items-center gap-1">
+                                    <ShoppingCart className="w-3 h-3 text-orange-500" />
+                                    Produtos recomendados em estoque:
+                                  </span>
+                                  <div className="space-y-1.5">
+                                    {message.products.map((prod: any) => {
+                                      const isAdded = addedCartProductIds.has(prod.id);
+                                      return (
+                                        <div key={prod.id} className="p-2 bg-white rounded-lg border border-slate-200 flex items-center justify-between gap-2 shadow-sm">
+                                          <div className="flex items-center gap-2 min-w-0">
+                                            {prod.image && (
+                                              <img src={prod.image} alt={prod.name} className="w-9 h-9 object-cover rounded bg-slate-100 flex-shrink-0" />
+                                            )}
+                                            <div className="min-w-0">
+                                              <p className="text-xs font-medium text-slate-800 truncate">{prod.name}</p>
+                                              <p className="text-xs font-bold text-orange-600">R$ {Number(prod.salePrice || prod.price).toFixed(2).replace('.', ',')}</p>
+                                            </div>
+                                          </div>
+                                          <Button
+                                            size="sm"
+                                            variant={isAdded ? "default" : "outline"}
+                                            className={`h-7 px-2 text-xs flex items-center gap-1 ${
+                                              isAdded ? 'bg-emerald-600 text-white hover:bg-emerald-600' : 'border-orange-500 text-orange-600 hover:bg-orange-50'
+                                            }`}
+                                            onClick={async () => {
+                                              await addToCart(prod.id, 1);
+                                              setAddedCartProductIds(prev => new Set(prev).add(prod.id));
+                                            }}
+                                            disabled={isAdded}
+                                          >
+                                            {isAdded ? <Check className="w-3 h-3" /> : <ShoppingCart className="w-3 h-3" />}
+                                            {isAdded ? 'Adicionado' : 'Comprar'}
+                                          </Button>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
                                 </div>
                               )}
                               
@@ -725,6 +792,13 @@ export default function PersonasChat({ isOpen, onClose }: PersonasChatProps) {
           </CardContent>
         )}
       </Card>
+
+      {/* Modal de Voz ao Vivo */}
+      <LiveVoiceModal
+        isOpen={isVoiceModalOpen}
+        onClose={() => setIsVoiceModalOpen(false)}
+      />
     </div>
   );
 }
+
