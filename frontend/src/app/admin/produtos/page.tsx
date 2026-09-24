@@ -2,7 +2,20 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Plus, Edit, Trash2, Search, Filter, Eye, Upload, Sparkles } from 'lucide-react';
+import { 
+  Plus, 
+  Edit, 
+  Trash2, 
+  Search, 
+  Filter, 
+  Eye, 
+  Upload, 
+  Sparkles,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight
+} from 'lucide-react';
 import AdminBreadcrumb from '../../components/admin/AdminBreadcrumb';
 import { useApi, useProducts } from '../../hooks/useApi';
 import { getImageUrl } from '../../utils/imageUrl';
@@ -407,52 +420,106 @@ export default function AdminProdutos() {
                 </table>
               </div>
 
-              {/* Paginação */}
+              {/* Paginação Completa Dinâmica */}
               {totalPages > 1 && (
-                <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200">
-                  <div className="flex-1 flex justify-between sm:hidden">
+                <div className="bg-white px-6 py-4 flex flex-col sm:flex-row items-center justify-between border-t border-gray-200 gap-4">
+                  <div>
+                    <p className="text-sm text-gray-600">
+                      Mostrando <span className="font-semibold text-gray-900">{Math.min((currentPage - 1) * itemsPerPage + 1, totalProducts)}</span> até{' '}
+                      <span className="font-semibold text-gray-900">{Math.min(currentPage * itemsPerPage, totalProducts)}</span> de{' '}
+                      <span className="font-semibold text-gray-900">{totalProducts}</span> produtos — Página{' '}
+                      <span className="font-semibold text-blue-600">{currentPage}</span> de{' '}
+                      <span className="font-semibold">{totalPages}</span>
+                    </p>
+                  </div>
+                  
+                  <div className="flex items-center gap-1 flex-wrap justify-center">
+                    {/* Botão Primeira Página */}
+                    <button
+                      onClick={() => setCurrentPage(1)}
+                      disabled={currentPage === 1}
+                      title="Primeira Página"
+                      className="p-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:hover:bg-transparent transition"
+                    >
+                      <ChevronsLeft className="h-4 w-4" />
+                    </button>
+
+                    {/* Botão Anterior */}
                     <button
                       onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                       disabled={currentPage === 1}
-                      className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
+                      title="Página Anterior"
+                      className="flex items-center gap-1 px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 disabled:opacity-40 disabled:hover:bg-transparent transition"
                     >
-                      Anterior
+                      <ChevronLeft className="h-4 w-4" />
+                      <span className="hidden sm:inline">Anterior</span>
                     </button>
+
+                    {/* Páginas Numeradas Dinâmicas */}
+                    <div className="flex items-center gap-1 mx-1">
+                      {(() => {
+                        const getPages = () => {
+                          if (totalPages <= 7) {
+                            return Array.from({ length: totalPages }, (_, i) => i + 1);
+                          }
+                          if (currentPage <= 4) {
+                            return [1, 2, 3, 4, 5, '...', totalPages];
+                          }
+                          if (currentPage >= totalPages - 3) {
+                            return [1, '...', totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
+                          }
+                          return [1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages];
+                        };
+
+                        return getPages().map((p, idx) => {
+                          if (p === '...') {
+                            return (
+                              <span key={`ellipsis-${idx}`} className="px-2 py-1 text-gray-400 text-sm select-none">
+                                ...
+                              </span>
+                            );
+                          }
+
+                          const pageNum = Number(p);
+                          const isCurrent = currentPage === pageNum;
+
+                          return (
+                            <button
+                              key={`page-${pageNum}`}
+                              onClick={() => setCurrentPage(pageNum)}
+                              className={`min-w-[36px] h-9 px-3 flex items-center justify-center rounded-lg text-sm font-semibold transition ${
+                                isCurrent
+                                  ? 'bg-blue-600 text-white shadow-sm shadow-blue-500/30'
+                                  : 'text-gray-700 hover:bg-gray-100 border border-gray-200 bg-white'
+                              }`}
+                            >
+                              {pageNum}
+                            </button>
+                          );
+                        });
+                      })()}
+                    </div>
+
+                    {/* Botão Próximo */}
                     <button
                       onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
                       disabled={currentPage === totalPages}
-                      className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
+                      title="Próxima Página"
+                      className="flex items-center gap-1 px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 disabled:opacity-40 disabled:hover:bg-transparent transition"
                     >
-                      Próximo
+                      <span className="hidden sm:inline">Próximo</span>
+                      <ChevronRight className="h-4 w-4" />
                     </button>
-                  </div>
-                  <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-                    <div>
-                      <p className="text-sm text-gray-700">
-                        Página <span className="font-medium">{currentPage}</span> de{' '}
-                        <span className="font-medium">{totalPages}</span>
-                      </p>
-                    </div>
-                    <div>
-                      <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
-                        {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                          const page = i + 1;
-                          return (
-                            <button
-                              key={page}
-                              onClick={() => setCurrentPage(page)}
-                              className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
-                                currentPage === page
-                                  ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
-                                  : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
-                              }`}
-                            >
-                              {page}
-                            </button>
-                          );
-                        })}
-                      </nav>
-                    </div>
+
+                    {/* Botão Última Página */}
+                    <button
+                      onClick={() => setCurrentPage(totalPages)}
+                      disabled={currentPage === totalPages}
+                      title="Última Página"
+                      className="p-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:hover:bg-transparent transition"
+                    >
+                      <ChevronsRight className="h-4 w-4" />
+                    </button>
                   </div>
                 </div>
               )}
