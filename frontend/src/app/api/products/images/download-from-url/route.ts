@@ -1,13 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || process.env.API_URL || 'http://localhost:8081';
+import { fetchBackend } from '@/lib/backend-client';
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const backendUrl = `${API_BASE_URL}/products/images/download-from-url`;
 
-    const response = await fetch(backendUrl, {
+    const response = await fetchBackend('/products/images/download-from-url', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

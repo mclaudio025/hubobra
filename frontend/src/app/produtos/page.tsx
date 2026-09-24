@@ -40,13 +40,11 @@ interface Category {
   slug: string;
 }
 
-const API_BASE = process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8081';
+import { fetchBackend } from '@/lib/backend-client';
 
 async function getProducts(): Promise<{ products: Product[]; total: number }> {
   try {
-    const res = await fetch(`${API_BASE}/products?limit=100`, { 
-      cache: 'no-store'
-    });
+    const res = await fetchBackend('/products?limit=100');
     
     if (!res.ok) {
       console.warn('API de produtos respondeu com status:', res.status);
@@ -69,7 +67,7 @@ async function getProducts(): Promise<{ products: Product[]; total: number }> {
 
 async function getCategories(): Promise<Category[]> {
   try {
-    const res = await fetch(`${API_BASE}/categories`, { cache: 'no-store' });
+    const res = await fetchBackend('/categories');
     if (!res.ok) return [];
     const data = await res.json();
     return Array.isArray(data) ? data : [];
@@ -77,6 +75,7 @@ async function getCategories(): Promise<Category[]> {
     return [];
   }
 }
+
 
 export default async function ProdutosPage() {
   const [{ products, total }, categories] = await Promise.all([

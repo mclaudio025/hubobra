@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || process.env.API_URL || 'http://localhost:8081';
+import { fetchBackend } from '@/lib/backend-client';
 
 export async function GET(
   request: NextRequest,
@@ -8,13 +7,12 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const response = await fetch(`${API_BASE_URL}/products/${id}`, {
+    const response = await fetchBackend(`/products/${id}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': request.headers.get('Authorization') || '',
       },
-      next: { revalidate: 30 }
     });
 
     if (!response.ok) {
@@ -41,7 +39,7 @@ export async function PATCH(
     const { id } = await params;
     const body = await request.json();
     
-    const response = await fetch(`${API_BASE_URL}/products/${id}`, {
+    const response = await fetchBackend(`/products/${id}`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
@@ -72,7 +70,7 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    const response = await fetch(`${API_BASE_URL}/products/${id}`, {
+    const response = await fetchBackend(`/products/${id}`, {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',

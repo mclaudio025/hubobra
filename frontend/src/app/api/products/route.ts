@@ -1,39 +1,32 @@
 import { NextRequest, NextResponse } from 'next/server';
-
-const API_BASE_URL = process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8081';
+import { fetchBackend } from '@/lib/backend-client';
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const queryString = searchParams.toString();
-    
-    let url = `${API_BASE_URL}/products`;
-    if (queryString) {
-      url += `?${queryString}`;
-    }
-    
-    const response = await fetch(url, {
+    const endpoint = queryString ? `/products?${queryString}` : '/products';
+
+    const response = await fetchBackend(endpoint, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': request.headers.get('Authorization') || '',
       },
-      cache: 'no-store',
     });
 
-
     if (!response.ok) {
-      const error = await response.json();
-      return NextResponse.json({ error: error.message }, { status: response.status });
+      const error = await response.json().catch(() => ({ message: 'Erro ao buscar produtos' }));
+      return NextResponse.json({ error: error.message || 'Erro nos produtos' }, { status: response.status });
     }
 
     const data = await response.json();
     return NextResponse.json(data);
-  } catch (error) {
-    console.error('Erro na API de produtos:', error);
+  } catch (error: any) {
+    console.error('Erro na rota GET /api/products:', error?.message || error);
     return NextResponse.json(
-      { error: 'Erro interno do servidor' },
-      { status: 500 }
+      { products: [], total: 0, error: 'Erro ao carregar produtos do servidor' },
+      { status: 200 }
     );
   }
 }
@@ -42,7 +35,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     
-    const response = await fetch(`${API_BASE_URL}/products`, {
+    const response = await fetchBackend('/products', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -59,9 +52,9 @@ export async function POST(request: NextRequest) {
     const data = await response.json();
     return NextResponse.json(data);
   } catch (error) {
-    console.error('Erro ao criar produto:', error);
+    console.error('Erro na rota POST /api/products:', error);
     return NextResponse.json(
-      { error: 'Erro interno do servidor' },
+      { error: 'Erro interno do servidor ao criar produto' },
       { status: 500 }
     );
   }

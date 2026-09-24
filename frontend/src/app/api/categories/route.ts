@@ -1,26 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
-
-const API_BASE_URL = process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8081';
+import { fetchBackend } from '@/lib/backend-client';
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const active = searchParams.get('active');
-    
-    let url = `${API_BASE_URL}/categories`;
-    if (active) {
-      url += `?active=${active}`;
-    }
-    
-    const response = await fetch(url, {
+    const endpoint = active ? `/categories?active=${active}` : '/categories';
+
+    const response = await fetchBackend(endpoint, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': request.headers.get('Authorization') || '',
       },
-      cache: 'no-store'
     });
-
 
     if (!response.ok) {
       console.warn(`Backend categories returned status ${response.status}`);
@@ -39,7 +32,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     
-    const response = await fetch(`${API_BASE_URL}/categories`, {
+    const response = await fetchBackend('/categories', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -49,7 +42,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!response.ok) {
-      const error = await response.json();
+      const error = await response.json().catch(() => ({ message: 'Erro ao criar categoria' }));
       return NextResponse.json({ error: error.message }, { status: response.status });
     }
 
@@ -68,7 +61,7 @@ export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
     
-    const response = await fetch(`${API_BASE_URL}/categories`, {
+    const response = await fetchBackend('/categories', {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -78,7 +71,7 @@ export async function PUT(request: NextRequest) {
     });
 
     if (!response.ok) {
-      const error = await response.json();
+      const error = await response.json().catch(() => ({ message: 'Erro ao atualizar categoria' }));
       return NextResponse.json({ error: error.message }, { status: response.status });
     }
 
@@ -105,7 +98,7 @@ export async function DELETE(request: NextRequest) {
       );
     }
     
-    const response = await fetch(`${API_BASE_URL}/categories/${id}`, {
+    const response = await fetchBackend(`/categories/${id}`, {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
@@ -114,7 +107,7 @@ export async function DELETE(request: NextRequest) {
     });
 
     if (!response.ok) {
-      const error = await response.json();
+      const error = await response.json().catch(() => ({ message: 'Erro ao deletar categoria' }));
       return NextResponse.json({ error: error.message }, { status: response.status });
     }
 

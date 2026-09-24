@@ -45,13 +45,14 @@ export async function POST(request: NextRequest) {
     }
 
     // 2. Fallback para o Backend NestJS / Supabase AI
-    const response = await fetch(`${BACKEND_URL}/ai-personas/chat`, {
+    const response = await fetchBackend('/ai-personas/chat', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(body),
     });
+
 
     if (!response.ok) {
       // Fallback local caso o backend não esteja respondendo

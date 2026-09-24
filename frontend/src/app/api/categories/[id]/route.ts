@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+import { fetchBackend } from '@/lib/backend-client';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const response = await fetch(`${API_BASE_URL}/categories/${params.id}`, {
+    const { id } = await params;
+    const response = await fetchBackend(`/categories/${id}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -16,7 +16,7 @@ export async function GET(
     });
 
     if (!response.ok) {
-      const error = await response.json();
+      const error = await response.json().catch(() => ({ message: 'Categoria não encontrada' }));
       return NextResponse.json({ error: error.message }, { status: response.status });
     }
 
@@ -33,13 +33,14 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const body = await request.json();
     
-    const response = await fetch(`${API_BASE_URL}/categories/${params.id}`, {
-      method: 'PUT',
+    const response = await fetchBackend(`/categories/${id}`, {
+      method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': request.headers.get('Authorization') || '',
@@ -48,7 +49,7 @@ export async function PUT(
     });
 
     if (!response.ok) {
-      const error = await response.json();
+      const error = await response.json().catch(() => ({ message: 'Erro ao atualizar categoria' }));
       return NextResponse.json({ error: error.message }, { status: response.status });
     }
 
@@ -65,10 +66,11 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const response = await fetch(`${API_BASE_URL}/categories/${params.id}`, {
+    const { id } = await params;
+    const response = await fetchBackend(`/categories/${id}`, {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
@@ -77,7 +79,7 @@ export async function DELETE(
     });
 
     if (!response.ok) {
-      const error = await response.json();
+      const error = await response.json().catch(() => ({ message: 'Erro ao deletar categoria' }));
       return NextResponse.json({ error: error.message }, { status: response.status });
     }
 

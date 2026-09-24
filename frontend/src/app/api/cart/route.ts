@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-
-const API_BASE_URL = process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8081';
+import { fetchBackend } from '@/lib/backend-client';
 
 export async function GET(request: NextRequest) {
   try {
-    const response = await fetch(`${API_BASE_URL}/cart`, {
+    const response = await fetchBackend('/cart', {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -13,7 +12,7 @@ export async function GET(request: NextRequest) {
     });
 
     if (!response.ok) {
-      const error = await response.json();
+      const error = await response.json().catch(() => ({ message: 'Erro no carrinho' }));
       return NextResponse.json({ error: error.message }, { status: response.status });
     }
 
@@ -22,15 +21,15 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Erro na API do carrinho:', error);
     return NextResponse.json(
-      { error: 'Erro interno do servidor' },
-      { status: 500 }
+      { items: [], total: 0, totalItems: 0 },
+      { status: 200 }
     );
   }
 }
 
 export async function DELETE(request: NextRequest) {
   try {
-    const response = await fetch(`${API_BASE_URL}/cart`, {
+    const response = await fetchBackend('/cart', {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
@@ -39,7 +38,7 @@ export async function DELETE(request: NextRequest) {
     });
 
     if (!response.ok) {
-      const error = await response.json();
+      const error = await response.json().catch(() => ({ message: 'Erro ao limpar carrinho' }));
       return NextResponse.json({ error: error.message }, { status: response.status });
     }
 

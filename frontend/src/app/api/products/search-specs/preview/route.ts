@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || process.env.API_URL || 'http://localhost:8081';
+import { fetchBackend } from '@/lib/backend-client';
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const backendUrl = `${API_BASE_URL}/products/search-specs/preview?${searchParams.toString()}`;
+    const queryString = searchParams.toString();
+    const endpoint = queryString ? `/products/search-specs/preview?${queryString}` : '/products/search-specs/preview';
 
-    const response = await fetch(backendUrl, {
+    const response = await fetchBackend(endpoint, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

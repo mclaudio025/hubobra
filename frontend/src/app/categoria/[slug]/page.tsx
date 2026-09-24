@@ -21,14 +21,15 @@ function normalizeSlug(str: string): string {
     .replace(/^-+|-+$/g, '');
 }
 
+import { fetchBackend } from '@/lib/backend-client';
+
 async function fetchCategory(slug: string): Promise<CategoryData | null> {
   try {
-    const res = await fetch(`${API_BASE}/categories`, {
-      next: { revalidate: 300 },
-    });
+    const res = await fetchBackend('/categories');
     if (!res.ok) return null;
     const categories: CategoryData[] = await res.json();
     if (!Array.isArray(categories)) return null;
+
 
     const targetSlug = normalizeSlug(slug);
 
