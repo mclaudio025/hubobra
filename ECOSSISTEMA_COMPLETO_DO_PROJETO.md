@@ -86,9 +86,10 @@ graph TD
 * **Funcionalidade:** Leitor de código de barras e EAN via câmera para conferência de estoque, preços e separação de pedidos
 
 ### 🚀 Infraestrutura & DevOps
-* **Containers:** Docker e Docker Compose
-* **Hospedagem & Deploy:** AWS (EC2/S3) e compatibilidade com cPanel / PlusHost (Node.js Selector)
-* **Controle de Versão:** Git + GitHub Actions (CI/CD)
+* **Containers & Orquestração:** Docker & Docker Compose gerenciados via **Easypanel**
+* **Hospedagem & Servidor:** **VPS Contabo** (IP dedicado, alta performance)
+* **Banco de Dados & Mídia:** **Supabase Cloud** (PostgreSQL com PgBouncer e Storage CDN para imagens WebP)
+* **Controle de Versão & Deploy:** Git + GitHub (`mclaudio025/hubobra`) integrado ao Easypanel (Deploy Contínuo)
 
 ---
 

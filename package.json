@@ -1,0 +1,57 @@
+{
+    "name": "ecommerce-materiais-construcao",
+    "version": "1.0.0",
+    "description": "Plataforma de e-commerce para materiais de construção",
+    "private": true,
+    "scripts": {
+        "start": "node start-system.js",
+        "start:safe": "node start-project-safe.js",
+        "stop": "node stop-system.js",
+        "status": "node check-system.js",
+        "test:ze": "node test-ze-da-obra.js",
+        "test:personas": "node test-personas.js",
+        "test:precos": "node test-price-management.js",
+        "test:payments": "node test-payments-controller.js",
+        "test:checkout": "node test-checkout-system.js",
+        "test:metadata": "node test-metadata-structure.js",
+        "deploy:build": "npm run build:frontend && npm run build:backend-nestjs",
+        "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend-nestjs\" \"npm run dev:ia\"",
+        "dev:frontend": "cd frontend && npm run dev",
+        "dev:backend": "cd backend && npm run dev",
+        "dev:backend-nestjs": "cd backend-nestjs && npm run start:dev",
+        "dev:ia": "cd ia && python main.py",
+        "build": "npm run build:frontend && npm run build:backend-nestjs",
+        "build:frontend": "cd frontend && npm run build",
+        "build:backend": "cd backend && npm run build",
+        "build:backend-nestjs": "cd backend-nestjs && npm run build",
+        "install:all": "npm install && cd frontend && npm install && cd ../backend && npm install && cd ../backend-nestjs && npm install && cd ../ia && pip install -r requirements.txt",
+        "docker:up": "cd infra && docker-compose up -d",
+        "docker:down": "cd infra && docker-compose down",
+        "docker:build": "cd infra && docker-compose build",
+        "postgres:setup": "cd backend-nestjs && chmod +x setup-postgres.sh && ./setup-postgres.sh",
+        "migrate:postgres": "chmod +x migrate-to-postgres.sh && ./migrate-to-postgres.sh",
+        "setup": "npm run install:all && cp .env.example .env && cp frontend/.env.example frontend/.env.local && cp backend/.env.example backend/.env && cp backend-nestjs/.env.example backend-nestjs/.env && cp ia/.env.example ia/.env",
+        "db:generate": "cd backend-nestjs && npx prisma generate",
+        "db:push": "cd backend-nestjs && npx prisma db push",
+        "db:migrate": "cd backend-nestjs && npx prisma migrate dev",
+        "db:seed": "cd backend-nestjs && npx prisma db seed",
+        "db:studio": "cd backend-nestjs && npx prisma studio"
+    },
+    "devDependencies": {
+        "concurrently": "^8.2.2"
+    },
+    "keywords": [
+        "ecommerce",
+        "materiais-construcao",
+        "nextjs",
+        "nestjs",
+        "fastapi",
+        "microsservicos"
+    ],
+    "author": "Equipe de Desenvolvimento",
+    "license": "MIT",
+    "dependencies": {
+        "axios": "^1.11.0",
+        "embla-carousel-autoplay": "^8.6.0"
+    }
+}
