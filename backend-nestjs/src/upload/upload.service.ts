@@ -117,32 +117,62 @@ export class UploadService {
     variants: string[] = ["thumbnail", "card", "medium"],
   ): Promise<UploadResult> {
     const fileId = uuidv4();
-    const fileExtension = path.extname(originalName).toLowerCase() || ".jpg";
-    const storagePath = `products/${fileId}${fileExtension}`;
+    // 1. Otimização e compressão obrigatória com Sharp antes de qualquer envio
+    let optimizedBuffer = buffer;
+    let finalMimeType = mimeType;
+    let finalExtension = path.extname(originalName).toLowerCase() || ".webp";
+    let width: number | undefined;
+    let height: number | undefined;
 
-    // 1. Se o Supabase Storage estiver configurado, envia diretamente para o Storage CDN
+    try {
+      // Redimensiona para no máximo 1080x1080 e converte para WebP (qualidade 82)
+      // Reduz arquivos de 5MB/2MB para ~30KB-60KB sem perda perceptível de qualidade
+      const processed = await sharp(buffer)
+        .resize(1080, 1080, {
+          fit: "inside",
+          withoutEnlargement: true,
+        })
+        .webp({ quality: 82, effort: 4 })
+        .toBuffer({ resolveWithObject: true });
+
+      optimizedBuffer = processed.data;
+      finalMimeType = "image/webp";
+      finalExtension = ".webp";
+      width = processed.info.width;
+      height = processed.info.height;
+    } catch (err: any) {
+      this.logger.warn(`Erro ao otimizar com Sharp, mantendo buffer original: ${err?.message}`);
+      try {
+        const meta = await sharp(buffer).metadata();
+        width = meta.width;
+        height = meta.height;
+      } catch {}
+    }
+
+    const storagePath = `products/${fileId}${finalExtension}`;
+
+    // 2. Se o Supabase Storage estiver configurado, envia o arquivo já comprimido em WebP
     if (this.supabaseStorageService.isConfigured()) {
       try {
-        const metadata = await sharp(buffer).metadata();
         const uploadResult = await this.supabaseStorageService.uploadFile(
-          buffer,
+          optimizedBuffer,
           storagePath,
-          mimeType,
+          finalMimeType,
         );
 
         return {
           id: fileId,
-          filename: `${fileId}${fileExtension}`,
+          filename: `${fileId}${finalExtension}`,
           originalName,
-          size: buffer.length,
-          mimeType,
+          size: optimizedBuffer.length,
+          mimeType: finalMimeType,
           url: uploadResult.publicUrl,
           thumbnailUrl: uploadResult.cdnUrls.thumbnail,
           cardUrl: uploadResult.cdnUrls.card,
           mediumUrl: uploadResult.cdnUrls.medium,
           zoomUrl: uploadResult.cdnUrls.zoom,
-          width: metadata.width,
-          height: metadata.height,
+          width,
+          height,
           storageProvider: "supabase",
         };
       } catch (err: any) {
