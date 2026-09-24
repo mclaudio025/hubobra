@@ -243,15 +243,21 @@ export default function AdminCategorias() {
 
               <button
                 onClick={() => handleDelete(category)}
-                className="p-2 hover:bg-gray-100 rounded transition"
-                title="Excluir"
+                className={`p-2 rounded transition ${
+                  category._count.products > 0 || category._count.children > 0
+                    ? 'cursor-not-allowed opacity-40 hover:bg-transparent'
+                    : 'hover:bg-red-50 text-red-600'
+                }`}
+                title={
+                  category._count.products > 0
+                    ? `Possui ${category._count.products} produto(s) vinculado(s). Mova os produtos para outra categoria antes de excluir.`
+                    : category._count.children > 0
+                    ? `Possui ${category._count.children} subcategoria(s). Exclua ou mova as subcategorias primeiro.`
+                    : 'Excluir categoria'
+                }
                 disabled={category._count.products > 0 || category._count.children > 0}
               >
-                <Trash2 className={`h-4 w-4 ${
-                  category._count.products > 0 || category._count.children > 0
-                    ? 'text-gray-400'
-                    : 'text-red-600'
-                }`} />
+                <Trash2 className="h-4 w-4" />
               </button>
             </div>
           </div>

@@ -19,7 +19,8 @@ export class CategoriesService {
 
   @CacheEvict("categories:*")
   async create(createCategoryDto: CreateCategoryDto) {
-    const { name, parentId } = createCategoryDto;
+    const { name } = createCategoryDto;
+    const parentId = createCategoryDto.parentId && createCategoryDto.parentId.trim() !== "" ? createCategoryDto.parentId : null;
 
     // Verificar se categoria já existe no mesmo nível
     const existingCategory = await this.prisma.category.findFirst({
@@ -30,7 +31,7 @@ export class CategoriesService {
     });
 
     if (existingCategory) {
-      throw new BadRequestException("Categoria já existe neste nível");
+      throw new BadRequestException("Já existe uma categoria com este nome neste nível");
     }
 
     // Verificar se categoria pai existe (se fornecida)
@@ -44,11 +45,12 @@ export class CategoriesService {
       }
     }
 
-    const slug = this.generateSlug(name, parentId);
+    const slug = await this.generateUniqueSlug(name, parentId);
 
     return this.prisma.category.create({
       data: {
         ...createCategoryDto,
+        parentId,
         slug,
       },
       include: {
@@ -64,15 +66,35 @@ export class CategoriesService {
     });
   }
 
-  private generateSlug(name: string, parentId?: string): string {
+  private async generateUniqueSlug(name: string, parentId?: string | null, excludeId?: string): Promise<string> {
     const baseSlug = name
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "") // Remove acentos (é->e, á->a, ç->c)
       .toLowerCase()
-      .replace(/\s+/g, "-")
-      .replace(/[^a-z0-9-]/g, "")
-      .replace(/-+/g, "-")
-      .replace(/^-|-$/g, "");
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
 
-    return parentId ? `${baseSlug}-sub` : baseSlug;
+    const rootSlug = parentId ? `${baseSlug}-sub` : baseSlug;
+    const fallbackSlug = rootSlug || "categoria";
+
+    let candidate = fallbackSlug;
+    let count = 0;
+
+    while (true) {
+      const existing = await this.prisma.category.findFirst({
+        where: {
+          slug: candidate,
+          ...(excludeId ? { id: { not: excludeId } } : {}),
+        },
+      });
+
+      if (!existing) {
+        return candidate;
+      }
+
+      count++;
+      candidate = `${fallbackSlug}-${count}`;
+    }
   }
 
   @CacheCategories(1800) // Cache por 30 minutos
@@ -211,38 +233,68 @@ export class CategoriesService {
   async update(id: string, updateCategoryDto: UpdateCategoryDto) {
     const category = await this.findById(id);
     const { name } = updateCategoryDto;
+    
+    // Normalizar parentId se fornecido
+    let targetParentId = category.parentId;
+    if (updateCategoryDto.parentId !== undefined) {
+      targetParentId = updateCategoryDto.parentId && updateCategoryDto.parentId.trim() !== "" 
+        ? updateCategoryDto.parentId 
+        : null;
+    }
 
-    // Verificar se novo nome já existe
-    if (name && name !== category.name) {
+    // Não permitir que seja pai de si mesma
+    if (targetParentId === id) {
+      throw new BadRequestException("Uma categoria não pode ser pai de si mesma");
+    }
+
+    // Verificar se categoria pai existe (se fornecida)
+    if (targetParentId && targetParentId !== category.parentId) {
+      const parentCategory = await this.prisma.category.findUnique({
+        where: { id: targetParentId },
+      });
+
+      if (!parentCategory) {
+        throw new BadRequestException("Categoria pai não encontrada");
+      }
+    }
+
+    const targetName = name || category.name;
+
+    // Verificar se já existe outra categoria com mesmo nome e mesmo pai
+    if ((name && name !== category.name) || (targetParentId !== category.parentId)) {
       const existingCategory = await this.prisma.category.findFirst({
         where: {
-          name,
-          id: { not: id }, // Excluir a categoria atual
+          name: targetName,
+          parentId: targetParentId || null,
+          id: { not: id },
         },
       });
 
       if (existingCategory) {
-        throw new BadRequestException("Nome da categoria já existe");
+        throw new BadRequestException("Já existe uma categoria com este nome neste nível");
       }
     }
 
-    const slug = name
-      ? name
-          .toLowerCase()
-          .replace(/\s+/g, "-")
-          .replace(/[^a-z0-9-]/g, "")
-      : undefined;
+    // Gerar novo slug se nome ou parentId mudaram
+    let slug: string | undefined;
+    if (name || targetParentId !== category.parentId) {
+      slug = await this.generateUniqueSlug(targetName, targetParentId, id);
+    }
 
     return this.prisma.category.update({
       where: { id },
       data: {
         ...updateCategoryDto,
+        parentId: targetParentId,
         ...(slug && { slug }),
       },
       include: {
+        parent: true,
+        children: true,
         _count: {
           select: {
             products: true,
+            children: true,
           },
         },
       },
