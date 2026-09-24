@@ -9,7 +9,7 @@
     "node": ">=20.0.0"
   },
   "scripts": {
-    "build": "npx prisma generate && nest build",
+    "build": "npx prisma generate && nest build && node -e \"try{const fs=require('fs');if(!fs.existsSync('dist/main.js')&&fs.existsSync('dist/src/main.js')){fs.writeFileSync('dist/main.js', 'require(\\\"./src/main.js\\\");');}}catch(e){}\"",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "node dist/src/main.js",
     "start:dev": "nest start --watch",
