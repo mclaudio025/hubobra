@@ -18,7 +18,9 @@ export async function GET(request: NextRequest) {
         'Content-Type': 'application/json',
         'Authorization': request.headers.get('Authorization') || '',
       },
+      cache: 'no-store',
     });
+
 
     if (!response.ok) {
       const error = await response.json();

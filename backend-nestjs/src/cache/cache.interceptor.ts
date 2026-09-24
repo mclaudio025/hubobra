@@ -127,12 +127,15 @@ export class CacheInterceptor implements NestInterceptor {
       "order",
       "search",
       "category",
+      "categoryId",
+      "slug",
       "status",
       "active",
       "featured",
       "minPrice",
       "maxPrice",
     ];
+
 
     const filtered: Record<string, any> = {};
     for (const key of relevantKeys) {

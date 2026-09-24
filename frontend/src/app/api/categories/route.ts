@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8081';
+const API_BASE_URL = process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8081';
 
 export async function GET(request: NextRequest) {
   try {
@@ -18,8 +18,9 @@ export async function GET(request: NextRequest) {
         'Content-Type': 'application/json',
         'Authorization': request.headers.get('Authorization') || '',
       },
-      next: { revalidate: 30 }
+      cache: 'no-store'
     });
+
 
     if (!response.ok) {
       console.warn(`Backend categories returned status ${response.status}`);

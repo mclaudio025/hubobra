@@ -94,7 +94,7 @@ export default function CategoryClient({ slug }: { slug: string }) {
 
       if (found) {
         setCategory(found);
-        const res = await getProducts({ categoryId: found.id, active: true, limit: 100 });
+        const res = await getProducts({ categoryId: found.id, limit: 100 });
         let prods: any[] = Array.isArray(res?.products)
           ? res.products
           : Array.isArray(res)
@@ -107,7 +107,7 @@ export default function CategoryClient({ slug }: { slug: string }) {
           const existingIds = new Set(prods.map((p: any) => p.id));
           
           const childRequests = childIds.map((cid: string) => 
-            getProducts({ categoryId: cid, active: true, limit: 100 }).catch(() => null)
+            getProducts({ categoryId: cid, limit: 100 }).catch(() => null)
           );
           const childResults = await Promise.all(childRequests);
           
@@ -129,7 +129,7 @@ export default function CategoryClient({ slug }: { slug: string }) {
           name: slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
           slug: slug
         });
-        const res = await getProducts({ active: true, limit: 100 });
+        const res = await getProducts({ limit: 100 });
         const prods = Array.isArray(res?.products)
           ? res.products
           : Array.isArray(res)
@@ -137,6 +137,7 @@ export default function CategoryClient({ slug }: { slug: string }) {
           : [];
         setProducts(prods);
       }
+
     } catch (error) {
       console.error('Erro ao carregar categoria:', error);
     } finally {

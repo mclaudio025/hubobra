@@ -96,7 +96,6 @@ export class ProductsService {
     });
   }
 
-  @CacheProducts(600) // Cache por 10 minutos
   async findAll(
     page = 1,
     limit = 20,
@@ -129,6 +128,10 @@ export class ProductsService {
       };
     }
 
+    const activeCondition = active !== undefined 
+      ? (String(active) === 'true' || active === true) 
+      : undefined;
+
     const where: Prisma.ProductWhereInput = {
       ...(search && {
         OR: [
@@ -146,9 +149,10 @@ export class ProductsService {
         ],
       }),
       ...categoryCondition,
-      ...(active !== undefined && { active }),
-      ...(featured !== undefined && { featured }),
+      ...(activeCondition !== undefined && { active: activeCondition }),
+      ...(featured !== undefined && { featured: Boolean(featured) }),
     };
+
 
     const [products, total] = await Promise.all([
       this.prisma.product.findMany({

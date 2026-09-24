@@ -217,8 +217,8 @@ export class ProductsController {
     @Query("limit", new DefaultValuePipe(20), ParseIntPipe) limit: number,
     @Query("search") search?: string,
     @Query("categoryId") categoryId?: string,
-    @Query("active") active?: boolean,
-    @Query("featured") featured?: boolean,
+    @Query("active", new ParseBoolPipe({ optional: true })) active?: boolean,
+    @Query("featured", new ParseBoolPipe({ optional: true })) featured?: boolean,
   ) {
     return this.productsService.findAll(
       page,
@@ -229,6 +229,7 @@ export class ProductsController {
       featured,
     );
   }
+
 
   @Get("stats")
   @UseGuards(JwtAuthGuard, RolesGuard)
