@@ -64,13 +64,13 @@ const personas = {
   lia: {
     name: 'Lia',
     avatar: '/avatars/lia.png',
-    color: 'from-pink-500 to-purple-600',
-    description: 'Especialista em decoração e design'
+    color: 'from-amber-500 to-orange-600',
+    description: 'Especialista em materiais e acabamentos'
   },
   ze: {
     name: 'Zé da Obra',
     avatar: '/avatars/ze.png',
-    color: 'from-orange-500 to-red-600',
+    color: 'from-slate-700 to-slate-900',
     description: 'Mestre de obras e construção'
   }
 }
@@ -346,24 +346,25 @@ export function ChatWidget({
   
   if (!isOpen) {
     return (
-      <div className={cn('fixed bottom-6 right-6 z-50', className)}>
+      <div className={cn('fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50', className)}>
         <Button
           onClick={() => setIsOpen(true)}
           size="lg"
+          aria-label="Abrir assistente virtual"
           className={cn(
-            'h-14 w-14 rounded-full shadow-lg transition-all duration-300 hover:scale-110',
+            'h-14 w-14 rounded-full shadow-2xl transition-all duration-300 hover:scale-105',
             'bg-gradient-to-r', personas[currentPersona].color,
-            'backdrop-blur-sm border border-white/20'
+            'text-white border-2 border-white dark:border-slate-800'
           )}
         >
           <MessageCircle className="h-6 w-6" />
         </Button>
         
         {/* Indicador de persona ativa */}
-        <div className="absolute -top-2 -left-2">
-          <Avatar className="h-8 w-8 border-2 border-white shadow-md">
+        <div className="absolute -top-1 -left-1">
+          <Avatar className="h-6 w-6 border-2 border-white shadow-md">
             <AvatarImage src={personas[currentPersona].avatar} />
-            <AvatarFallback className={cn('text-xs bg-gradient-to-r', personas[currentPersona].color)}>
+            <AvatarFallback className={cn('text-[10px] text-white font-bold bg-gradient-to-r', personas[currentPersona].color)}>
               {personas[currentPersona].name[0]}
             </AvatarFallback>
           </Avatar>
@@ -373,28 +374,31 @@ export function ChatWidget({
   }
   
   return (
-    <div className={cn('fixed bottom-6 right-6 z-50', className)}>
+    <div className={cn('fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50', className)}>
       <Card className={cn(
-        'w-96 transition-all duration-300 shadow-2xl border-0',
-        'bg-white/80 backdrop-blur-xl',
-        isMinimized ? 'h-16' : 'h-[600px]'
+        'w-[calc(100vw-32px)] max-w-[390px] sm:w-96 transition-all duration-300 shadow-2xl rounded-2xl overflow-hidden',
+        'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex flex-col',
+        isMinimized ? 'h-16' : 'h-[520px] sm:h-[580px] max-h-[85vh]'
       )}>
         {/* Header */}
         <div className={cn(
-          'flex items-center justify-between p-4 border-b border-white/20',
+          'flex items-center justify-between p-3.5 sm:p-4 border-b border-white/10 shrink-0',
           'bg-gradient-to-r', personas[currentPersona].color,
-          'text-white rounded-t-lg'
+          'text-white'
         )}>
           <div className="flex items-center space-x-3">
-            <Avatar className="h-8 w-8 border-2 border-white/30">
+            <Avatar className="h-9 w-9 border-2 border-white/30">
               <AvatarImage src={personas[currentPersona].avatar} />
-              <AvatarFallback className="bg-white/20 text-white">
+              <AvatarFallback className="bg-white/20 text-white font-bold text-sm">
                 {personas[currentPersona].name[0]}
               </AvatarFallback>
             </Avatar>
-            <div className="flex-1">
-              <h3 className="font-semibold text-sm">{personas[currentPersona].name}</h3>
-              <p className="text-xs text-white/80">{personas[currentPersona].description}</p>
+            <div className="flex-1 min-w-0">
+              <h3 className="font-semibold text-sm leading-tight flex items-center gap-1.5">
+                {personas[currentPersona].name}
+                <span className="inline-block w-2 h-2 rounded-full bg-emerald-400"></span>
+              </h3>
+              <p className="text-xs text-white/80 truncate">{personas[currentPersona].description}</p>
             </div>
           </div>
           
@@ -403,7 +407,7 @@ export function ChatWidget({
               variant="ghost"
               size="sm"
               onClick={() => setShowHistory(!showHistory)}
-              className="text-white hover:bg-white/20 h-8 w-8 p-0"
+              className="text-white hover:bg-white/20 h-8 w-8 p-0 rounded-lg"
               title="Histórico"
             >
               <History className="h-4 w-4" />
@@ -413,7 +417,7 @@ export function ChatWidget({
               variant="ghost"
               size="sm"
               onClick={handleNewConversation}
-              className="text-white hover:bg-white/20 h-8 w-8 p-0"
+              className="text-white hover:bg-white/20 h-8 w-8 p-0 rounded-lg"
               title="Nova conversa"
             >
               <Plus className="h-4 w-4" />
@@ -423,7 +427,8 @@ export function ChatWidget({
               variant="ghost"
               size="sm"
               onClick={() => setIsMinimized(!isMinimized)}
-              className="text-white hover:bg-white/20 h-8 w-8 p-0"
+              className="text-white hover:bg-white/20 h-8 w-8 p-0 rounded-lg"
+              title={isMinimized ? "Maximizar" : "Minimizar"}
             >
               {isMinimized ? <Maximize2 className="h-4 w-4" /> : <Minimize2 className="h-4 w-4" />}
             </Button>
@@ -432,7 +437,8 @@ export function ChatWidget({
               variant="ghost"
               size="sm"
               onClick={handleClose}
-              className="text-white hover:bg-white/20 h-8 w-8 p-0"
+              className="text-white hover:bg-white/20 h-8 w-8 p-0 rounded-lg"
+              title="Fechar chat"
             >
               <X className="h-4 w-4" />
             </Button>
@@ -443,27 +449,27 @@ export function ChatWidget({
           <>
             {/* History Panel */}
             {showHistory && (
-              <div className="border-b bg-gray-50 max-h-48">
+              <div className="border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 max-h-48 shrink-0">
                 <div className="p-3">
                   <div className="flex items-center justify-between mb-2">
-                    <h4 className="font-medium text-sm">Conversas Recentes</h4>
+                    <h4 className="font-medium text-xs text-slate-700 dark:text-slate-300 uppercase tracking-wider">Conversas Recentes</h4>
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => setShowHistory(false)}
-                      className="h-6 w-6 p-0"
+                      className="h-6 w-6 p-0 text-slate-400 hover:text-slate-600"
                     >
                       <X className="h-3 w-3" />
                     </Button>
                   </div>
                   
                   <div className="relative mb-2">
-                    <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3 w-3 text-gray-400" />
+                    <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3 w-3 text-slate-400" />
                     <Input
                       placeholder="Buscar conversas..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-7 h-7 text-xs"
+                      className="pl-7 h-7 text-xs bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800"
                     />
                   </div>
                   
@@ -476,28 +482,28 @@ export function ChatWidget({
                           variant={currentConversation?.id === conversation.id ? 'secondary' : 'ghost'}
                           size="sm"
                           onClick={() => handleConversationSelect(conversation)}
-                          className="w-full justify-start h-auto p-2 text-left"
+                          className="w-full justify-start h-auto p-2 text-left rounded-lg"
                         >
                           <div className="flex items-center space-x-2 w-full">
-                            <Avatar className="h-5 w-5">
+                            <Avatar className="h-5 w-5 shrink-0">
                               <div className={cn(
-                                'w-full h-full flex items-center justify-center text-white text-xs',
-                                conversation.persona === 'lia' ? 'bg-pink-400' : 'bg-blue-500'
+                                'w-full h-full flex items-center justify-center text-white text-[10px] font-bold',
+                                conversation.persona === 'lia' ? 'bg-orange-500' : 'bg-slate-700'
                               )}>
                                 {conversation.persona === 'lia' ? 'L' : 'Z'}
                               </div>
                             </Avatar>
                             
                             <div className="flex-1 min-w-0">
-                              <p className="text-xs font-medium truncate">{conversation.title}</p>
-                              <p className="text-xs text-gray-500">
+                              <p className="text-xs font-medium truncate text-slate-800 dark:text-slate-200">{conversation.title}</p>
+                              <p className="text-[10px] text-slate-500">
                                 {conversation.messages.length} mensagens
                               </p>
                             </div>
                             
-                            <div className="flex items-center space-x-1">
-                              <Clock className="h-3 w-3 text-gray-400" />
-                              <span className="text-xs text-gray-400">
+                            <div className="flex items-center space-x-1 shrink-0">
+                              <Clock className="h-3 w-3 text-slate-400" />
+                              <span className="text-[10px] text-slate-400">
                                 {conversation.updatedAt.toLocaleDateString()}
                               </span>
                             </div>
@@ -506,7 +512,7 @@ export function ChatWidget({
                       ))}
                       
                       {conversations.length === 0 && (
-                        <div className="text-center py-4 text-gray-500">
+                        <div className="text-center py-4 text-slate-400">
                           <MessageCircle className="h-6 w-6 mx-auto mb-1 opacity-50" />
                           <p className="text-xs">Nenhuma conversa ainda</p>
                         </div>
@@ -518,7 +524,7 @@ export function ChatWidget({
             )}
             
             {/* Persona Switcher */}
-            <div className="p-3 border-b border-gray-200/50 bg-white/50">
+            <div className="p-2.5 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 shrink-0">
               <div className="flex space-x-2">
                 {Object.entries(personas).map(([key, persona]) => (
                   <Button
@@ -527,13 +533,15 @@ export function ChatWidget({
                     size="sm"
                     onClick={() => switchPersona(key as 'lia' | 'ze')}
                     className={cn(
-                      'flex-1 h-8 text-xs',
-                      currentPersona === key && `bg-gradient-to-r ${persona.color} text-white border-0`
+                      'flex-1 h-8 text-xs font-medium rounded-lg transition-all',
+                      currentPersona === key
+                        ? `bg-gradient-to-r ${persona.color} text-white border-0 shadow-sm`
+                        : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
                     )}
                   >
-                    <Avatar className="h-4 w-4 mr-1">
+                    <Avatar className="h-4 w-4 mr-1.5 shrink-0">
                       <AvatarImage src={persona.avatar} />
-                      <AvatarFallback className="text-xs">{persona.name[0]}</AvatarFallback>
+                      <AvatarFallback className="text-[10px]">{persona.name[0]}</AvatarFallback>
                     </Avatar>
                     {persona.name}
                   </Button>
@@ -542,42 +550,42 @@ export function ChatWidget({
             </div>
             
             {/* Messages */}
-            <ScrollArea className="flex-1 p-4 h-[400px]">
-              <div className="space-y-4">
+            <ScrollArea className="flex-1 p-3.5 sm:p-4 bg-slate-50/50 dark:bg-slate-900/50 overflow-y-auto">
+              <div className="space-y-3">
                 {(!currentConversation?.messages || currentConversation.messages.length === 0) && (
-                  <div className="text-center py-8">
-                    <Bot className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                    <h3 className="font-semibold text-gray-600 mb-2">
+                  <div className="text-center py-6">
+                    <Bot className="h-10 w-10 mx-auto mb-3 text-orange-500/80" />
+                    <h3 className="font-semibold text-slate-800 dark:text-slate-200 text-sm mb-1.5">
                       Olá! Sou {currentPersona === 'lia' ? 'a Lia' : 'o Zé da Obra'}
                     </h3>
-                    <p className="text-sm text-gray-500 mb-4">
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mb-4 leading-relaxed">
                       {getWelcomeMessage()}
                     </p>
                     
-                    <div className="grid grid-cols-1 gap-2 max-w-xs mx-auto">
+                    <div className="grid grid-cols-1 gap-1.5 max-w-xs mx-auto">
                       <Button 
                         variant="outline" 
                         size="sm" 
-                        className="text-xs"
-                        onClick={() => setInputValue('Preciso de dicas de decoração para minha sala')}
+                        className="text-xs justify-start bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-orange-400 text-slate-700 dark:text-slate-300"
+                        onClick={() => setInputValue('Preciso de dicas de materiais para minha obra')}
                       >
-                        💡 Dicas de decoração
+                        💡 Sugestões de materiais
                       </Button>
                       <Button 
                         variant="outline" 
                         size="sm" 
-                        className="text-xs"
-                        onClick={() => setInputValue('Como instalar este produto corretamente?')}
+                        className="text-xs justify-start bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-orange-400 text-slate-700 dark:text-slate-300"
+                        onClick={() => setInputValue('Como aplicar e instalar este produto?')}
                       >
-                        🔧 Ajuda com instalação
+                        🔧 Dúvidas técnicas e aplicação
                       </Button>
                       <Button 
                         variant="outline" 
                         size="sm" 
-                        className="text-xs"
-                        onClick={() => setInputValue('Preciso calcular quantos materiais vou precisar')}
+                        className="text-xs justify-start bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-orange-400 text-slate-700 dark:text-slate-300"
+                        onClick={() => setInputValue('Como funciona a entrega e o pagamento no local?')}
                       >
-                        📏 Calcular materiais
+                        🚚 Entrega rápida e pagamento
                       </Button>
                     </div>
                   </div>
@@ -593,13 +601,10 @@ export function ChatWidget({
                   >
                     <div
                       className={cn(
-                        'max-w-[80%] rounded-lg p-3 text-sm relative group',
+                        'max-w-[85%] rounded-2xl p-3 text-sm relative group shadow-sm',
                         message.sender === 'user'
-                          ? 'bg-blue-500 text-white'
-                          : cn(
-                              'bg-gradient-to-r text-white',
-                              personas[message.sender as 'lia' | 'ze']?.color || 'bg-gray-200 text-gray-800'
-                            )
+                          ? 'bg-orange-500 text-white rounded-tr-none'
+                          : 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 border border-slate-200 dark:border-slate-700 rounded-tl-none'
                       )}
                     >
                       {message.type === 'image' && message.metadata?.imageUrl && (
@@ -612,27 +617,27 @@ export function ChatWidget({
                         </div>
                       )}
                       
-                      <p className="whitespace-pre-wrap">{message.content}</p>
+                      <p className="whitespace-pre-wrap leading-relaxed text-xs sm:text-sm">{message.content}</p>
                       
-                      <div className="flex items-center justify-between mt-2 text-xs opacity-70">
+                      <div className="flex items-center justify-between mt-2 text-[10px] opacity-70">
                         <span>
                           {message.sender !== 'user' && (
-                            <Badge variant="secondary" className="text-xs mr-2">
+                            <Badge variant="secondary" className="text-[10px] mr-1.5 py-0 px-1.5 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
                               {message.sender === 'lia' ? 'Lia' : 'Zé da Obra'}
                             </Badge>
                           )}
                           {message.status === 'sending' && (
-                            <Badge variant="outline" className="text-xs mr-2">
+                            <Badge variant="outline" className="text-[10px] mr-1.5 py-0 px-1.5">
                               Enviando...
                             </Badge>
                           )}
                           {message.status === 'error' && (
-                            <Badge variant="destructive" className="text-xs mr-2">
+                            <Badge variant="destructive" className="text-[10px] mr-1.5 py-0 px-1.5">
                               Erro
                             </Badge>
                           )}
                         </span>
-                        <span>{message.timestamp.toLocaleTimeString()}</span>
+                        <span>{message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                       </div>
                       
                       {/* Message Actions */}
@@ -640,9 +645,8 @@ export function ChatWidget({
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="h-6 w-6 p-0"
+                          className="h-6 w-6 p-0 text-slate-400 hover:text-slate-600"
                           onClick={() => {
-                            // Copy message content
                             navigator.clipboard.writeText(message.content)
                           }}
                         >
@@ -655,14 +659,11 @@ export function ChatWidget({
                 
                 {isLoading && (
                   <div className="flex justify-start">
-                    <div className={cn(
-                      'bg-gradient-to-r text-white rounded-lg p-3',
-                      personas[currentPersona].color
-                    )}>
-                      <div className="flex space-x-1">
-                        <div className="w-2 h-2 bg-white/70 rounded-full animate-bounce" />
-                        <div className="w-2 h-2 bg-white/70 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} />
-                        <div className="w-2 h-2 bg-white/70 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
+                    <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 rounded-2xl rounded-tl-none p-3 shadow-sm">
+                      <div className="flex space-x-1.5 items-center">
+                        <div className="w-2 h-2 bg-orange-500 rounded-full animate-bounce" />
+                        <div className="w-2 h-2 bg-orange-500 rounded-full animate-bounce" style={{ animationDelay: '0.15s' }} />
+                        <div className="w-2 h-2 bg-orange-500 rounded-full animate-bounce" style={{ animationDelay: '0.3s' }} />
                       </div>
                     </div>
                   </div>
@@ -673,7 +674,7 @@ export function ChatWidget({
             
             {/* Contextual Suggestions */}
             {showSuggestions && currentConversation && (
-              <div className="border-t p-3">
+              <div className="border-t border-slate-200 dark:border-slate-800 p-2.5 bg-white dark:bg-slate-900 shrink-0">
                 <ContextualSuggestions
                   context={{
                     page: context?.page,
@@ -683,61 +684,61 @@ export function ChatWidget({
                     currentMessage: inputValue
                   }}
                   onSuggestionClick={handleSuggestionClick}
-                  maxSuggestions={3}
-                  className="border-0 p-0 shadow-none"
+                  maxSuggestions={2}
+                  className="border-0 p-0 shadow-none bg-transparent"
                 />
               </div>
             )}
             
             {/* Input */}
-            <div className="p-4 border-t border-gray-200/50 bg-white/50">
+            <div className="p-3 sm:p-4 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0">
               <div className="flex items-center space-x-2">
                 <div className="flex-1 relative">
                   <Input
-                     ref={inputRef}
-                     value={inputValue}
-                     onChange={(e) => setInputValue(e.target.value)}
-                     onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                     placeholder={`Digite sua mensagem para ${personas[currentPersona].name}...`}
-                     className="pr-20 bg-white/80 border-gray-200/50"
-                     disabled={isLoading}
-                   />
+                    ref={inputRef}
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                    placeholder={`Mensagem para ${personas[currentPersona].name}...`}
+                    className="pr-20 bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-xl text-xs sm:text-sm focus-visible:ring-orange-500"
+                    disabled={isLoading}
+                  />
                   
-                  <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex items-center space-x-1">
+                  <div className="absolute right-1.5 top-1/2 transform -translate-y-1/2 flex items-center space-x-0.5">
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => setShowVoiceRecognition(true)}
                       className={cn(
-                        'h-6 w-6 p-0',
-                        isRecording ? 'text-red-500 animate-pulse' : 'text-gray-400 hover:text-gray-600'
+                        'h-7 w-7 p-0 rounded-lg',
+                        isRecording ? 'text-red-500 animate-pulse' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'
                       )}
                       disabled={isLoading}
                       title="Reconhecimento de voz"
                     >
-                      {isRecording ? <MicOff className="h-3 w-3" /> : <Mic className="h-3 w-3" />}
+                      {isRecording ? <MicOff className="h-3.5 w-3.5" /> : <Mic className="h-3.5 w-3.5" />}
                     </Button>
                     
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => setShowImageAnalysis(true)}
-                      className="h-6 w-6 p-0 text-gray-400 hover:text-gray-600"
+                      className="h-7 w-7 p-0 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg"
                       disabled={isLoading}
                       title="Análise de imagem"
                     >
-                      <ImageIcon className="h-3 w-3" />
+                      <ImageIcon className="h-3.5 w-3.5" />
                     </Button>
                     
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => fileInputRef.current?.click()}
-                      className="h-6 w-6 p-0 text-gray-400 hover:text-gray-600"
+                      className="h-7 w-7 p-0 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg"
                       disabled={isLoading}
                       title="Anexar arquivo"
                     >
-                      <Paperclip className="h-3 w-3" />
+                      <Paperclip className="h-3.5 w-3.5" />
                     </Button>
                   </div>
                 </div>
@@ -746,7 +747,7 @@ export function ChatWidget({
                   onClick={handleSendMessage}
                   disabled={!inputValue.trim() || isLoading}
                   size="sm"
-                  className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
+                  className="bg-orange-500 hover:bg-orange-600 text-white rounded-xl h-9 px-3 shadow-sm transition-all shrink-0"
                 >
                   {isLoading ? (
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />

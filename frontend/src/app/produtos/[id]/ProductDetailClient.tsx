@@ -30,7 +30,6 @@ import Product360Gallery from '@/components/Product360Gallery';
 import ARSimulator from '@/components/ARSimulator';
 import ProductSpecsAdvanced from '@/components/ProductSpecsAdvanced';
 import ProductRecommendations from '@/components/ProductRecommendations';
-import ProductAIAssistants from '@/app/components/ProductAIAssistants';
 import ProductReviews from '@/app/components/ProductReviews';
 import ProductShippingTab from '@/app/components/ProductShippingTab';
 
@@ -633,8 +632,6 @@ export default function ProductDetailClient({ productId }: { productId: string }
         />
       )}
 
-      {/* Assistentes IA contextuais para o produto */}
-      <ProductAIAssistants product={product} />
     </div>
   );
 }
