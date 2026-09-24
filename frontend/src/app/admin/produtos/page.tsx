@@ -45,6 +45,13 @@ export default function AdminProdutos() {
 
   useEffect(() => {
     fetchCategories();
+  }, []);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, categoryFilter, statusFilter]);
+
+  useEffect(() => {
     fetchProducts();
   }, [currentPage, searchTerm, categoryFilter, statusFilter]);
 
@@ -61,10 +68,20 @@ export default function AdminProdutos() {
     try {
       setLoading(true);
       
-      // Remover filtros do lado do servidor - deixar apenas paginação
       const params = new URLSearchParams();
       params.append('page', currentPage.toString());
       params.append('limit', itemsPerPage.toString());
+      if (searchTerm && searchTerm.trim()) {
+        params.append('search', searchTerm.trim());
+      }
+      if (categoryFilter) {
+        params.append('categoryId', categoryFilter);
+      }
+      if (statusFilter === 'active') {
+        params.append('active', 'true');
+      } else if (statusFilter === 'inactive') {
+        params.append('active', 'false');
+      }
       
       const data = await apiCall(`/products?${params.toString()}`, { requireAuth: true });
       
@@ -118,25 +135,7 @@ export default function AdminProdutos() {
     }
   };
 
-  const filteredProducts = products.filter(product => {
-    // Filtro de busca
-    const matchesSearch = !searchTerm || 
-      product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.sku.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    // Filtro de categoria
-    const productCategoryId = typeof product.category === 'object' && product.category?.id 
-      ? product.category.id 
-      : product.category;
-    const matchesCategory = !categoryFilter || productCategoryId === categoryFilter;
-    
-    // Filtro de status
-    const matchesStatus = statusFilter === 'all' || 
-                         (statusFilter === 'active' && product.active) ||
-                         (statusFilter === 'inactive' && !product.active);
-    
-    return matchesSearch && matchesCategory && matchesStatus;
-  });
+  const filteredProducts = products;
 
 
 

@@ -238,12 +238,12 @@ class SupabaseService {
   }
 
   /// Busca histórico de produtos recentes / auditados
-  Future<List<ProductModel>> getRecentProducts({int limit = 20}) async {
+  Future<List<ProductModel>> getRecentProducts({int limit = 150}) async {
     try {
       final response = await _client
           .from(SupabaseConfig.productsTable)
           .select('*, category:categories(id, name), images:product_images(url)')
-          .order('updatedAt', ascending: false)
+          .order('name', ascending: true)
           .limit(limit);
 
       return (response as List).map((p) => ProductModel.fromJson(p)).toList();
