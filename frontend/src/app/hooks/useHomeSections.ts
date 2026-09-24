@@ -136,21 +136,66 @@ export function useHomeSections() {
         }
       }
 
+      let loadedSections: HomeSection[] = [];
+
       if (res && res.ok) {
         const data = await res.json();
         if (Array.isArray(data) && data.length > 0) {
-          const filtered = data.filter(
+          loadedSections = data.filter(
             (s: HomeSection) => s.type !== 'partner_bar' && s.id !== 'partner-network-bar'
           );
-          setSections(filtered);
-          return filtered;
         }
       }
-      const defaultFiltered = DEFAULT_SECTIONS.filter(
-        (s) => s.type !== 'partner_bar' && s.id !== 'partner-network-bar'
+
+      if (loadedSections.length === 0) {
+        loadedSections = DEFAULT_SECTIONS.filter(
+          (s) => s.type !== 'partner_bar' && s.id !== 'partner-network-bar'
+        );
+      }
+
+      // Se alguma seção de carrossel estiver sem produtos, busca produtos gerais como fallback
+      const hasEmptyCarousels = loadedSections.some(
+        (s) => s.type === 'product_carousel' && (!s.products || s.products.length === 0)
       );
-      setSections(defaultFiltered);
-      return defaultFiltered;
+
+      if (hasEmptyCarousels) {
+        try {
+          let prodRes = await fetch('/api/products?limit=24', { cache: 'no-store' });
+          if (!prodRes.ok && apiBase) {
+            prodRes = await fetch(`${apiBase}/products?limit=24`, { cache: 'no-store' });
+          }
+          if (prodRes && prodRes.ok) {
+            const prodData = await prodRes.json();
+            const allProducts = Array.isArray(prodData?.products)
+              ? prodData.products
+              : Array.isArray(prodData?.data)
+              ? prodData.data
+              : Array.isArray(prodData)
+              ? prodData
+              : [];
+
+            if (allProducts.length > 0) {
+              loadedSections = loadedSections.map((s, idx) => {
+                if (s.type === 'product_carousel' && (!s.products || s.products.length === 0)) {
+                  const sliceStart = (idx * 4) % Math.max(1, allProducts.length - 4);
+                  return {
+                    ...s,
+                    products: allProducts.slice(sliceStart, sliceStart + 12).length > 0
+                      ? allProducts.slice(sliceStart, sliceStart + 12)
+                      : allProducts,
+                  };
+                }
+                return s;
+              });
+            }
+          }
+        } catch (prodErr) {
+          console.warn('Fallback de produtos na home:', prodErr);
+        }
+      }
+
+      setSections(loadedSections);
+      return loadedSections;
     } catch (err: any) {
       console.warn('Usando seções padrão para a home:', err);
       const defaultFiltered = DEFAULT_SECTIONS.filter(
@@ -162,6 +207,7 @@ export function useHomeSections() {
       setLoading(false);
     }
   }, [apiBase]);
+
 
   /**
    * Busca a lista bruta para o painel Admin

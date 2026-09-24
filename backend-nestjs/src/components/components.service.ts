@@ -283,7 +283,6 @@ export class ComponentsService {
         const products = await this.prisma.product.findMany({
           where: {
             id: { in: section.manualProductIds },
-            active: true,
           },
           include: {
             images: { select: { url: true, alt: true } },
@@ -295,17 +294,28 @@ export class ComponentsService {
         if (products.length > 0) return products;
       }
 
-      // 2. Por Categoria
+      // 2. Por Categoria (incluindo todas as subcategorias filhas)
       if (section.productSource === "category" && section.categorySlug) {
-        const category = await this.prisma.category.findUnique({
-          where: { slug: section.categorySlug },
+        let category = await this.prisma.category.findFirst({
+          where: {
+            OR: [
+              { slug: section.categorySlug },
+              { slug: { contains: section.categorySlug, mode: "insensitive" } },
+              { name: { contains: section.categoryName || section.categorySlug, mode: "insensitive" } },
+            ],
+          },
         });
 
         if (category) {
+          const childCategories = await this.prisma.category.findMany({
+            where: { parentId: category.id },
+            select: { id: true },
+          });
+          const allCategoryIds = [category.id, ...childCategories.map((c) => c.id)];
+
           const products = await this.prisma.product.findMany({
             where: {
-              categoryId: category.id,
-              active: true,
+              categoryId: { in: allCategoryIds },
             },
             include: {
               images: { select: { url: true, alt: true } },
@@ -323,7 +333,6 @@ export class ComponentsService {
       if (section.productSource === "discount") {
         const products = await this.prisma.product.findMany({
           where: {
-            active: true,
             comparePrice: { gt: 0 },
           },
           include: {
@@ -340,7 +349,6 @@ export class ComponentsService {
       // 4. Mais Vendidos
       if (section.productSource === "bestsellers") {
         const products = await this.prisma.product.findMany({
-          where: { active: true },
           include: {
             images: { select: { url: true, alt: true } },
             category: { select: { id: true, name: true, slug: true } },
@@ -352,9 +360,8 @@ export class ComponentsService {
         if (products.length > 0) return products;
       }
 
-      // 5. Destaques / Padrão
+      // 5. Destaques / Padrão com Fallback
       const products = await this.prisma.product.findMany({
-        where: { active: true },
         include: {
           images: { select: { url: true, alt: true } },
           category: { select: { id: true, name: true, slug: true } },

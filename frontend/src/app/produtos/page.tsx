@@ -40,7 +40,7 @@ interface Category {
   slug: string;
 }
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8081';
+const API_BASE = process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8081';
 
 async function getProducts(): Promise<{ products: Product[]; total: number }> {
   try {
