@@ -95,11 +95,33 @@ export default function CategoryClient({ slug }: { slug: string }) {
       if (found) {
         setCategory(found);
         const res = await getProducts({ categoryId: found.id, active: true, limit: 100 });
-        const prods = Array.isArray(res?.products)
+        let prods: any[] = Array.isArray(res?.products)
           ? res.products
           : Array.isArray(res)
           ? res
           : [];
+
+        // Se a categoria possui subcategorias filhas, carregar e unir todos os produtos das subcategorias
+        if (found.children && found.children.length > 0) {
+          const childIds = found.children.map((c: any) => c.id).filter(Boolean);
+          const existingIds = new Set(prods.map((p: any) => p.id));
+          
+          const childRequests = childIds.map((cid: string) => 
+            getProducts({ categoryId: cid, active: true, limit: 100 }).catch(() => null)
+          );
+          const childResults = await Promise.all(childRequests);
+          
+          childResults.forEach((cRes: any) => {
+            const childProds = Array.isArray(cRes?.products) ? cRes.products : Array.isArray(cRes) ? cRes : [];
+            childProds.forEach((cp: any) => {
+              if (!existingIds.has(cp.id)) {
+                existingIds.add(cp.id);
+                prods.push(cp);
+              }
+            });
+          });
+        }
+
         setProducts(prods);
       } else {
         setCategory({
@@ -132,17 +154,24 @@ export default function CategoryClient({ slug }: { slug: string }) {
   };
 
   const subcategoryOptions = useMemo(() => {
-    const list: { name: string; count: number }[] = [];
+    const list: { name: string; count: number; id?: string }[] = [];
     if (category?.children && category.children.length > 0) {
       category.children.forEach(child => {
-        const count = products.filter(p => p.categoryId === child.id || p.category?.id === child.id || p.category?.name === child.name).length;
-        list.push({ name: child.name, count });
+        const count = products.filter(p => {
+          const pCatId = p.categoryId || p.category?.id;
+          const pCatName = p.subcategory?.name || p.subcategory || p.subCategory || p.category?.name;
+          return (
+            pCatId === child.id ||
+            normalizeSlug(pCatName) === normalizeSlug(child.name)
+          );
+        }).length;
+        list.push({ name: child.name, count, id: child.id });
       });
     } else {
       const map = new Map<string, number>();
       products.forEach(p => {
-        const catName = p.subcategory?.name || p.subcategory || p.subCategory;
-        if (catName) {
+        const catName = p.subcategory?.name || p.subcategory || p.subCategory || p.category?.name;
+        if (catName && catName !== category?.name) {
           map.set(catName, (map.get(catName) || 0) + 1);
         }
       });
@@ -187,8 +216,22 @@ export default function CategoryClient({ slug }: { slug: string }) {
   const filteredProducts = useMemo(() => {
     return products.filter(product => {
       if (selectedSubcategories.length > 0) {
-        const prodSub = product.subcategory?.name || product.subcategory || product.subCategory || product.category?.name;
-        if (!selectedSubcategories.includes(prodSub)) {
+        const prodSubName = product.subcategory?.name || product.subcategory || product.subCategory || product.category?.name;
+        const prodCatId = product.categoryId || product.category?.id;
+
+        const matches = selectedSubcategories.some(selected => {
+          const normSelected = normalizeSlug(selected);
+          return (
+            prodCatId === selected ||
+            normalizeSlug(prodSubName) === normSelected ||
+            (category?.children && category.children.some((c: any) => 
+              (c.id === selected || normalizeSlug(c.name) === normSelected) &&
+              (c.id === prodCatId || normalizeSlug(c.name) === normalizeSlug(prodSubName))
+            ))
+          );
+        });
+
+        if (!matches) {
           return false;
         }
       }
