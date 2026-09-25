@@ -10,11 +10,11 @@ export function normalizeTextForTTS(text: string): string {
   if (!text) return '';
   
   return text
-    // 1. Pronúncia perfeita da Marca HubObra
-    .replace(/HubObra/gi, 'Rôbi Obra')
-    .replace(/Hub\s*Obra/gi, 'Rôbi Obra')
-    .replace(/Hub\s*Construções/gi, 'Rôbi Construções')
-    .replace(/Hub\s*Construcoes/gi, 'Rôbi Construções')
+    // 1. Pronúncia perfeita da Marca HubObra (Hub em inglês + Obra em português -> Râb Obra)
+    .replace(/HubObra/gi, 'Râb Obra')
+    .replace(/Hub\s*Obra/gi, 'Râb Obra')
+    .replace(/Hub\s*Construções/gi, 'Râb Construções')
+    .replace(/Hub\s*Construcoes/gi, 'Râb Construções')
     
     // 2. Termos tecnológicos e pagamentos
     .replace(/\bPIX\b/g, 'Pícs')

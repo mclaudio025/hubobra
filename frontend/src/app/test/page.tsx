@@ -15,17 +15,19 @@ import {
   Download,
   CheckCircle2,
   Zap,
-  Radio
+  Radio,
+  Sliders
 } from 'lucide-react';
 
 export default function VoicePlaygroundPage() {
   // Static test audio states
   const [playingLia, setPlayingLia] = useState(false);
   const [playingZe, setPlayingZe] = useState(false);
+  const [playingSample, setPlayingSample] = useState<string | null>(null);
 
   // Custom text synthesizer state
   const [customText, setCustomText] = useState(
-    'Olá Claudio! Vi que você adicionou 50 sacos de cimento Poty ao carrinho. Quer que eu verifique a entrega com frete grátis para sua obra agora mesmo?'
+    'Olá Claudio! Vi que você adicionou 50 sacos de cimento Poty ao carrinho na HubObra. Quer que eu verifique a entrega com frete grátis para sua obra agora mesmo?'
   );
   const [persona, setPersona] = useState<'lia' | 'ze'>('lia');
   const [generating, setGenerating] = useState(false);
@@ -47,6 +49,16 @@ export default function VoicePlaygroundPage() {
       console.error('Erro ao reproduzir áudio:', e);
       if (type === 'lia') setPlayingLia(false);
       else setPlayingZe(false);
+    });
+  };
+
+  const handlePlaySpecificSample = (sampleFile: string) => {
+    setPlayingSample(sampleFile);
+    const audio = new Audio(`/audio/${sampleFile}`);
+    audio.onended = () => setPlayingSample(null);
+    audio.play().catch(e => {
+      console.error('Erro ao reproduzir amostra:', e);
+      setPlayingSample(null);
     });
   };
 
@@ -109,8 +121,65 @@ export default function VoicePlaygroundPage() {
             Voice Playground &bull; HubObra AI
           </h1>
           <p className="text-sm text-slate-400 max-w-xl mx-auto">
-            Ouça a naturalidade das vozes geradas com a sua chave ElevenLabs e teste novas frases de vendas em tempo real.
+            Ouça a naturalidade das vozes calibradas com a pronúncia em inglês de &ldquo;Hub&rdquo; + &ldquo;Obra&rdquo; e teste novas frases de vendas em tempo real.
           </p>
+        </div>
+
+        {/* Pronunciation Comparison Bar */}
+        <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 space-y-3">
+          <div className="flex items-center gap-2 text-orange-400">
+            <Sliders className="h-4 w-4" />
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-300">
+              Comparativo de Pronúncia de &ldquo;HubObra&rdquo; (Clique para Ouvir):
+            </h3>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <button
+              onClick={() => handlePlaySpecificSample('hub_english_1_rab_obra.mp3')}
+              className={`p-3 rounded-2xl border text-left transition flex items-center justify-between ${
+                playingSample === 'hub_english_1_rab_obra.mp3'
+                  ? 'bg-orange-500/20 border-orange-500 text-orange-300'
+                  : 'bg-slate-950 border-slate-800 text-slate-300 hover:border-slate-700'
+              }`}
+            >
+              <div>
+                <p className="text-xs font-bold">Opção 1 (Râb Obra) ⭐</p>
+                <p className="text-[11px] text-slate-500">Hub Inglês Natural + Obra</p>
+              </div>
+              <Play className="h-4 w-4 text-orange-400 shrink-0" />
+            </button>
+
+            <button
+              onClick={() => handlePlaySpecificSample('hub_english_4_hub_virgula_obra.mp3')}
+              className={`p-3 rounded-2xl border text-left transition flex items-center justify-between ${
+                playingSample === 'hub_english_4_hub_virgula_obra.mp3'
+                  ? 'bg-orange-500/20 border-orange-500 text-orange-300'
+                  : 'bg-slate-950 border-slate-800 text-slate-300 hover:border-slate-700'
+              }`}
+            >
+              <div>
+                <p className="text-xs font-bold">Opção 2 (Hub, Obra)</p>
+                <p className="text-[11px] text-slate-500">Pausa suave entre as palavras</p>
+              </div>
+              <Play className="h-4 w-4 text-orange-400 shrink-0" />
+            </button>
+
+            <button
+              onClick={() => handlePlaySpecificSample('phonetic_1_robi_obra.mp3')}
+              className={`p-3 rounded-2xl border text-left transition flex items-center justify-between ${
+                playingSample === 'phonetic_1_robi_obra.mp3'
+                  ? 'bg-orange-500/20 border-orange-500 text-orange-300'
+                  : 'bg-slate-950 border-slate-800 text-slate-300 hover:border-slate-700'
+              }`}
+            >
+              <div>
+                <p className="text-xs font-bold">Opção 3 (Rôbi Obra)</p>
+                <p className="text-[11px] text-slate-500">Pronúncia abrasileirada</p>
+              </div>
+              <Play className="h-4 w-4 text-orange-400 shrink-0" />
+            </button>
+          </div>
         </div>
 
         {/* Generated Sample Cards */}
@@ -141,7 +210,7 @@ export default function VoicePlaygroundPage() {
             <div className="pt-2 flex items-center justify-between">
               <button
                 onClick={() => handlePlayStatic('lia')}
-                className="inline-flex items-center gap-2 px-5 py-2.5 bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs rounded-xl shadow-lg shadow-orange-500/20 transition active:scale-95"
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs rounded-xl shadow-lg shadow-orange-500/20 transition active:scale-95 cursor-pointer"
               >
                 {playingLia ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4 fill-white" />}
                 {playingLia ? 'Reproduzindo...' : 'Ouvir Áudio da Lia'}
@@ -183,7 +252,7 @@ export default function VoicePlaygroundPage() {
             <div className="pt-2 flex items-center justify-between">
               <button
                 onClick={() => handlePlayStatic('ze')}
-                className="inline-flex items-center gap-2 px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs rounded-xl shadow-lg shadow-amber-500/20 transition active:scale-95"
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs rounded-xl shadow-lg shadow-amber-500/20 transition active:scale-95 cursor-pointer"
               >
                 {playingZe ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4 fill-slate-950" />}
                 {playingZe ? 'Reproduzindo...' : 'Ouvir Áudio do Zé'}
@@ -211,7 +280,7 @@ export default function VoicePlaygroundPage() {
                 Gerador de Áudio ao Vivo (Qualquer Frase)
               </h2>
               <p className="text-xs text-slate-400">
-                Digite qualquer texto de orçamento ou dúvida de obra para gerar o áudio na hora via ElevenLabs.
+                Digite qualquer texto de orçamento ou dúvida de obra para gerar o áudio na hora via ElevenLabs com normalização fonética automática.
               </p>
             </div>
 
@@ -219,7 +288,7 @@ export default function VoicePlaygroundPage() {
             <div className="flex bg-slate-950 p-1 rounded-xl border border-slate-800 shrink-0">
               <button
                 onClick={() => setPersona('lia')}
-                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
                   persona === 'lia'
                     ? 'bg-orange-500 text-white shadow-md'
                     : 'text-slate-400 hover:text-white'
@@ -229,7 +298,7 @@ export default function VoicePlaygroundPage() {
               </button>
               <button
                 onClick={() => setPersona('ze')}
-                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
                   persona === 'ze'
                     ? 'bg-amber-500 text-slate-950 shadow-md'
                     : 'text-slate-400 hover:text-white'
