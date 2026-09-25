@@ -112,61 +112,69 @@ export function CartProvider({ children }: { children: ReactNode }) {
   };
 
   const removeFromCart = async (productId: string) => {
-    if (!isAuthenticated) {
-      console.log('❌ Usuário não autenticado para remover item');
-      return;
-    }
+    // 1. Atualização otimista imediata na interface
+    setItems((prevItems) => {
+      const next = prevItems.filter((i) => i.product.id !== productId);
+      const newTotal = next.reduce((acc, i) => acc + Number(i.product.price) * i.quantity, 0);
+      const newTotalItems = next.reduce((acc, i) => acc + i.quantity, 0);
+      setTotal(newTotal);
+      setTotalItems(newTotalItems);
+      return next;
+    });
 
-    console.log('🗑️ Iniciando remoção do item:', productId);
+    if (!isAuthenticated) return;
 
     try {
-      setLoading(true);
-      console.log('📡 Chamando API para remover item...');
       await cartApi.removeFromCart(productId);
-      console.log('✅ Item removido da API, atualizando carrinho...');
-      await refreshCart();
-      console.log('✅ Carrinho atualizado com sucesso');
     } catch (error) {
-      console.error('❌ Erro ao remover do carrinho:', error);
-      throw error;
-    } finally {
-      setLoading(false);
+      console.error('❌ Erro ao remover do carrinho no servidor:', error);
+      // Re-sincronizar em caso de erro
+      await refreshCart();
     }
   };
 
   const updateQuantity = async (productId: string, quantity: number) => {
+    if (quantity <= 0) {
+      await removeFromCart(productId);
+      return;
+    }
+
+    // 1. Atualização otimista instantânea (0ms de atraso na tela e no total)
+    setItems((prevItems) => {
+      const next = prevItems.map((item) =>
+        item.product.id === productId ? { ...item, quantity } : item
+      );
+      const newTotal = next.reduce((acc, i) => acc + Number(i.product.price) * i.quantity, 0);
+      const newTotalItems = next.reduce((acc, i) => acc + i.quantity, 0);
+      setTotal(newTotal);
+      setTotalItems(newTotalItems);
+      return next;
+    });
+
     if (!isAuthenticated) return;
 
+    // 2. Sincronização em background com a API
     try {
-      setLoading(true);
-      if (quantity <= 0) {
-        await removeFromCart(productId);
-      } else {
-        await cartApi.updateCartItem(productId, quantity);
-        await refreshCart();
-      }
+      await cartApi.updateCartItem(productId, quantity);
     } catch (error) {
-      console.error('Erro ao atualizar quantidade:', error);
-      throw error;
-    } finally {
-      setLoading(false);
+      console.error('Erro ao atualizar quantidade no servidor:', error);
+      // Se a API falhar, resincronizar
+      await refreshCart();
     }
   };
 
   const clearCart = async () => {
+    setItems([]);
+    setTotal(0);
+    setTotalItems(0);
+
     if (!isAuthenticated) return;
 
     try {
-      setLoading(true);
       await cartApi.clearCart();
-      setItems([]);
-      setTotal(0);
-      setTotalItems(0);
     } catch (error) {
-      console.error('Erro ao limpar carrinho:', error);
-      throw error;
-    } finally {
-      setLoading(false);
+      console.error('Erro ao limpar carrinho no servidor:', error);
+      await refreshCart();
     }
   };
 

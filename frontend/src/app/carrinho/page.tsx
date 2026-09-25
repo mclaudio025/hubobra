@@ -85,14 +85,20 @@ export default function CarrinhoPage() {
     setCepInput(formatted);
     if (clean.length === 8) {
       setTimeout(() => {
-        const rates = calculateShippingRates({ cep: clean, state: 'CE', subtotal: total });
+        const rates = calculateShippingRates({
+          cep: clean,
+          state: 'CE',
+          subtotal: items.reduce((acc, i) => acc + Number(i.product.price) * i.quantity, 0)
+        });
         setShippingResult(rates);
       }, 100);
     }
   };
 
+  const subtotal = items.reduce((acc, item) => acc + Number(item.product.price) * item.quantity, 0);
+  const totalItemCount = items.reduce((acc, item) => acc + item.quantity, 0);
   const shippingCost = shippingResult ? shippingResult.fee : 0;
-  const finalTotal = total + shippingCost;
+  const finalTotal = subtotal + shippingCost;
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-16">
@@ -115,7 +121,7 @@ export default function CarrinhoPage() {
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-6 sm:py-8">
         {items.length === 0 ? (
           <div className="text-center py-20 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 max-w-2xl mx-auto p-8 shadow-sm">
             <div className="w-20 h-20 bg-orange-50 dark:bg-orange-950/40 text-orange-600 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -139,9 +145,9 @@ export default function CarrinhoPage() {
               {/* Cart Items */}
               <div className="lg:col-span-2 space-y-4">
                 <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200/80 dark:border-slate-800 overflow-hidden">
-                  <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                  <div className="p-4 sm:p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
                     <h2 className="text-base font-black text-slate-900 dark:text-white">
-                      Materiais Selecionados ({items.reduce((acc, i) => acc + i.quantity, 0)} itens)
+                      Materiais Selecionados ({totalItemCount} {totalItemCount === 1 ? 'item' : 'itens'})
                     </h2>
                     <button
                       onClick={clearCart}
@@ -153,10 +159,10 @@ export default function CarrinhoPage() {
 
                   <div className="divide-y divide-slate-100 dark:divide-slate-800">
                     {items.map((item) => (
-                      <div key={item.product.id} className="p-5 flex items-center justify-between gap-4">
-                        <div className="flex items-center gap-4 min-w-0">
+                      <div key={item.product.id} className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+                        <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
                           {/* Product Image */}
-                          <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-xl flex items-center justify-center shrink-0 overflow-hidden border border-slate-200/60 dark:border-slate-700">
+                          <div className="w-14 h-14 sm:w-16 sm:h-16 bg-slate-100 dark:bg-slate-800 rounded-xl flex items-center justify-center shrink-0 overflow-hidden border border-slate-200/60 dark:border-slate-700">
                             {item.product.images && item.product.images.length > 0 ? (
                               <img
                                 src={item.product.images[0].url}
@@ -169,7 +175,7 @@ export default function CarrinhoPage() {
                           </div>
 
                           {/* Product Info */}
-                          <div className="min-w-0">
+                          <div className="min-w-0 flex-1">
                             <h3 className="text-sm font-bold text-slate-900 dark:text-white truncate">
                               {item.product.name}
                             </h3>
@@ -180,37 +186,41 @@ export default function CarrinhoPage() {
                         </div>
 
                         {/* Quantity Controls & Total */}
-                        <div className="flex items-center gap-4 shrink-0">
-                          <div className="flex items-center border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden bg-slate-50 dark:bg-slate-800">
+                        <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-4 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100 dark:border-slate-800">
+                          <div className="flex items-center border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden bg-slate-50 dark:bg-slate-800 shadow-xs">
                             <button
+                              type="button"
                               onClick={() => handleQuantityChange(item.product.id, item.quantity - 1)}
-                              className="p-1.5 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition"
-                              aria-label="Diminuir"
+                              className="w-10 h-10 flex items-center justify-center text-slate-700 dark:text-slate-200 hover:bg-orange-500 hover:text-white active:bg-orange-600 active:scale-90 transition-all font-bold select-none cursor-pointer"
+                              aria-label="Diminuir quantidade"
                             >
-                              <Minus className="h-3.5 w-3.5" />
+                              <Minus className="h-4 w-4" />
                             </button>
-                            <span className="px-3 py-1 text-xs font-bold text-slate-900 dark:text-white">
+                            <span className="w-10 text-center text-sm font-black text-slate-900 dark:text-white select-none">
                               {item.quantity}
                             </span>
                             <button
+                              type="button"
                               onClick={() => handleQuantityChange(item.product.id, item.quantity + 1)}
-                              className="p-1.5 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition"
-                              aria-label="Aumentar"
+                              className="w-10 h-10 flex items-center justify-center text-slate-700 dark:text-slate-200 hover:bg-orange-500 hover:text-white active:bg-orange-600 active:scale-90 transition-all font-bold select-none cursor-pointer"
+                              aria-label="Aumentar quantidade"
                             >
-                              <Plus className="h-3.5 w-3.5" />
+                              <Plus className="h-4 w-4" />
                             </button>
                           </div>
 
-                          <div className="text-right min-w-[80px]">
-                            <p className="text-sm font-black text-slate-900 dark:text-white">
+                          <div className="text-right min-w-[85px] sm:min-w-[100px]">
+                            <p className="text-sm sm:text-base font-black text-slate-900 dark:text-white">
                               {formatCurrency(item.product.price * item.quantity)}
                             </p>
                           </div>
 
                           <button
+                            type="button"
                             onClick={() => removeFromCart(item.product.id)}
-                            className="text-slate-400 hover:text-red-500 p-1 transition"
-                            title="Remover"
+                            className="text-slate-400 hover:text-red-500 p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
+                            title="Remover produto"
+                            aria-label="Remover produto"
                           >
                             <Trash2 className="h-4 w-4" />
                           </button>
@@ -277,7 +287,7 @@ export default function CarrinhoPage() {
                   <div className="space-y-2 text-xs border-b border-slate-100 dark:border-slate-800 pb-4">
                     <div className="flex justify-between text-slate-600 dark:text-slate-400">
                       <span>Subtotal</span>
-                      <span className="font-bold text-slate-900 dark:text-white">{formatCurrency(total)}</span>
+                      <span className="font-bold text-slate-900 dark:text-white">{formatCurrency(subtotal)}</span>
                     </div>
 
                     <div className="flex justify-between items-center text-slate-600 dark:text-slate-400">
