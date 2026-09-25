@@ -2,6 +2,42 @@ import { NextRequest, NextResponse } from 'next/server';
 
 const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY || 'sk_67f8bd0467303175138623ceb61f5480d5807e1cf5eef5e4';
 
+/**
+ * Normalizador Fonético para Síntese de Voz (TTS)
+ * Garante pronúncia 100% natural de marcas, unidades de medida e valores monetários.
+ */
+export function normalizeTextForTTS(text: string): string {
+  if (!text) return '';
+  
+  return text
+    // 1. Pronúncia perfeita da Marca HubObra
+    .replace(/HubObra/gi, 'Rôbi Obra')
+    .replace(/Hub\s*Obra/gi, 'Rôbi Obra')
+    .replace(/Hub\s*Construções/gi, 'Rôbi Construções')
+    .replace(/Hub\s*Construcoes/gi, 'Rôbi Construções')
+    
+    // 2. Termos tecnológicos e pagamentos
+    .replace(/\bPIX\b/g, 'Pícs')
+    .replace(/\bPix\b/g, 'Pícs')
+    .replace(/\bWhatsApp\b/gi, 'Uatizap')
+    .replace(/\bWhats\b/gi, 'Uats')
+    
+    // 3. Unidades de Medida da Construção Civil
+    .replace(/(\d+)\s*m²\b/gi, '$1 metros quadrados')
+    .replace(/(\d+)\s*m³\b/gi, '$1 metros cúbicos')
+    .replace(/(\d+)\s*kg\b/gi, '$1 quilos')
+    .replace(/(\d+)\s*un\b/gi, '$1 unidades')
+    .replace(/(\d+)\s*cx\b/gi, '$1 caixas')
+    
+    // 4. Valores em Reais
+    .replace(/R\$\s*(\d+)[,\.](\d{2})/g, '$1 reais e $2 centavos')
+    .replace(/R\$\s*(\d+)/g, '$1 reais')
+    
+    // 5. Limpeza de emojis e markdown para áudio limpo
+    .replace(/[*_~`#]/g, '')
+    .replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '');
+}
+
 export async function POST(req: NextRequest) {
   try {
     const { text, persona } = await req.json();
@@ -10,12 +46,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Texto não fornecido' }, { status: 400 });
     }
 
+    // Aplica a normalização fonética antes de enviar para o ElevenLabs
+    const phoneticText = normalizeTextForTTS(text);
+
     // Voice IDs do ElevenLabs
-    // Sarah/Bella para Lia (Feminino acolhedor comercial)
-    // Adam/Roger para Zé da Obra (Masculino técnico confiante)
     const voiceId = persona === 'ze' 
-      ? 'pNInz6obpgDQGcFmaJgB' // Adam
-      : 'EXAVITQu4vr4xnSDxMaL'; // Sarah / Bella
+      ? 'pNInz6obpgDQGcFmaJgB' // Adam (Voz do Zé da Obra)
+      : 'EXAVITQu4vr4xnSDxMaL'; // Sarah/Bella (Voz da Lia)
 
     const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
       method: 'POST',
@@ -25,7 +62,7 @@ export async function POST(req: NextRequest) {
         'Accept': 'audio/mpeg'
       },
       body: JSON.stringify({
-        text,
+        text: phoneticText,
         model_id: 'eleven_multilingual_v2',
         voice_settings: {
           stability: persona === 'ze' ? 0.55 : 0.45,
