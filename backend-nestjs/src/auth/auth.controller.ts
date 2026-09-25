@@ -42,6 +42,28 @@ export class AuthController {
     return this.authService.register(registerDto);
   }
 
+  @Post("forgot-password")
+  @ApiOperation({ summary: "Solicitar recuperação de senha" })
+  @ApiResponse({ status: 200, description: "Código de recuperação gerado" })
+  async forgotPassword(@Body("email") email: string) {
+    return this.authService.forgotPassword(email);
+  }
+
+  @Post("reset-password")
+  @ApiOperation({ summary: "Redefinir senha do usuário" })
+  @ApiResponse({ status: 200, description: "Senha redefinida com sucesso" })
+  async resetPassword(
+    @Body()
+    resetDto: {
+      email: string;
+      code?: string;
+      token?: string;
+      newPassword: string;
+    },
+  ) {
+    return this.authService.resetPassword(resetDto);
+  }
+
   @Get("profile")
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()

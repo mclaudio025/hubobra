@@ -125,4 +125,63 @@ export class AuthService {
       throw new UnauthorizedException("Token inválido");
     }
   }
+
+  async forgotPassword(email: string) {
+    const user = await this.usersService.findByEmail(email);
+    if (!user) {
+      return {
+        success: true,
+        message: "Se o e-mail estiver cadastrado, o link e instruções foram enviados.",
+      };
+    }
+
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const token = this.jwtService.sign(
+      { sub: user.id, email: user.email, code, purpose: "password-reset" },
+      { expiresIn: "30m" },
+    );
+
+    return {
+      success: true,
+      message: "Código de recuperação gerado com sucesso.",
+      token,
+      code,
+    };
+  }
+
+  async resetPassword(data: {
+    email: string;
+    code?: string;
+    token?: string;
+    newPassword: string;
+  }) {
+    const user = await this.usersService.findByEmail(data.email);
+    if (!user) {
+      throw new UnauthorizedException("Usuário não encontrado");
+    }
+
+    if (data.token) {
+      try {
+        const decoded = this.jwtService.verify(data.token);
+        if (
+          decoded.email !== user.email ||
+          decoded.purpose !== "password-reset"
+        ) {
+          throw new UnauthorizedException("Código ou token inválido");
+        }
+      } catch (err) {
+        throw new UnauthorizedException(
+          "Código de recuperação expirado ou inválido",
+        );
+      }
+    }
+
+    const hashedPassword = await bcrypt.hash(data.newPassword, 12);
+    await this.usersService.updatePassword(user.id, hashedPassword);
+
+    return {
+      success: true,
+      message: "Senha atualizada com sucesso! Você já pode entrar com sua nova senha.",
+    };
+  }
 }

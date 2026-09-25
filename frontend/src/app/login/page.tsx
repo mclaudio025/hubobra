@@ -16,7 +16,9 @@ import {
   Sparkles,
   ShieldCheck,
   HelpCircle,
-  X
+  X,
+  RefreshCw,
+  ArrowRight
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../components/ui/Toaster';
@@ -27,9 +29,17 @@ function LoginFormContent() {
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  
+  // Estados do Modal de Recuperação e Redefinição
   const [showForgotModal, setShowForgotModal] = useState(false);
+  const [forgotStep, setForgotStep] = useState<'request' | 'reset'>('request');
   const [forgotEmail, setForgotEmail] = useState('');
-  const [forgotSent, setForgotSent] = useState(false);
+  const [resetCode, setResetCode] = useState('');
+  const [resetToken, setResetToken] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmNewPassword, setShowConfirmNewPassword] = useState(false);
   const [forgotLoading, setForgotLoading] = useState(false);
 
   const [formData, setFormData] = useState({
@@ -124,26 +134,115 @@ function LoginFormContent() {
     });
   };
 
-  const handleForgotPasswordSubmit = async (e: React.FormEvent) => {
+  // Solicitar código de recuperação
+  const handleForgotPasswordRequest = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!forgotEmail) return;
 
     setForgotLoading(true);
-    // Simula envio e prepara link de suporte rápido
-    setTimeout(() => {
-      setForgotLoading(false);
-      setForgotSent(true);
+    try {
+      const res = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: forgotEmail }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Erro ao processar solicitação');
+
+      if (data.token) {
+        setResetToken(data.token);
+      }
+      if (data.code) {
+        setResetCode(data.code);
+      }
+
+      setForgotStep('reset');
       addToast({
         type: 'success',
-        title: 'Instruções enviadas!',
-        message: `Se o e-mail ${forgotEmail} estiver cadastrado, você receberá o link de redefinição.`,
+        title: 'Código gerado!',
+        message: 'Informe a nova senha abaixo para redefinir o acesso à sua conta.',
       });
-    }, 800);
+    } catch (err: any) {
+      // Em caso de falha de conexão com backend direto, permite redefinição guiada
+      setForgotStep('reset');
+      addToast({
+        type: 'info',
+        title: 'Redefinição assistida',
+        message: 'Digite sua nova senha abaixo para prosseguir.',
+      });
+    } finally {
+      setForgotLoading(false);
+    }
+  };
+
+  // Salvar nova senha
+  const handleResetPasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newPassword || newPassword.length < 6) {
+      addToast({
+        type: 'error',
+        title: 'Senha muito curta',
+        message: 'A nova senha deve ter no mínimo 6 caracteres.',
+      });
+      return;
+    }
+
+    if (newPassword !== confirmNewPassword) {
+      addToast({
+        type: 'error',
+        title: 'Senhas divergentes',
+        message: 'A confirmação não confere com a nova senha digitada.',
+      });
+      return;
+    }
+
+    setForgotLoading(true);
+    try {
+      const res = await fetch('/api/auth/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: forgotEmail,
+          code: resetCode,
+          token: resetToken,
+          newPassword,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Erro ao redefinir senha');
+
+      addToast({
+        type: 'success',
+        title: 'Senha redefinida!',
+        message: 'Sua senha foi alterada com sucesso. Faça login com a nova senha.',
+      });
+
+      // Preenche o formulário com o email e a nova senha
+      setFormData(prev => ({
+        ...prev,
+        email: forgotEmail,
+        password: newPassword,
+      }));
+      setShowForgotModal(false);
+      setForgotStep('request');
+      setNewPassword('');
+      setConfirmNewPassword('');
+    } catch (err: any) {
+      addToast({
+        type: 'error',
+        title: 'Erro na redefinição',
+        message: err.message || 'Não foi possível redefinir. Tente pelo WhatsApp oficial.',
+      });
+    } finally {
+      setForgotLoading(false);
+    }
   };
 
   const getWhatsAppRecoveryUrl = () => {
     const emailToUse = forgotEmail || formData.email || '';
-    const message = `Olá equipe da ${STORE_CONFIG.name}! 👋\nPreciso de suporte para redefinir/recuperar a senha da minha conta.\n\n📧 *Email cadastrado:* ${emailToUse || '(informar email)'}`;
+    const message = `Olá equipe da ${STORE_CONFIG.name}! 👋\nPreciso de suporte para redefinir a senha da minha conta.\n\n📧 *Email:* ${emailToUse || '(informar email)'}`;
     return getWhatsAppLink(message);
   };
 
@@ -247,7 +346,7 @@ function LoginFormContent() {
                     type="button"
                     onClick={() => {
                       setForgotEmail(formData.email);
-                      setForgotSent(false);
+                      setForgotStep('request');
                       setShowForgotModal(true);
                     }}
                     className="text-xs font-semibold text-orange-600 hover:text-orange-700 hover:underline transition-colors"
@@ -383,12 +482,15 @@ function LoginFormContent() {
         </div>
       </div>
 
-      {/* Modal de Recuperação de Senha */}
+      {/* Modal de Recuperação e Redefinição de Senha */}
       {showForgotModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 relative">
             <button
-              onClick={() => setShowForgotModal(false)}
+              onClick={() => {
+                setShowForgotModal(false);
+                setForgotStep('request');
+              }}
               className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors"
             >
               <X className="w-5 h-5" />
@@ -399,44 +501,17 @@ function LoginFormContent() {
             </div>
 
             <h3 className="text-xl font-bold text-slate-900 mb-1">
-              Recuperar sua senha
+              {forgotStep === 'request' ? 'Recuperar sua senha' : 'Criar nova senha'}
             </h3>
             <p className="text-xs text-slate-600 mb-5 leading-relaxed">
-              Informe o e-mail cadastrado na sua conta. Vamos enviar as instruções para você redefinir sua senha com segurança.
+              {forgotStep === 'request' 
+                ? 'Informe o e-mail cadastrado na sua conta para redefinir seu acesso com rapidez e segurança.'
+                : `Cadastre uma nova senha de acesso para a conta vinculada a ${forgotEmail}.`
+              }
             </p>
 
-            {forgotSent ? (
-              <div className="space-y-4">
-                <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 text-center">
-                  <CheckCircle className="w-8 h-8 text-emerald-600 mx-auto mb-2" />
-                  <p className="text-sm font-bold text-emerald-900">Instruções Enviadas!</p>
-                  <p className="text-xs text-emerald-700 mt-1">
-                    Verifique sua caixa de entrada e pasta de spam em <strong>{forgotEmail}</strong>.
-                  </p>
-                </div>
-
-                <div className="pt-2 flex flex-col gap-2">
-                  <a
-                    href={getWhatsAppRecoveryUrl()}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-colors shadow-sm"
-                  >
-                    <MessageCircle className="w-4 h-4" />
-                    Atendimento Rápido no WhatsApp
-                  </a>
-
-                  <button
-                    type="button"
-                    onClick={() => setShowForgotModal(false)}
-                    className="w-full py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-colors"
-                  >
-                    Fechar e voltar ao login
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <form onSubmit={handleForgotPasswordSubmit} className="space-y-4">
+            {forgotStep === 'request' ? (
+              <form onSubmit={handleForgotPasswordRequest} className="space-y-4">
                 <div>
                   <label htmlFor="forgotEmail" className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
                     E-mail da sua conta
@@ -457,16 +532,23 @@ function LoginFormContent() {
                   </div>
                 </div>
 
-                <div className="pt-2 space-y-2">
+                <div className="pt-2 space-y-2.5">
                   <button
                     type="submit"
                     disabled={forgotLoading || !forgotEmail}
                     className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-gradient-to-r from-orange-600 to-amber-500 hover:from-orange-700 hover:to-amber-600 text-white rounded-xl text-sm font-bold shadow-md shadow-orange-500/20 focus:outline-none disabled:opacity-50 transition-all"
                   >
-                    {forgotLoading ? <Loading size="sm" /> : 'Enviar link de recuperação'}
+                    {forgotLoading ? (
+                      <Loading size="sm" />
+                    ) : (
+                      <>
+                        <span>Avançar para Redefinição</span>
+                        <ArrowRight className="w-4 h-4" />
+                      </>
+                    )}
                   </button>
 
-                  <div className="relative flex py-2 items-center">
+                  <div className="relative flex py-1.5 items-center">
                     <div className="flex-grow border-t border-slate-200"></div>
                     <span className="flex-shrink mx-3 text-[11px] font-semibold text-slate-400 uppercase">ou suporte direto</span>
                     <div className="flex-grow border-t border-slate-200"></div>
@@ -476,11 +558,87 @@ function LoginFormContent() {
                     href={getWhatsAppRecoveryUrl()}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold transition-colors shadow-sm"
+                    className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-colors shadow-sm"
                   >
                     <MessageCircle className="w-4 h-4" />
-                    Recuperar via WhatsApp Oficial
+                    Falar com Suporte no WhatsApp
                   </a>
+                </div>
+              </form>
+            ) : (
+              <form onSubmit={handleResetPasswordSubmit} className="space-y-4">
+                {/* Nova Senha */}
+                <div>
+                  <label htmlFor="newPassword" className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                    Nova Senha
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                      <Lock className="h-4 w-4" />
+                    </div>
+                    <input
+                      id="newPassword"
+                      type={showNewPassword ? 'text' : 'password'}
+                      required
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      className="block w-full pl-10 pr-11 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl placeholder-slate-400 text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all font-medium"
+                      placeholder="Mínimo 6 caracteres"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowNewPassword(!showNewPassword)}
+                      className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-700"
+                    >
+                      {showNewPassword ? <EyeOff className="h-4 w-4 text-orange-600" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Confirmar Nova Senha */}
+                <div>
+                  <label htmlFor="confirmNewPassword" className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                    Confirmar Nova Senha
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                      <ShieldCheck className="h-4 w-4" />
+                    </div>
+                    <input
+                      id="confirmNewPassword"
+                      type={showConfirmNewPassword ? 'text' : 'password'}
+                      required
+                      value={confirmNewPassword}
+                      onChange={(e) => setConfirmNewPassword(e.target.value)}
+                      className="block w-full pl-10 pr-11 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl placeholder-slate-400 text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all font-medium"
+                      placeholder="Repita a nova senha"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmNewPassword(!showConfirmNewPassword)}
+                      className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-700"
+                    >
+                      {showConfirmNewPassword ? <EyeOff className="h-4 w-4 text-orange-600" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="pt-2 space-y-2">
+                  <button
+                    type="submit"
+                    disabled={forgotLoading || !newPassword}
+                    className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-gradient-to-r from-orange-600 to-amber-500 hover:from-orange-700 hover:to-amber-600 text-white rounded-xl text-sm font-bold shadow-md shadow-orange-500/20 focus:outline-none disabled:opacity-50 transition-all"
+                  >
+                    {forgotLoading ? <Loading size="sm" /> : 'Salvar Nova Senha'}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setForgotStep('request')}
+                    className="w-full py-2 text-xs font-semibold text-slate-500 hover:text-slate-700 transition-colors"
+                  >
+                    Voltar e alterar e-mail
+                  </button>
                 </div>
               </form>
             )}

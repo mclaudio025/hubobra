@@ -105,6 +105,18 @@ export class UsersService {
     });
   }
 
+  async updatePassword(id: string, passwordHash: string) {
+    return this.prisma.user.update({
+      where: { id },
+      data: { password: passwordHash },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+      },
+    });
+  }
+
   async remove(id: string) {
     const user = await this.findById(id);
 
