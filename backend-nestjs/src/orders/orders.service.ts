@@ -196,6 +196,7 @@ export class OrdersService {
               email: true,
             },
           },
+          shippingAddress: true,
           items: {
             include: {
               product: {
@@ -442,16 +443,44 @@ export class OrdersService {
     currentStatus: string,
     newStatus: OrderStatus,
   ) {
+    // Permite transições flexíveis na gestão do painel administrativo
     const validTransitions: Record<string, OrderStatus[]> = {
-      [OrderStatus.PENDING]: [OrderStatus.CONFIRMED, OrderStatus.CANCELLED],
-      [OrderStatus.CONFIRMED]: [OrderStatus.PROCESSING, OrderStatus.CANCELLED],
-      [OrderStatus.PROCESSING]: [OrderStatus.SHIPPED, OrderStatus.CANCELLED],
-      [OrderStatus.SHIPPED]: [OrderStatus.DELIVERED],
-      [OrderStatus.DELIVERED]: [],
-      [OrderStatus.CANCELLED]: [],
+      [OrderStatus.PENDING]: [
+        OrderStatus.CONFIRMED,
+        OrderStatus.PROCESSING,
+        OrderStatus.SHIPPED,
+        OrderStatus.DELIVERED,
+        OrderStatus.CANCELLED,
+      ],
+      [OrderStatus.CONFIRMED]: [
+        OrderStatus.PENDING,
+        OrderStatus.PROCESSING,
+        OrderStatus.SHIPPED,
+        OrderStatus.DELIVERED,
+        OrderStatus.CANCELLED,
+      ],
+      [OrderStatus.PROCESSING]: [
+        OrderStatus.CONFIRMED,
+        OrderStatus.SHIPPED,
+        OrderStatus.DELIVERED,
+        OrderStatus.CANCELLED,
+      ],
+      [OrderStatus.SHIPPED]: [
+        OrderStatus.PROCESSING,
+        OrderStatus.DELIVERED,
+        OrderStatus.CANCELLED,
+      ],
+      [OrderStatus.DELIVERED]: [
+        OrderStatus.SHIPPED,
+        OrderStatus.CANCELLED,
+      ],
+      [OrderStatus.CANCELLED]: [
+        OrderStatus.PENDING,
+        OrderStatus.CONFIRMED,
+      ],
     };
 
-    const allowedTransitions = validTransitions[currentStatus] || [];
+    const allowedTransitions = validTransitions[currentStatus] || Object.values(OrderStatus);
 
     if (!allowedTransitions.includes(newStatus)) {
       throw new BadRequestException(

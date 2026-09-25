@@ -2,6 +2,7 @@ import { Injectable, Logger } from "@nestjs/common";
 import { HttpService } from "@nestjs/axios";
 import { ConfigService } from "@nestjs/config";
 import { firstValueFrom } from "rxjs";
+import { PrismaService } from "../prisma/prisma.service";
 
 export interface WhatsAppAIMessage {
   phone: string;
@@ -20,6 +21,7 @@ export class WhatsAppAIService {
   constructor(
     private readonly httpService: HttpService,
     private readonly configService: ConfigService,
+    private readonly prisma: PrismaService,
   ) {
     this.iaServiceUrl = this.configService.get(
       "IA_SERVICE_URL",
@@ -72,18 +74,18 @@ export class WhatsAppAIService {
         response.data.message ||
         "Desculpe, não consegui processar sua mensagem.";
 
-      // Atualizar histórico da conversa
-      this.updateConversationHistory(data.sessionId, data.message, aiResponse);
+        // Atualizar histórico da conversa
+        this.updateConversationHistory(data.sessionId, data.message, aiResponse);
 
-      // Formatar resposta para WhatsApp
-      return this.formatWhatsAppMessage(aiResponse);
-    } catch (error) {
-      this.logger.error("IA service error:", error.message);
+        // Formatar resposta para WhatsApp
+        return this.formatWhatsAppMessage(aiResponse);
+      } catch (error) {
+        this.logger.error("IA service error:", error.message);
 
-      // Fallback para resposta simulada
-      return this.getSimulatedResponse(data.message, data.userName);
+        // Fallback para resposta simulada com busca no banco
+        return await this.getSimulatedResponse(data.message, data.userName);
+      }
     }
-  }
 
   private isGreeting(message: string): boolean {
     const greetings = [
@@ -217,22 +219,132 @@ export class WhatsAppAIService {
     return "🤖 " + message;
   }
 
-  private getSimulatedResponse(message: string, userName: string): string {
+  private async getSimulatedResponse(
+    message: string,
+    userName: string,
+  ): Promise<string> {
     const lowerMessage = message.toLowerCase();
 
-    // 1. DÚVIDA DE USO / APLICAÇÃO TÉCNICA -> Chama o ZÉ DA OBRA 👷‍♂️
+    // 0. CONSULTA DE PEDIDOS / ENTREGA EM TEMPO REAL
     if (
-      lowerMessage.includes("como usa") ||
+      lowerMessage.includes("pedido") ||
+      lowerMessage.includes("como está") ||
+      lowerMessage.includes("como esta") ||
+      lowerMessage.includes("onde está") ||
+      lowerMessage.includes("onde esta") ||
+      lowerMessage.includes("rastreio") ||
+      lowerMessage.includes("comprovante") ||
+      lowerMessage.includes("saiu") ||
+      message.match(/(?:#|pedido\s*|n[ºo]\s*)?([0-9]{6,16})/i)
+    ) {
+      try {
+        const numberMatch = message.match(
+          /(?:#|pedido\s*|n[ºo]\s*|número\s*|numero\s*)?([0-9]{6,16})/i,
+        );
+        let order: any = null;
+
+        if (numberMatch && numberMatch[1]) {
+          const orderNum = numberMatch[1];
+          order = await this.prisma.order.findFirst({
+            where: {
+              OR: [
+                { orderNumber: orderNum },
+                { orderNumber: { contains: orderNum } },
+                { id: orderNum },
+              ],
+            },
+            include: {
+              items: { include: { product: true } },
+              shippingAddress: true,
+              payment: true,
+              user: true,
+            },
+          });
+        }
+
+        if (!order) {
+          order = await this.prisma.order.findFirst({
+            orderBy: { createdAt: "desc" },
+            include: {
+              items: { include: { product: true } },
+              shippingAddress: true,
+              payment: true,
+              user: true,
+            },
+          });
+        }
+
+        if (order) {
+          const statusLabels: Record<string, string> = {
+            PENDING: "⏳ Aguardando Pagamento PIX",
+            CONFIRMED: "✅ Confirmado / Em Separação",
+            PROCESSING: "📦 Em Separação no Depósito",
+            SHIPPED: "🚚 SAIU PARA ENTREGA! (Em rota até seu endereço)",
+            DELIVERED: "🎉 ENTREGUE com sucesso na sua obra!",
+            CANCELLED: "❌ Cancelado",
+          };
+
+          const statusText = statusLabels[order.status] || `📦 ${order.status}`;
+          const totalFormatted = Number(
+            order.totalAmount || order.total || 0,
+          ).toLocaleString("pt-BR", {
+            style: "currency",
+            currency: "BRL",
+          });
+          const dateFormatted = new Date(order.createdAt).toLocaleDateString(
+            "pt-BR",
+          );
+
+          const itemsSummary = (order.items || [])
+            .map(
+              (i: any) =>
+                `• *${i.quantity}x* ${i.product?.name || i.name || "Material"}`,
+            )
+            .join("\n");
+
+          const addressSummary = order.shippingAddress
+            ? `${order.shippingAddress.street || ""}, ${order.shippingAddress.number || "S/N"} - ${order.shippingAddress.neighborhood || ""}, ${order.shippingAddress.city || "Fortaleza"}/${order.shippingAddress.state || "CE"}`
+            : "Retirada na Loja";
+
+          let deliveryAdvice =
+            "Assim que o caminhão for carregado e sair para entrega, você receberá a notificação!";
+          if (order.status === "SHIPPED") {
+            deliveryAdvice =
+              "🚛 *O motorista já está em deslocamento com seus materiais para o seu endereço!*";
+          } else if (order.status === "DELIVERED") {
+            deliveryAdvice =
+              "✅ *Entrega finalizada com sucesso! Se precisar de mais materiais, conte conosco.*";
+          } else if (order.status === "PENDING") {
+            deliveryAdvice =
+              "💳 *Aguardando o pagamento do PIX para liberar a separação imediata dos produtos.*";
+          }
+
+          return (
+            `🙋‍♀️ *Lia da HubObra:*\n\n` +
+            `Localizei seu Pedido *#${order.orderNumber || order.id?.slice(0, 8)}*:\n\n` +
+            `• *Status:* ${statusText}\n` +
+            `• *Data:* ${dateFormatted}\n` +
+            `• *Total:* ${totalFormatted}\n` +
+            `• *Destino:* ${addressSummary}\n\n` +
+            `📋 *Itens do Pedido:*\n${itemsSummary || "• Materiais de Construção"}\n\n` +
+            `💡 ${deliveryAdvice}\n\n` +
+            `🔗 *Acompanhar Comprovante Oficial:*\n` +
+            `https://hubobra.com.br/pedidos/${order.id}/recibo`
+          );
+        }
+      } catch (err) {
+        this.logger.error("Erro ao buscar pedido para WhatsApp AI:", err);
+      }
+    }
+
+    // 1. DÚVIDA TÉCNICA / APLICAÇÃO (Zé da Obra assume)
+    if (
       lowerMessage.includes("como aplicar") ||
-      lowerMessage.includes("como passa") ||
-      lowerMessage.includes("quantas demao") ||
-      lowerMessage.includes("quantas demãos") ||
-      lowerMessage.includes("tempo de secagem") ||
-      lowerMessage.includes("duvida de uso") ||
-      lowerMessage.includes("dúvida de uso") ||
-      lowerMessage.includes("dica") ||
+      lowerMessage.includes("como usar") ||
+      lowerMessage.includes("passo a passo") ||
       lowerMessage.includes("como fazer") ||
-      lowerMessage.includes("modo de uso")
+      lowerMessage.includes("qual o traço") ||
+      lowerMessage.includes("como impermeabilizar")
     ) {
       if (
         lowerMessage.includes("impermeabiliz") ||

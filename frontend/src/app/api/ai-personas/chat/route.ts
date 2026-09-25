@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { fetchBackend } from '@/lib/backend-client';
 
 const BACKEND_URL = process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8081';
 const N8N_WEBHOOK_URL = process.env.N8N_LIA_WEBHOOK_URL || process.env.N8N_WEBHOOK_URL || '';

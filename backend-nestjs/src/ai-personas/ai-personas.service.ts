@@ -2,6 +2,7 @@ import { Injectable, Logger } from "@nestjs/common";
 import { HttpService } from "@nestjs/axios";
 import { ConfigService } from "@nestjs/config";
 import { ProductsService } from "../products/products.service";
+import { PrismaService } from "../prisma/prisma.service";
 
 export interface ConversationContext {
   sessionId: string;
@@ -38,6 +39,7 @@ export class AIPersonasService {
     private readonly httpService: HttpService,
     private readonly configService: ConfigService,
     private readonly productsService: ProductsService,
+    private readonly prisma: PrismaService,
   ) {}
 
   async processMessage(
@@ -176,6 +178,123 @@ export class AIPersonasService {
     }
   }
 
+  private async findOrderInfo(
+    message: string,
+    context: ConversationContext,
+  ): Promise<string | null> {
+    try {
+      const lowerMessage = message.toLowerCase();
+      const numberMatch = message.match(
+        /(?:#|pedido\s*|n[ºo]\s*|número\s*|numero\s*)?([0-9]{6,16})/i,
+      );
+      let order: any = null;
+
+      if (numberMatch && numberMatch[1]) {
+        const orderNum = numberMatch[1];
+        order = await this.prisma.order.findFirst({
+          where: {
+            OR: [
+              { orderNumber: orderNum },
+              { orderNumber: { contains: orderNum } },
+              { id: orderNum },
+            ],
+          },
+          include: {
+            items: { include: { product: true } },
+            shippingAddress: true,
+            payment: true,
+            user: true,
+          },
+        });
+      }
+
+      if (
+        !order &&
+        (lowerMessage.includes("meu pedido") ||
+          lowerMessage.includes("como está") ||
+          lowerMessage.includes("como esta") ||
+          lowerMessage.includes("onde está") ||
+          lowerMessage.includes("onde esta") ||
+          lowerMessage.includes("saiu pra entrega") ||
+          lowerMessage.includes("saiu para entrega") ||
+          lowerMessage.includes("status"))
+      ) {
+        order = await this.prisma.order.findFirst({
+          orderBy: { createdAt: "desc" },
+          include: {
+            items: { include: { product: true } },
+            shippingAddress: true,
+            payment: true,
+            user: true,
+          },
+        });
+      }
+
+      if (order) {
+        const statusLabels: Record<string, string> = {
+          PENDING: "⏳ Aguardando Confirmação do Pagamento",
+          CONFIRMED: "✅ Confirmado / Em Fila de Separação",
+          PROCESSING: "📦 Em Separação no Depósito",
+          SHIPPED: "🚚 SAIU PARA ENTREGA! (Em rota até seu endereço)",
+          DELIVERED: "🎉 ENTREGUE com sucesso no local da obra!",
+          CANCELLED: "❌ Cancelado",
+        };
+
+        const statusText = statusLabels[order.status] || `📦 ${order.status}`;
+        const totalFormatted = Number(
+          order.totalAmount || order.total || 0,
+        ).toLocaleString("pt-BR", {
+          style: "currency",
+          currency: "BRL",
+        });
+        const dateFormatted = new Date(order.createdAt).toLocaleDateString(
+          "pt-BR",
+        );
+
+        const itemsSummary = (order.items || [])
+          .map(
+            (i: any) =>
+              `• *${i.quantity}x* ${i.product?.name || i.name || "Material"}`,
+          )
+          .join("\n");
+
+        const addressSummary = order.shippingAddress
+          ? `${order.shippingAddress.street || ""}, ${order.shippingAddress.number || "S/N"} - ${order.shippingAddress.neighborhood || ""}, ${order.shippingAddress.city || "Fortaleza"}/${order.shippingAddress.state || "CE"}`
+          : "Retirada na Loja";
+
+        let deliveryAdvice =
+          "Assim que o caminhão for carregado e sair para entrega, você receberá a notificação!";
+        if (order.status === "SHIPPED") {
+          deliveryAdvice =
+            "🚛 *O motorista já está em deslocamento com seus materiais para o seu endereço!*";
+        } else if (order.status === "DELIVERED") {
+          deliveryAdvice =
+            "✅ *Entrega finalizada com sucesso! Se precisar de mais materiais, conte conosco.*";
+        } else if (order.status === "PENDING") {
+          deliveryAdvice =
+            "💳 *Aguardando o pagamento do PIX para liberar a separação imediata dos produtos.*";
+        }
+
+        return (
+          `📦 *Localizei seu Pedido #${order.orderNumber || order.id?.slice(0, 8)}:*\n\n` +
+          `• *Status:* ${statusText}\n` +
+          `• *Data:* ${dateFormatted}\n` +
+          `• *Total:* ${totalFormatted}\n` +
+          `• *Destino:* ${addressSummary}\n\n` +
+          `📋 *Itens do Pedido:*\n${itemsSummary || "• Materiais de Construção"}\n\n` +
+          `💡 ${deliveryAdvice}\n\n` +
+          `🔗 *Acompanhar Comprovante Oficial Online:*\n` +
+          `https://hubobra.com.br/pedidos/${order.id}/recibo`
+        );
+      }
+
+      return null;
+    } catch (err) {
+      this.logger.error("Erro ao buscar pedido para IA:", err);
+      return null;
+    }
+  }
+
   private async generatePersonaResponse(
     persona: "lia" | "ze",
     message: string,
@@ -213,13 +332,37 @@ export class AIPersonasService {
       };
     }
 
-    // Perguntas sobre pedidos e compras
-    if (lowerMessage.includes("pedido") || lowerMessage.includes("compra")) {
+    // 1. Consulta de Pedidos em Tempo Real (Lia busca no Banco de Dados)
+    if (
+      lowerMessage.includes("pedido") ||
+      lowerMessage.includes("compra") ||
+      lowerMessage.includes("rastreio") ||
+      lowerMessage.includes("comprovante") ||
+      lowerMessage.includes("como está") ||
+      lowerMessage.includes("como esta") ||
+      lowerMessage.includes("onde está") ||
+      lowerMessage.includes("onde esta") ||
+      lowerMessage.includes("saiu") ||
+      message.match(/(?:#|pedido\s*|n[ºo]\s*)?([0-9]{6,16})/i)
+    ) {
+      const orderDetails = await this.findOrderInfo(message, context);
+      if (orderDetails) {
+        return {
+          response: orderDetails,
+          persona: "lia",
+          suggestedActions: [
+            "Ver comprovante oficial",
+            "Fazer novo pedido",
+            "Falar com atendente",
+          ],
+        };
+      }
+
       return {
-        response: `📦 *Sobre seus pedidos na HubConstruções:*\n\n• Pagamento no PIX com confirmação imediata e desconto de 5% à vista.\n• Entregas expressas em 24h a 48h na sua obra!\n• Você pode acompanhar seu pedido direto pelo menu "Meus Pedidos" ou me informar o código aqui.\n\nPrecisa de ajuda para montar um novo pedido agora?`,
+        response: `📦 *Consulta de Pedidos HubObra:*\n\nPara eu localizar seu pedido com precisão, por favor me informe o *número do pedido* (ex: \`#2609250001\`) ou o seu *e-mail/telefone* cadastrado na compra! 😊\n\nVocê também pode acompanhar todos os seus pedidos direto na aba *Meus Pedidos* da loja.`,
         persona: "lia",
         suggestedActions: [
-          "Meus pedidos",
+          "Meus Pedidos",
           "Fazer novo pedido",
           "Calcular frete",
         ],
@@ -228,8 +371,17 @@ export class AIPersonasService {
 
     // Perguntas sobre entrega e frete
     if (lowerMessage.includes("entrega") || lowerMessage.includes("frete") || lowerMessage.includes("prazo")) {
+      const orderDetails = await this.findOrderInfo(message, context);
+      if (orderDetails) {
+        return {
+          response: orderDetails,
+          persona: "lia",
+          suggestedActions: ["Ver comprovante", "Novo pedido"],
+        };
+      }
+
       return {
-        response: `🚚 *Prazos e Condições de Entrega:*\n\n📍 *Região Metropolitana:* Entrega rápida em até 24h úteis direto no canteiro da obra.\n📍 *Interior:* 2 a 4 dias úteis.\n\n💥 *Frete Grátis* para compras acima de R$ 299,00!\n\nQual produto você gostaria de receber na sua obra?`,
+        response: `🚚 *Prazos e Condições de Entrega HubObra:*\n\n📍 *Região Metropolitana:* Entrega rápida em até 24h úteis direto no canteiro da obra.\n📍 *Interior:* 2 a 4 dias úteis.\n\n💥 *Frete Grátis* para compras acima de R$ 299,00!\n\nQual produto você gostaria de receber na sua obra?`,
         persona: "lia",
         suggestedActions: ["Ver produtos com frete grátis", "Calcular materiais", "Falar com especialista"],
       };
