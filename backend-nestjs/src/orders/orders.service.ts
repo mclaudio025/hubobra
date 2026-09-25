@@ -70,106 +70,101 @@ export class OrdersService {
     // Gerar número do pedido
     const orderNumber = await this.generateOrderNumber();
 
-    // Criar pedido em transação
+    // Criar pedido diretamente (compatível com Supabase PgBouncer / Pooler)
     try {
-      const order = await this.prisma.$transaction(async (prisma) => {
-        // Criar pedido
-        const newOrder = await prisma.order.create({
-          data: {
-            orderNumber,
-            userId,
-            subtotal,
-            shipping: Number(shipping) || 0,
-            tax: Number(tax) || 0,
-            total,
-            notes: notes ? String(notes).trim() : null,
-            status: OrderStatus.PENDING,
-            items: {
-              create: items.map((item) => ({
-                productId: item.productId,
-                quantity: Number(item.quantity) || 1,
-                price: Number(item.price) || 0,
-                total: (Number(item.price) || 0) * (Number(item.quantity) || 1),
-              })),
-            },
-            shippingAddress: {
-              create: {
-                street: shippingAddress?.street || "Retirada no CD",
-                number: shippingAddress?.number || "S/N",
-                complement: shippingAddress?.complement ? String(shippingAddress.complement).trim() : null,
-                district: shippingAddress?.district || "Centro",
-                city: shippingAddress?.city || "Fortaleza",
-                state: shippingAddress?.state || "CE",
-                zipCode: shippingAddress?.zipCode || "60000-000",
-                country: shippingAddress?.country || "Brasil",
-              },
-            },
-            payment: {
-              create: {
-                method: payment?.method || "CASH",
-                amount: Number(payment?.amount) || total,
-                status: PaymentStatus.PENDING,
-                transactionId: payment?.transactionId || null,
-              },
+      const newOrder = await this.prisma.order.create({
+        data: {
+          orderNumber,
+          userId,
+          subtotal,
+          shipping: Number(shipping) || 0,
+          tax: Number(tax) || 0,
+          total,
+          notes: notes ? String(notes).trim() : null,
+          status: OrderStatus.PENDING,
+          items: {
+            create: items.map((item) => ({
+              productId: item.productId,
+              quantity: Number(item.quantity) || 1,
+              price: Number(item.price) || 0,
+              total: (Number(item.price) || 0) * (Number(item.quantity) || 1),
+            })),
+          },
+          shippingAddress: {
+            create: {
+              street: shippingAddress?.street || "Retirada no CD",
+              number: shippingAddress?.number || "S/N",
+              complement: shippingAddress?.complement ? String(shippingAddress.complement).trim() : null,
+              district: shippingAddress?.district || "Centro",
+              city: shippingAddress?.city || "Fortaleza",
+              state: shippingAddress?.state || "CE",
+              zipCode: shippingAddress?.zipCode || "60000-000",
+              country: shippingAddress?.country || "Brasil",
             },
           },
-          include: {
-            items: {
-              include: {
-                product: {
-                  select: {
-                    id: true,
-                    name: true,
-                    sku: true,
-                    price: true,
-                  },
+          payment: {
+            create: {
+              method: payment?.method || "CASH",
+              amount: Number(payment?.amount) || total,
+              status: PaymentStatus.PENDING,
+              transactionId: payment?.transactionId || null,
+            },
+          },
+        },
+        include: {
+          items: {
+            include: {
+              product: {
+                select: {
+                  id: true,
+                  name: true,
+                  sku: true,
+                  price: true,
                 },
               },
             },
-            shippingAddress: true,
-            payment: true,
-            user: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
-              },
+          },
+          shippingAddress: true,
+          payment: true,
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
             },
           },
-        });
-
-        // Atualizar estoque dos produtos
-        for (const item of items) {
-          try {
-            await prisma.product.update({
-              where: { id: item.productId },
-              data: {
-                stock: {
-                  decrement: Number(item.quantity) || 1,
-                },
-              },
-            });
-          } catch (stockErr: any) {
-            console.warn(`[OrdersService] Não foi possível decrementar estoque do produto ${item.productId}:`, stockErr?.message);
-          }
-        }
-
-        // Limpar carrinho do usuário
-        try {
-          await prisma.cartItem.deleteMany({
-            where: {
-              userId,
-              productId: { in: productIds },
-            },
-          });
-        } catch (cartErr: any) {
-          console.warn("[OrdersService] Aviso ao limpar itens do carrinho:", cartErr?.message);
-        }
-
-        return newOrder;
+        },
       });
 
-      return order;
+      // Atualizar estoque dos produtos de forma não-bloqueante
+      for (const item of items) {
+        try {
+          await this.prisma.product.update({
+            where: { id: item.productId },
+            data: {
+              stock: {
+                decrement: Number(item.quantity) || 1,
+              },
+            },
+          });
+        } catch (stockErr: any) {
+          console.warn(`[OrdersService] Não foi possível decrementar estoque do produto ${item.productId}:`, stockErr?.message);
+        }
+      }
+
+      // Limpar carrinho do usuário
+      try {
+        await this.prisma.cartItem.deleteMany({
+          where: {
+            userId,
+            productId: { in: productIds },
+          },
+        });
+      } catch (cartErr: any) {
+        console.warn("[OrdersService] Aviso ao limpar itens do carrinho:", cartErr?.message);
+      }
+
+      return newOrder;
     } catch (dbErr: any) {
       console.error("[OrdersService.create] Erro ao registrar pedido no banco de dados:", dbErr);
       throw new BadRequestException(
