@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import puppeteer from 'puppeteer';
-import { renderToString } from 'react-dom/server';
-import React from 'react';
-import OrderReceipt from '../../../../../components/OrderReceipt';
+import { STORE_CONFIG } from '@/config/store.config';
+import { fetchBackend } from '@/lib/backend-client';
 
 export async function GET(
   request: NextRequest,
@@ -19,14 +17,11 @@ export async function GET(
     }
 
     // Buscar dados do pedido no backend
-    const orderResponse = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/orders/${orderId}`,
-      {
-        headers: {
-          'Authorization': request.headers.get('Authorization') || '',
-        },
-      }
-    );
+    const orderResponse = await fetchBackend(`/orders/${orderId}`, {
+      headers: {
+        'Authorization': request.headers.get('Authorization') || '',
+      },
+    });
 
     if (!orderResponse.ok) {
       return NextResponse.json(
@@ -36,6 +31,14 @@ export async function GET(
     }
 
     const order = await orderResponse.json();
+    const customerName = order.user?.name || order.customer?.name || order.shippingAddress?.recipientName || 'Cliente';
+    const customerEmail = order.user?.email || order.customer?.email || 'N/A';
+    const customerPhone = order.user?.phone || order.customer?.phone || order.shippingAddress?.phone || 'N/A';
+    const orderItems = order.items || [];
+    const total = Number(order.totalAmount || order.total || 0);
+    const subtotal = Number(order.subtotal || total);
+    const shipping = Number(order.shippingFee || order.shipping || 0);
+    const discount = Number(order.discount || 0);
 
     // Gerar HTML do recibo
     const receiptHTML = `
@@ -44,284 +47,276 @@ export async function GET(
       <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Recibo - Pedido #${order.orderNumber}</title>
-        <script src="https://cdn.tailwindcss.com"></script>
+        <title>Recibo Oficial - Pedido #${order.orderNumber || order.id?.slice(0, 8)}</title>
         <style>
-          @media print {
-            body { margin: 0; }
-            .no-print { display: none; }
+          * { box-sizing: border-box; margin: 0; padding: 0; }
+          body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            color: #1e293b;
+            background: #fff;
+            padding: 24px;
+            font-size: 13px;
+            line-height: 1.4;
           }
-          
-          .receipt-container {
-            max-width: 100%;
-            margin: 0;
-            padding: 15px;
-            font-family: 'Arial', sans-serif;
-            font-size: 12px;
-            line-height: 1.3;
-          }
-          
-          .company-header {
+          .header {
             border-bottom: 2px solid #ea580c;
-            padding-bottom: 12px;
-            margin-bottom: 15px;
+            padding-bottom: 16px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
           }
-          
-          .company-name {
-            font-size: 18px;
-            font-weight: bold;
-            color: #1f2937;
-            margin-bottom: 4px;
-          }
-          
-          .receipt-title {
+          .brand-name {
+            font-size: 24px;
+            font-weight: 800;
             color: #ea580c;
-            font-size: 18px;
-            font-weight: 600;
+            letter-spacing: -0.5px;
           }
-          
-          .info-section {
-            background-color: #f9fafb;
-            padding: 10px;
-            border-radius: 4px;
-            margin-bottom: 10px;
+          .brand-sub {
+            font-size: 11px;
+            color: #64748b;
+            margin-top: 2px;
           }
-          
-          .items-table {
+          .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 9999px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+          }
+          .badge-pending { background: #fef3c7; color: #b45309; }
+          .badge-confirmed { background: #dcfce7; color: #15803d; }
+          .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 20px;
+          }
+          .card {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 12px 16px;
+          }
+          .card-title {
+            font-size: 12px;
+            font-weight: 700;
+            color: #475569;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 4px;
+          }
+          table {
             width: 100%;
             border-collapse: collapse;
             margin-bottom: 20px;
           }
-          
-          .items-table th,
-          .items-table td {
-            border: 1px solid #d1d5db;
-            padding: 6px 8px;
-            text-align: left;
+          th {
+            background: #f1f5f9;
+            color: #475569;
+            font-weight: 700;
             font-size: 11px;
+            text-transform: uppercase;
+            padding: 8px 10px;
+            border-bottom: 2px solid #cbd5e1;
+            text-align: left;
           }
-          
-          .items-table th {
-            background-color: #f3f4f6;
-            font-weight: 600;
+          td {
+            padding: 8px 10px;
+            border-bottom: 1px solid #f1f5f9;
+            font-size: 12px;
           }
-          
-          .total-section {
-            background-color: #f9fafb;
-            padding: 10px;
-            border-radius: 4px;
-            text-align: right;
+          .text-right { text-align: right; }
+          .text-center { text-align: center; }
+          .totals-box {
+            margin-left: auto;
+            width: 280px;
+            background: #fff7ed;
+            border: 1px solid #fed7aa;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 24px;
           }
-          
-          .total-amount {
-            font-size: 18px;
-            font-weight: bold;
+          .total-line {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 6px;
+            font-size: 12px;
+            color: #64748b;
+          }
+          .grand-total {
+            display: flex;
+            justify-content: space-between;
+            padding-top: 8px;
+            border-top: 2px dashed #ea580c;
+            font-size: 16px;
+            font-weight: 800;
             color: #ea580c;
           }
-          
-          .status-badge {
-            display: inline-block;
-            padding: 4px 12px;
-            border-radius: 9999px;
-            font-size: 12px;
-            font-weight: 500;
+          .sign-boxes {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-top: 32px;
+            padding-top: 16px;
           }
-          
-          .status-pending { background-color: #fef3c7; color: #d97706; }
-          .status-confirmed { background-color: #dbeafe; color: #2563eb; }
-          .status-processing { background-color: #fed7aa; color: #ea580c; }
-          .status-shipped { background-color: #e9d5ff; color: #9333ea; }
-          .status-delivered { background-color: #dcfce7; color: #16a34a; }
-          .status-cancelled { background-color: #fee2e2; color: #dc2626; }
+          .sign-line {
+            border-top: 1px solid #94a3b8;
+            padding-top: 6px;
+            text-align: center;
+            font-size: 11px;
+            color: #64748b;
+          }
+          .footer {
+            border-top: 1px solid #e2e8f0;
+            padding-top: 12px;
+            margin-top: 24px;
+            text-align: center;
+            font-size: 10px;
+            color: #94a3b8;
+          }
         </style>
       </head>
       <body>
-        <div class="receipt-container">
-          <!-- Header da Empresa -->
-          <div class="company-header">
-            <div style="display: flex; justify-content: space-between; align-items: start;">
-              <div>
-                <div class="company-name">Zé da Obra - Materiais de Construção</div>
-                <p style="color: #6b7280; font-size: 12px; margin: 2px 0;">
-                  Av. Bezerra de Menezes, 1000 - São Gerardo, Fortaleza - CE, 60325-000
-                </p>
-                <p style="color: #6b7280; font-size: 12px; margin: 2px 0;">
-                  📞 (85) 3456-7890 | ✉️ contato@zedaobra.com.br
-                </p>
-                <p style="color: #9ca3af; font-size: 10px; margin: 2px 0;">
-                  CNPJ: 12.345.678/0001-90
-                </p>
-              </div>
-              <div style="text-align: right;">
-                <div class="receipt-title">🧾 RECIBO</div>
-                <p style="font-size: 14px; color: #6b7280; margin: 4px 0;">
-                  Pedido #${order.orderNumber}
-                </p>
-                <p style="font-size: 12px; color: #9ca3af;">
-                  ${new Date(order.createdAt).toLocaleDateString('pt-BR', {
-                    day: '2-digit',
-                    month: '2-digit',
-                    year: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                  })}
-                </p>
-              </div>
+        <div class="header">
+          <div>
+            <div class="brand-name">${STORE_CONFIG.name}</div>
+            <div class="brand-sub">${STORE_CONFIG.tagline}</div>
+            <div style="font-size: 11px; color: #64748b; margin-top: 4px;">
+              CNPJ: ${STORE_CONFIG.cnpj} &bull; ${STORE_CONFIG.contact.address}
+            </div>
+            <div style="font-size: 11px; color: #64748b;">
+              WhatsApp: ${STORE_CONFIG.contact.whatsappFormatted} &bull; ${STORE_CONFIG.domain}
             </div>
           </div>
-
-          <!-- Informações do Cliente e Status -->
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
-            <div class="info-section">
-              <h3 style="font-weight: 600; margin-bottom: 12px; color: #1f2937;">
-                📦 Dados do Cliente
-              </h3>
-              <p style="margin: 4px 0; font-size: 14px;"><strong>Nome:</strong> ${order.customer.name}</p>
-              <p style="margin: 4px 0; font-size: 14px;"><strong>Email:</strong> ${order.customer.email}</p>
-              ${order.customer.phone ? `<p style="margin: 4px 0; font-size: 14px;"><strong>Telefone:</strong> ${order.customer.phone}</p>` : ''}
+          <div style="text-align: right;">
+            <div style="font-size: 16px; font-weight: 800; color: #1e293b;">
+              PEDIDO #${order.orderNumber || order.id?.slice(0, 8)}
             </div>
-            
-            <div class="info-section">
-              <h3 style="font-weight: 600; margin-bottom: 12px; color: #1f2937;">
-                📅 Status do Pedido
-              </h3>
-              <p style="margin: 4px 0; font-size: 14px;">
-                <strong>Status:</strong> 
-                <span class="status-badge status-${order.status.toLowerCase()}">
-                  ${getStatusLabel(order.status)}
-                </span>
-              </p>
-              <p style="margin: 4px 0; font-size: 14px;"><strong>Pagamento:</strong> ${getPaymentMethodLabel(order.paymentMethod)}</p>
-              <p style="margin: 4px 0; font-size: 14px;"><strong>Entrega:</strong> ${order.deliveryMethod === 'DELIVERY' ? 'Entrega em Casa' : 'Retirar na Loja'}</p>
+            <div style="font-size: 11px; color: #64748b; margin: 4px 0;">
+              Data: ${new Date(order.createdAt).toLocaleString('pt-BR')}
             </div>
+            <span class="badge ${order.status === 'CONFIRMED' || order.status === 'DELIVERED' ? 'badge-confirmed' : 'badge-pending'}">
+              ${getStatusLabel(order.status)}
+            </span>
           </div>
+        </div>
 
-          <!-- Endereço de Entrega -->
-          ${order.deliveryMethod === 'DELIVERY' && order.deliveryAddress ? `
-            <div style="background-color: #eff6ff; padding: 16px; border-radius: 8px; margin-bottom: 20px;">
-              <h3 style="font-weight: 600; margin-bottom: 12px; color: #1f2937;">
-                📍 Endereço de Entrega
-              </h3>
-              <p style="font-size: 14px; color: #374151; margin: 2px 0;">
-                ${order.deliveryAddress.street}, ${order.deliveryAddress.number}
-                ${order.deliveryAddress.complement ? ` - ${order.deliveryAddress.complement}` : ''}
-              </p>
-              <p style="font-size: 14px; color: #374151; margin: 2px 0;">
-                ${order.deliveryAddress.district} - ${order.deliveryAddress.city}/${order.deliveryAddress.state}
-              </p>
-              <p style="font-size: 14px; color: #374151; margin: 2px 0;">
-                CEP: ${order.deliveryAddress.zipCode}
-              </p>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-title">Dados do Cliente</div>
+            <p><strong>Nome:</strong> ${customerName}</p>
+            <p><strong>Email:</strong> ${customerEmail}</p>
+            <p><strong>Telefone:</strong> ${customerPhone}</p>
+          </div>
+          <div class="card">
+            <div class="card-title">Entrega & Pagamento</div>
+            <p><strong>Forma de Pagamento:</strong> ${getPaymentMethodLabel(order.payment?.paymentMethod || order.paymentMethod)}</p>
+            <p><strong>Endereço:</strong> ${order.shippingAddress ? `${order.shippingAddress.street}, ${order.shippingAddress.number || 'S/N'} - ${order.shippingAddress.neighborhood || ''}, ${order.shippingAddress.city}/${order.shippingAddress.state}` : 'Retirada na Loja'}</p>
+          </div>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 40px;" class="text-center">#</th>
+              <th>Material / Descrição</th>
+              <th class="text-center" style="width: 70px;">Qtd</th>
+              <th class="text-right" style="width: 90px;">Unitário</th>
+              <th class="text-right" style="width: 100px;">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${orderItems.map((item: any, idx: number) => `
+              <tr>
+                <td class="text-center" style="color: #94a3b8;">${idx + 1}</td>
+                <td>
+                  <div style="font-weight: 600;">${item.product?.name || item.name || 'Produto'}</div>
+                  ${item.product?.sku ? `<div style="font-size: 10px; color: #94a3b8;">SKU: ${item.product.sku}</div>` : ''}
+                </td>
+                <td class="text-center font-bold">${item.quantity}</td>
+                <td class="text-right">${formatCurrency(Number(item.price || item.unitPrice || 0))}</td>
+                <td class="text-right font-bold">${formatCurrency(Number(item.totalPrice || item.price * item.quantity || 0))}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+
+        <div class="totals-box">
+          <div class="total-line">
+            <span>Subtotal:</span>
+            <span>${formatCurrency(subtotal)}</span>
+          </div>
+          ${shipping > 0 ? `
+            <div class="total-line">
+              <span>Frete:</span>
+              <span>${formatCurrency(shipping)}</span>
             </div>
           ` : ''}
-
-          <!-- Itens do Pedido -->
-          <div style="margin-bottom: 20px;">
-            <h3 style="font-weight: 600; margin-bottom: 16px; color: #1f2937;">
-              📦 Itens do Pedido
-            </h3>
-            <table class="items-table">
-              <thead>
-                <tr>
-                  <th>Produto</th>
-                  <th style="text-align: center;">Qtd</th>
-                  <th style="text-align: right;">Valor Unit.</th>
-                  <th style="text-align: right;">Total</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${order.items.map((item: any) => `
-                  <tr>
-                    <td>${item.name}</td>
-                    <td style="text-align: center;">${item.quantity}</td>
-                    <td style="text-align: right;">${formatCurrency(item.price)}</td>
-                    <td style="text-align: right; font-weight: 500;">${formatCurrency(item.total)}</td>
-                  </tr>
-                `).join('')}
-              </tbody>
-            </table>
-          </div>
-
-          <!-- Totais -->
-          <div class="total-section">
-            <div style="width: 250px; margin-left: auto;">
-              <div style="display: flex; justify-content: space-between; margin: 8px 0; font-size: 14px;">
-                <span>Subtotal:</span>
-                <span>${formatCurrency(order.subtotal)}</span>
-              </div>
-              ${order.shipping > 0 ? `
-                <div style="display: flex; justify-content: space-between; margin: 8px 0; font-size: 14px;">
-                  <span>Frete:</span>
-                  <span>${formatCurrency(order.shipping)}</span>
-                </div>
-              ` : ''}
-              <div style="display: flex; justify-content: space-between; margin: 8px 0; padding-top: 8px; border-top: 1px solid #d1d5db;">
-                <span style="font-size: 18px; font-weight: bold;">Total:</span>
-                <span class="total-amount">${formatCurrency(order.total)}</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Observações -->
-          ${order.notes ? `
-            <div style="background-color: #fefce8; padding: 16px; border-radius: 8px; margin-bottom: 20px;">
-              <h3 style="font-weight: 600; margin-bottom: 8px; color: #1f2937;">Observações:</h3>
-              <p style="font-size: 14px; color: #374151;">${order.notes}</p>
+          ${discount > 0 ? `
+            <div class="total-line" style="color: #16a34a;">
+              <span>Desconto:</span>
+              <span>-${formatCurrency(discount)}</span>
             </div>
           ` : ''}
-
-          <!-- Footer -->
-          <div style="border-top: 1px solid #d1d5db; padding-top: 16px; text-align: center; font-size: 12px; color: #9ca3af;">
-            <p>Este é um recibo eletrônico gerado automaticamente.</p>
-            <p style="margin-top: 4px;">
-              Para dúvidas, entre em contato: (85) 3000-0000 | contato@materiaisceara.com.br
-            </p>
-            <p style="margin-top: 4px;">www.materiaisceara.com.br</p>
-            <p style="margin-top: 8px; color: #d1d5db;">
-              Recibo gerado em ${new Date().toLocaleDateString('pt-BR', {
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-              })}
-            </p>
+          <div class="grand-total">
+            <span>TOTAL GERAL:</span>
+            <span>${formatCurrency(total)}</span>
           </div>
+        </div>
+
+        <div class="sign-boxes">
+          <div class="sign-line">
+            Assinatura do Responsável pela Separação (${STORE_CONFIG.name})
+          </div>
+          <div class="sign-line">
+            Assinatura do Recebedor / Cliente
+          </div>
+        </div>
+
+        <div class="footer">
+          Documento gerado eletronicamente por ${STORE_CONFIG.name} (${STORE_CONFIG.domain}) em ${new Date().toLocaleString('pt-BR')}.
         </div>
       </body>
       </html>
     `;
 
-    // Gerar PDF com Puppeteer
-    const browser = await puppeteer.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
-    });
+    // Retornar HTML para impressão / visualização direta se preferir ou PDF se puppeteer estiver disponível
+    try {
+      const puppeteer = await import('puppeteer');
+      const browser = await puppeteer.default.launch({
+        headless: true,
+        args: ['--no-sandbox', '--disable-setuid-sandbox']
+      });
 
-    const page = await browser.newPage();
-    await page.setContent(receiptHTML, { waitUntil: 'networkidle0' });
+      const page = await browser.newPage();
+      await page.setContent(receiptHTML, { waitUntil: 'networkidle0' });
 
-    const pdf = await page.pdf({
-      format: 'A4',
-      printBackground: true,
-      margin: {
-        top: '15px',
-        right: '15px',
-        bottom: '15px',
-        left: '15px'
-      },
-      scale: 0.8
-    });
+      const pdf = await page.pdf({
+        format: 'A4',
+        printBackground: true,
+        margin: { top: '15px', right: '15px', bottom: '15px', left: '15px' },
+        scale: 0.85
+      });
 
-    await browser.close();
+      await browser.close();
 
-    // Retornar PDF
-    return new NextResponse(pdf, {
-      headers: {
-        'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="recibo-pedido-${order.orderNumber}.pdf"`
-      }
-    });
+      return new NextResponse(pdf as any, {
+        headers: {
+          'Content-Type': 'application/pdf',
+          'Content-Disposition': `attachment; filename="recibo-pedido-${order.orderNumber || order.id}.pdf"`
+        }
+      });
+    } catch (pdfErr) {
+      // Fallback para HTML imprimível se puppeteer nativo não estiver rodando no contêiner
+      return new NextResponse(receiptHTML, {
+        headers: {
+          'Content-Type': 'text/html; charset=utf-8',
+        }
+      });
+    }
 
   } catch (error) {
     console.error('Erro ao gerar PDF:', error);
@@ -340,26 +335,26 @@ function formatCurrency(value: number) {
   }).format(value);
 }
 
-function getPaymentMethodLabel(method: string) {
-  const methods = {
+function getPaymentMethodLabel(method?: string) {
+  const methods: Record<string, string> = {
     'PIX': 'PIX',
-    'STORE_PICKUP': 'Pagar na Entrega',
-    'PAYMENT_LINK': 'Pagar na Entrega',
-    'CASH_ON_DELIVERY': 'Pagar na Entrega',
+    'STORE_PICKUP': 'Pagar na Entrega / Retirada',
+    'PAYMENT_LINK': 'Link de Pagamento',
+    'CASH_ON_DELIVERY': 'Dinheiro / Cartão na Entrega',
     'CREDIT_CARD': 'Cartão de Crédito',
     'DEBIT_CARD': 'Cartão de Débito'
   };
-  return methods[method as keyof typeof methods] || 'Pagar na Entrega';
+  return method ? (methods[method] || method) : 'PIX';
 }
 
-function getStatusLabel(status: string) {
-  const statuses = {
+function getStatusLabel(status?: string) {
+  const statuses: Record<string, string> = {
     'PENDING': 'Pendente',
     'CONFIRMED': 'Confirmado',
-    'PROCESSING': 'Processando',
+    'PROCESSING': 'Separando',
     'SHIPPED': 'Enviado',
     'DELIVERED': 'Entregue',
     'CANCELLED': 'Cancelado'
   };
-  return statuses[status as keyof typeof statuses] || status;
+  return status ? (statuses[status] || status) : 'Pendente';
 }
