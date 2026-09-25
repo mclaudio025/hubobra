@@ -35,6 +35,18 @@ export function PWAProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
+    // 0. Registrar Service Worker se suportado
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker
+        .register('/sw.js')
+        .then((registration) => {
+          console.log('✅ PWA: Service Worker registrado com sucesso:', registration.scope);
+        })
+        .catch((error) => {
+          console.warn('⚠️ PWA: Falha ao registrar Service Worker:', error);
+        });
+    }
+
     // 1. Verificar se já está rodando como standalone (App instalado)
     const isStandalone = 
       window.matchMedia('(display-mode: standalone)').matches ||

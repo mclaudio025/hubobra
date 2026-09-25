@@ -24,7 +24,7 @@ export default function ConditionalLayout({ children }: ConditionalLayoutProps) 
   return (
     <>
       <Header />
-      <main className="min-h-screen">
+      <main className="min-h-screen overflow-x-hidden w-full max-w-[100vw]">
         {children}
       </main>
       <Footer />

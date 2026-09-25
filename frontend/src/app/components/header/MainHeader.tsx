@@ -102,10 +102,11 @@ export default function MainHeader() {
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.8, ease: "easeOut", delay: 0.2 }}
       >
-        <div className="container mx-auto px-4 py-3.5 relative">
-          <div className="flex items-center justify-between gap-4">
+        <div className="container mx-auto px-2.5 sm:px-4 py-2.5 sm:py-3.5 relative">
+          <div className="flex items-center justify-between gap-1.5 sm:gap-4">
             {/* Mobile Menu Button */}
             <motion.div
+              className="shrink-0"
               initial={{ x: -20, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
               transition={{ delay: 0.4, duration: 0.5 }}
@@ -113,32 +114,33 @@ export default function MainHeader() {
               <MobileMenu />
             </motion.div>
 
-            {/* Logo HubConstruções */}
+            {/* Logo HubObra */}
             <motion.div
+              className="flex items-center shrink min-w-0"
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ delay: 0.5, duration: 0.6, type: "spring", stiffness: 200 }}
             >
-              <Link href="/" className="flex-shrink-0 group">
+              <Link href="/" className="flex items-center group shrink min-w-0">
                 <motion.div 
-                  className="flex items-center"
+                  className="flex items-center shrink min-w-0"
                   whileHover={{ scale: 1.02 }}
                   transition={{ type: "spring", stiffness: 400, damping: 10 }}
                 >
                   {/* Modern Hub Icon */}
-                  <div className="bg-gradient-to-br from-orange-500 via-amber-500 to-orange-600 text-white p-2.5 rounded-xl mr-3 shadow-md shadow-orange-500/20 relative overflow-hidden flex items-center justify-center">
-                    <Box className="w-6 h-6 text-white" />
+                  <div className="bg-gradient-to-br from-orange-500 via-amber-500 to-orange-600 text-white p-2 sm:p-2.5 rounded-xl mr-1.5 sm:mr-3 shadow-md shadow-orange-500/20 relative overflow-hidden flex items-center justify-center shrink-0">
+                    <Box className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <div className="flex items-center gap-1">
-                      <span className="text-xl lg:text-2xl font-black tracking-tight text-slate-900 dark:text-white">
+                      <span className="text-lg sm:text-xl lg:text-2xl font-black tracking-tight text-slate-900 dark:text-white leading-none">
                         Hub<span className="text-orange-500">Obra</span>
                       </span>
-                      <span className="text-[9px] bg-orange-100 dark:bg-orange-950/80 text-orange-600 dark:text-orange-400 font-bold px-1.5 py-0.5 rounded uppercase tracking-wider">
+                      <span className="hidden sm:inline-block text-[9px] bg-orange-100 dark:bg-orange-950/80 text-orange-600 dark:text-orange-400 font-bold px-1.5 py-0.5 rounded uppercase tracking-wider">
                         Marketplace
                       </span>
                     </div>
-                    <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400 tracking-tight">
+                    <p className="hidden md:block text-[11px] font-medium text-slate-500 dark:text-slate-400 tracking-tight truncate">
                       Estoque Unificado de Lojas Parceiras
                     </p>
                   </div>
@@ -158,7 +160,7 @@ export default function MainHeader() {
 
             {/* Actions */}
             <motion.div 
-              className="flex items-center gap-3 lg:gap-6"
+              className="flex items-center gap-0.5 sm:gap-3 lg:gap-6 shrink-0"
               initial={{ x: 20, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
               transition={{ delay: 0.7, duration: 0.5 }}
@@ -402,16 +404,18 @@ export default function MainHeader() {
 
               {/* Cart */}
               <motion.div
+                className="shrink-0 flex items-center justify-center"
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ delay: 1.2, type: "spring", stiffness: 200 }}
               >
                 <Link 
                   href="/carrinho" 
-                  className="flex flex-col items-center text-gray-600 dark:text-gray-300 hover:text-orange-500 dark:hover:text-orange-400 transition-colors relative group"
+                  className="flex flex-col items-center justify-center text-gray-700 dark:text-gray-300 hover:text-orange-500 dark:hover:text-orange-400 transition-colors relative group min-w-[42px] px-1 py-0.5"
+                  aria-label="Carrinho de compras"
                 >
                   <motion.div 
-                    className="relative"
+                    className="relative flex items-center justify-center"
                     whileHover={{ 
                       scale: 1.1, 
                       rotate: [0, -5, 5, 0],
@@ -430,10 +434,10 @@ export default function MainHeader() {
                       transition={{ duration: 0.8, repeat: Infinity }}
                       className="absolute inset-0 bg-orange-400/30 rounded-full"
                     />
-                    <ShoppingCart className="h-6 w-6 group-hover:drop-shadow-lg transition-all duration-300 relative z-10" />
+                    <ShoppingCart className="h-5 w-5 sm:h-6 sm:w-6 group-hover:drop-shadow-lg transition-all duration-300 relative z-10" />
                     {totalItems > 0 && (
                       <motion.span 
-                        className="absolute -top-2 -right-2 bg-gradient-primary text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold shadow-glow"
+                        className="absolute -top-1.5 -right-2 bg-gradient-primary text-white rounded-full min-w-4 h-4 px-1 flex items-center justify-center text-[10px] font-bold shadow-glow leading-none"
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
                         whileHover={{ scale: 1.2, rotate: [0, -10, 10, 0] }}
@@ -443,7 +447,7 @@ export default function MainHeader() {
                       </motion.span>
                     )}
                   </motion.div>
-                  <span className="text-xs mt-1">Carrinho</span>
+                  <span className="text-[10px] sm:text-xs mt-0.5 font-medium leading-none text-center">Carrinho</span>
                 </Link>
               </motion.div>
             </motion.div>
