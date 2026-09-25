@@ -6,6 +6,7 @@
 export async function fetchBackend(endpoint: string, options: RequestInit = {}): Promise<Response> {
   const candidateBases = [
     process.env.API_URL,
+    process.env.BACKEND_URL,
     process.env.NEXT_PUBLIC_API_URL,
     'http://api:8081',
     'http://backend:8081',

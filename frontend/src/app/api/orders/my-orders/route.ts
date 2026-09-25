@@ -1,18 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+import { fetchBackend } from '@/lib/backend-client';
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const queryString = searchParams.toString();
+    const endpoint = queryString ? `/orders/my-orders?${queryString}` : '/orders/my-orders';
     
-    let url = `${API_BASE_URL}/orders/my-orders`;
-    if (queryString) {
-      url += `?${queryString}`;
-    }
-    
-    const response = await fetch(url, {
+    const response = await fetchBackend(endpoint, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -21,16 +16,19 @@ export async function GET(request: NextRequest) {
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      return NextResponse.json({ error: error.message }, { status: response.status });
+      const error = await response.json().catch(() => ({ message: 'Erro ao buscar pedidos do usuário' }));
+      const errorMessage = Array.isArray(error?.message)
+        ? error.message.join(', ')
+        : (error?.message || error?.error || `Erro ${response.status}`);
+      return NextResponse.json({ error: errorMessage, message: errorMessage }, { status: response.status });
     }
 
     const data = await response.json();
     return NextResponse.json(data);
-  } catch (error) {
-    console.error('Erro ao buscar meus pedidos:', error);
+  } catch (error: any) {
+    console.error('Erro na rota GET /api/orders/my-orders:', error?.message || error);
     return NextResponse.json(
-      { error: 'Erro interno do servidor' },
+      { error: error?.message || 'Erro interno do servidor ao carregar seus pedidos' },
       { status: 500 }
     );
   }

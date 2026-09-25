@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { fetchBackend } from '@/lib/backend-client';
 
 interface UpdateOrderStatusRequest {
   status: string;
@@ -28,8 +29,8 @@ export async function PATCH(
     }
 
     // Chamar o backend para atualizar o status do pedido
-    const backendResponse = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/orders/${orderId}/status`,
+    const backendResponse = await fetchBackend(
+      `/orders/${orderId}/status`,
       {
         method: 'PATCH',
         headers: {
@@ -42,20 +43,22 @@ export async function PATCH(
 
     if (!backendResponse.ok) {
       const errorData = await backendResponse.json().catch(() => ({}));
+      const errorMessage = Array.isArray(errorData?.message)
+        ? errorData.message.join(', ')
+        : (errorData?.message || errorData?.error || 'Erro ao atualizar status do pedido');
       return NextResponse.json(
-        { error: errorData.message || 'Erro ao atualizar status do pedido' },
+        { error: errorMessage, message: errorMessage },
         { status: backendResponse.status }
       );
     }
 
     const updatedOrder = await backendResponse.json();
-
     return NextResponse.json(updatedOrder);
 
-  } catch (error) {
-    console.error('Erro ao atualizar status do pedido:', error);
+  } catch (error: any) {
+    console.error('Erro ao atualizar status do pedido:', error?.message || error);
     return NextResponse.json(
-      { error: 'Erro interno do servidor' },
+      { error: error?.message || 'Erro interno do servidor' },
       { status: 500 }
     );
   }

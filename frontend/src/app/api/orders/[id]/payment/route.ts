@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { fetchBackend } from '@/lib/backend-client';
 
 interface UpdatePaymentRequest {
   status: 'PENDING' | 'PAID' | 'FAILED' | 'CANCELLED';
@@ -29,12 +30,13 @@ export async function PATCH(
     }
 
     // Chamar o backend para atualizar o status do pagamento
-    const backendResponse = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/orders/${orderId}/payment`,
+    const backendResponse = await fetchBackend(
+      `/orders/${orderId}/payment`,
       {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': request.headers.get('Authorization') || '',
         },
         body: JSON.stringify(body),
       }
@@ -42,20 +44,22 @@ export async function PATCH(
 
     if (!backendResponse.ok) {
       const errorData = await backendResponse.json().catch(() => ({}));
+      const errorMessage = Array.isArray(errorData?.message)
+        ? errorData.message.join(', ')
+        : (errorData?.message || errorData?.error || 'Erro ao atualizar pagamento');
       return NextResponse.json(
-        { error: errorData.message || 'Erro ao atualizar pagamento' },
+        { error: errorMessage, message: errorMessage },
         { status: backendResponse.status }
       );
     }
 
     const updatedOrder = await backendResponse.json();
-
     return NextResponse.json(updatedOrder);
 
-  } catch (error) {
-    console.error('Erro ao atualizar pagamento:', error);
+  } catch (error: any) {
+    console.error('Erro ao atualizar pagamento:', error?.message || error);
     return NextResponse.json(
-      { error: 'Erro interno do servidor' },
+      { error: error?.message || 'Erro interno do servidor' },
       { status: 500 }
     );
   }

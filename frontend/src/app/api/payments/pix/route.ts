@@ -1,67 +1,61 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { fetchBackend } from '@/lib/backend-client';
 
 interface PixPaymentRequest {
   orderId: string;
   amount: number;
   customerName: string;
   customerEmail: string;
-  description: string;
-}
-
-interface PixPaymentResponse {
-  id: string;
-  qrCode: string;
-  qrCodeText: string;
-  expiresAt: string;
-  amount: number;
-  status: 'PENDING' | 'PAID' | 'EXPIRED';
+  description?: string;
 }
 
 export async function POST(request: NextRequest) {
   try {
     const body: PixPaymentRequest = await request.json();
-    
     const { orderId, amount, customerName, customerEmail, description } = body;
 
     // Validar dados obrigatórios
-    if (!orderId || !amount || !customerName || !customerEmail) {
+    if (!orderId || !amount) {
       return NextResponse.json(
-        { error: 'Dados obrigatórios não fornecidos' },
+        { error: 'Dados obrigatórios não fornecidos para geração do PIX' },
         { status: 400 }
       );
     }
 
     // Chamar o backend para criar o pagamento PIX
-    const backendResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/payments/pix`, {
+    const backendResponse = await fetchBackend('/payments/pix', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': request.headers.get('Authorization') || '',
       },
       body: JSON.stringify({
         orderId,
         amount,
-        customerName,
-        customerEmail,
-        description,
+        customerName: customerName || 'Cliente HubObra',
+        customerEmail: customerEmail || 'cliente@hubobra.com.br',
+        description: description || `Pedido HubObra`,
       }),
     });
 
     if (!backendResponse.ok) {
       const errorData = await backendResponse.json().catch(() => ({}));
+      const errorMessage = Array.isArray(errorData?.message)
+        ? errorData.message.join(', ')
+        : (errorData?.message || errorData?.error || 'Erro ao criar pagamento PIX');
       return NextResponse.json(
-        { error: errorData.message || 'Erro ao criar pagamento PIX' },
+        { error: errorMessage, message: errorMessage },
         { status: backendResponse.status }
       );
     }
 
-    const pixPayment: PixPaymentResponse = await backendResponse.json();
-
+    const pixPayment = await backendResponse.json();
     return NextResponse.json(pixPayment);
 
-  } catch (error) {
-    console.error('Erro na API de PIX:', error);
+  } catch (error: any) {
+    console.error('Erro na API de PIX POST:', error?.message || error);
     return NextResponse.json(
-      { error: 'Erro interno do servidor' },
+      { error: error?.message || 'Erro interno do servidor ao gerar PIX' },
       { status: 500 }
     );
   }
@@ -80,24 +74,30 @@ export async function GET(request: NextRequest) {
     }
 
     // Consultar status do pagamento PIX no backend
-    const backendResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/payments/pix/${paymentId}`);
+    const backendResponse = await fetchBackend(`/payments/pix/${paymentId}`, {
+      headers: {
+        'Authorization': request.headers.get('Authorization') || '',
+      },
+    });
 
     if (!backendResponse.ok) {
       const errorData = await backendResponse.json().catch(() => ({}));
+      const errorMessage = Array.isArray(errorData?.message)
+        ? errorData.message.join(', ')
+        : (errorData?.message || errorData?.error || 'Erro ao consultar pagamento PIX');
       return NextResponse.json(
-        { error: errorData.message || 'Erro ao consultar pagamento PIX' },
+        { error: errorMessage, message: errorMessage },
         { status: backendResponse.status }
       );
     }
 
     const pixPayment = await backendResponse.json();
-
     return NextResponse.json(pixPayment);
 
-  } catch (error) {
-    console.error('Erro na consulta PIX:', error);
+  } catch (error: any) {
+    console.error('Erro na consulta PIX GET:', error?.message || error);
     return NextResponse.json(
-      { error: 'Erro interno do servidor' },
+      { error: error?.message || 'Erro interno do servidor ao consultar PIX' },
       { status: 500 }
     );
   }

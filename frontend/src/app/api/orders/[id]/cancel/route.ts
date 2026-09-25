@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+import { fetchBackend } from '@/lib/backend-client';
 
 interface CancelOrderRequest {
   reason?: string;
@@ -22,8 +21,8 @@ export async function PATCH(
     }
 
     // Chamar o backend para cancelar o pedido
-    const backendResponse = await fetch(
-      `${API_BASE_URL}/orders/${orderId}/cancel`,
+    const backendResponse = await fetchBackend(
+      `/orders/${orderId}/cancel`,
       {
         method: 'PATCH',
         headers: {
@@ -36,20 +35,22 @@ export async function PATCH(
 
     if (!backendResponse.ok) {
       const errorData = await backendResponse.json().catch(() => ({}));
+      const errorMessage = Array.isArray(errorData?.message)
+        ? errorData.message.join(', ')
+        : (errorData?.message || errorData?.error || 'Erro ao cancelar pedido');
       return NextResponse.json(
-        { error: errorData.message || 'Erro ao cancelar pedido' },
+        { error: errorMessage, message: errorMessage },
         { status: backendResponse.status }
       );
     }
 
     const cancelledOrder = await backendResponse.json();
-
     return NextResponse.json(cancelledOrder);
 
-  } catch (error) {
-    console.error('Erro ao cancelar pedido:', error);
+  } catch (error: any) {
+    console.error('Erro ao cancelar pedido:', error?.message || error);
     return NextResponse.json(
-      { error: 'Erro interno do servidor' },
+      { error: error?.message || 'Erro interno do servidor' },
       { status: 500 }
     );
   }

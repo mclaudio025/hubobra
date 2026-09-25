@@ -1,13 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+import { fetchBackend } from '@/lib/backend-client';
 
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const response = await fetch(`${API_BASE_URL}/users/${params.id}`, {
+    const response = await fetchBackend(`/users/${params.id}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -16,16 +15,19 @@ export async function GET(
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      return NextResponse.json({ error: error.message }, { status: response.status });
+      const error = await response.json().catch(() => ({ message: 'Erro ao buscar usuário' }));
+      const errorMessage = Array.isArray(error?.message)
+        ? error.message.join(', ')
+        : (error?.message || error?.error || `Erro ${response.status}`);
+      return NextResponse.json({ error: errorMessage, message: errorMessage }, { status: response.status });
     }
 
     const data = await response.json();
     return NextResponse.json(data);
-  } catch (error) {
-    console.error('Erro ao buscar usuário:', error);
+  } catch (error: any) {
+    console.error('Erro ao buscar usuário:', error?.message || error);
     return NextResponse.json(
-      { error: 'Erro interno do servidor' },
+      { error: error?.message || 'Erro interno do servidor' },
       { status: 500 }
     );
   }
@@ -38,7 +40,7 @@ export async function PATCH(
   try {
     const body = await request.json();
     
-    const response = await fetch(`${API_BASE_URL}/users/${params.id}`, {
+    const response = await fetchBackend(`/users/${params.id}`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
@@ -48,16 +50,19 @@ export async function PATCH(
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      return NextResponse.json({ error: error.message }, { status: response.status });
+      const error = await response.json().catch(() => ({ message: 'Erro ao atualizar usuário' }));
+      const errorMessage = Array.isArray(error?.message)
+        ? error.message.join(', ')
+        : (error?.message || error?.error || `Erro ${response.status}`);
+      return NextResponse.json({ error: errorMessage, message: errorMessage }, { status: response.status });
     }
 
     const data = await response.json();
     return NextResponse.json(data);
-  } catch (error) {
-    console.error('Erro ao atualizar usuário:', error);
+  } catch (error: any) {
+    console.error('Erro ao atualizar usuário:', error?.message || error);
     return NextResponse.json(
-      { error: 'Erro interno do servidor' },
+      { error: error?.message || 'Erro interno do servidor' },
       { status: 500 }
     );
   }
@@ -68,7 +73,7 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const response = await fetch(`${API_BASE_URL}/users/${params.id}`, {
+    const response = await fetchBackend(`/users/${params.id}`, {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
@@ -77,16 +82,19 @@ export async function DELETE(
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      return NextResponse.json({ error: error.message }, { status: response.status });
+      const error = await response.json().catch(() => ({ message: 'Erro ao deletar usuário' }));
+      const errorMessage = Array.isArray(error?.message)
+        ? error.message.join(', ')
+        : (error?.message || error?.error || `Erro ${response.status}`);
+      return NextResponse.json({ error: errorMessage, message: errorMessage }, { status: response.status });
     }
 
     const data = await response.json();
     return NextResponse.json(data);
-  } catch (error) {
-    console.error('Erro ao deletar usuário:', error);
+  } catch (error: any) {
+    console.error('Erro ao deletar usuário:', error?.message || error);
     return NextResponse.json(
-      { error: 'Erro interno do servidor' },
+      { error: error?.message || 'Erro interno do servidor' },
       { status: 500 }
     );
   }

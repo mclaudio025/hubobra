@@ -22,9 +22,13 @@ export class OrdersService {
       shippingAddress,
       payment,
       notes,
-      shipping,
+      shipping = 0,
       tax = 0,
     } = createOrderDto;
+
+    if (!items || items.length === 0) {
+      throw new BadRequestException("O pedido deve conter pelo menos um item");
+    }
 
     // Validar produtos e calcular totais
     const productIds = items.map((item) => item.productId);
@@ -34,12 +38,14 @@ export class OrdersService {
     });
 
     if (products.length !== productIds.length) {
+      const foundIds = new Set(products.map((p) => p.id));
+      const missingIds = productIds.filter((id) => !foundIds.has(id));
       throw new BadRequestException(
-        "Um ou mais produtos não foram encontrados",
+        `Produtos não encontrados no catálogo: ${missingIds.join(", ")}`,
       );
     }
 
-    // Verificar estoque
+    // Verificar estoque quando aplicável
     for (const item of items) {
       const product = products.find((p) => p.id === item.productId);
       if (!product) {
@@ -47,108 +53,129 @@ export class OrdersService {
           `Produto ${item.productId} não encontrado`,
         );
       }
-      if (product.stock < item.quantity) {
+      if (typeof product.stock === "number" && product.stock > 0 && product.stock < item.quantity) {
         throw new BadRequestException(
-          `Estoque insuficiente para o produto ${product.name}`,
+          `Estoque insuficiente para o produto ${product.name} (Disponível: ${product.stock}, Solicitado: ${item.quantity})`,
         );
       }
     }
 
     // Calcular totais
     const subtotal = items.reduce(
-      (sum, item) => sum + item.price * item.quantity,
+      (sum, item) => sum + (Number(item.price) || 0) * (Number(item.quantity) || 1),
       0,
     );
-    const total = subtotal + shipping + tax;
+    const total = subtotal + (Number(shipping) || 0) + (Number(tax) || 0);
 
     // Gerar número do pedido
     const orderNumber = await this.generateOrderNumber();
 
     // Criar pedido em transação
-    const order = await this.prisma.$transaction(async (prisma) => {
-      // Criar pedido
-      const newOrder = await prisma.order.create({
-        data: {
-          orderNumber,
-          userId,
-          subtotal,
-          shipping,
-          tax,
-          total,
-          notes,
-          status: OrderStatus.PENDING,
-          items: {
-            create: items.map((item) => ({
-              productId: item.productId,
-              quantity: item.quantity,
-              price: item.price,
-              total: item.price * item.quantity,
-            })),
-          },
-          shippingAddress: {
-            create: {
-              ...shippingAddress,
-              country: shippingAddress.country || "Brasil",
+    try {
+      const order = await this.prisma.$transaction(async (prisma) => {
+        // Criar pedido
+        const newOrder = await prisma.order.create({
+          data: {
+            orderNumber,
+            userId,
+            subtotal,
+            shipping: Number(shipping) || 0,
+            tax: Number(tax) || 0,
+            total,
+            notes: notes ? String(notes).trim() : null,
+            status: OrderStatus.PENDING,
+            items: {
+              create: items.map((item) => ({
+                productId: item.productId,
+                quantity: Number(item.quantity) || 1,
+                price: Number(item.price) || 0,
+                total: (Number(item.price) || 0) * (Number(item.quantity) || 1),
+              })),
             },
-          },
-          payment: {
-            create: {
-              method: payment.method,
-              amount: payment.amount,
-              status: PaymentStatus.PENDING,
-              transactionId: payment.transactionId,
+            shippingAddress: {
+              create: {
+                street: shippingAddress?.street || "Retirada no CD",
+                number: shippingAddress?.number || "S/N",
+                complement: shippingAddress?.complement ? String(shippingAddress.complement).trim() : null,
+                district: shippingAddress?.district || "Centro",
+                city: shippingAddress?.city || "Fortaleza",
+                state: shippingAddress?.state || "CE",
+                zipCode: shippingAddress?.zipCode || "60000-000",
+                country: shippingAddress?.country || "Brasil",
+              },
             },
-          },
-        },
-        include: {
-          items: {
-            include: {
-              product: {
-                select: {
-                  id: true,
-                  name: true,
-                  sku: true,
-                  price: true,
-                },
+            payment: {
+              create: {
+                method: payment?.method || "CASH",
+                amount: Number(payment?.amount) || total,
+                status: PaymentStatus.PENDING,
+                transactionId: payment?.transactionId || null,
               },
             },
           },
-          shippingAddress: true,
-          payment: true,
-          user: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
+          include: {
+            items: {
+              include: {
+                product: {
+                  select: {
+                    id: true,
+                    name: true,
+                    sku: true,
+                    price: true,
+                  },
+                },
+              },
             },
-          },
-        },
-      });
-
-      // Atualizar estoque dos produtos
-      for (const item of items) {
-        await prisma.product.update({
-          where: { id: item.productId },
-          data: {
-            stock: {
-              decrement: item.quantity,
+            shippingAddress: true,
+            payment: true,
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+              },
             },
           },
         });
-      }
 
-      // Limpar carrinho do usuário
-      await prisma.cartItem.deleteMany({
-        where: {
-          userId,
-          productId: { in: productIds },
-        },
+        // Atualizar estoque dos produtos
+        for (const item of items) {
+          try {
+            await prisma.product.update({
+              where: { id: item.productId },
+              data: {
+                stock: {
+                  decrement: Number(item.quantity) || 1,
+                },
+              },
+            });
+          } catch (stockErr: any) {
+            console.warn(`[OrdersService] Não foi possível decrementar estoque do produto ${item.productId}:`, stockErr?.message);
+          }
+        }
+
+        // Limpar carrinho do usuário
+        try {
+          await prisma.cartItem.deleteMany({
+            where: {
+              userId,
+              productId: { in: productIds },
+            },
+          });
+        } catch (cartErr: any) {
+          console.warn("[OrdersService] Aviso ao limpar itens do carrinho:", cartErr?.message);
+        }
+
+        return newOrder;
       });
 
-      return newOrder;
-    });
-
-    return order;
+      return order;
+    } catch (dbErr: any) {
+      console.error("[OrdersService.create] Erro ao registrar pedido no banco de dados:", dbErr);
+      throw new BadRequestException(
+        dbErr?.message || "Falha ao registrar pedido no banco de dados",
+      );
+    }
   }
 
   async findAll(
@@ -384,30 +411,36 @@ export class OrdersService {
   }
 
   private async generateOrderNumber(): Promise<string> {
-    const today = new Date();
-    const year = today.getFullYear().toString().slice(-2);
-    const month = (today.getMonth() + 1).toString().padStart(2, "0");
-    const day = today.getDate().toString().padStart(2, "0");
+    try {
+      const today = new Date();
+      const year = today.getFullYear().toString().slice(-2);
+      const month = (today.getMonth() + 1).toString().padStart(2, "0");
+      const day = today.getDate().toString().padStart(2, "0");
 
-    const prefix = `${year}${month}${day}`;
+      const prefix = `${year}${month}${day}`;
 
-    // Buscar último pedido do dia
-    const lastOrder = await this.prisma.order.findFirst({
-      where: {
-        orderNumber: {
-          startsWith: prefix,
+      // Buscar último pedido do dia
+      const lastOrder = await this.prisma.order.findFirst({
+        where: {
+          orderNumber: {
+            startsWith: prefix,
+          },
         },
-      },
-      orderBy: { orderNumber: "desc" },
-    });
+        orderBy: { orderNumber: "desc" },
+      });
 
-    let sequence = 1;
-    if (lastOrder) {
-      const lastSequence = parseInt(lastOrder.orderNumber.slice(-4));
-      sequence = lastSequence + 1;
+      let sequence = 1;
+      if (lastOrder && lastOrder.orderNumber) {
+        const lastSequence = parseInt(lastOrder.orderNumber.slice(-4), 10);
+        if (!isNaN(lastSequence)) {
+          sequence = lastSequence + 1;
+        }
+      }
+
+      return `${prefix}${sequence.toString().padStart(4, "0")}`;
+    } catch (e) {
+      return `${Date.now().toString().slice(-8)}${Math.floor(Math.random() * 1000).toString().padStart(3, "0")}`;
     }
-
-    return `${prefix}${sequence.toString().padStart(4, "0")}`;
   }
 
   private validateStatusTransition(

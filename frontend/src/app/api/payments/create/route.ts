@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { fetchBackend } from '@/lib/backend-client';
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const backendUrl = process.env.BACKEND_URL || 'http://localhost:8080';
     
-    const response = await fetch(`${backendUrl}/payments`, {
+    const response = await fetchBackend('/payments', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -15,16 +15,19 @@ export async function POST(request: NextRequest) {
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      return NextResponse.json(error, { status: response.status });
+      const error = await response.json().catch(() => ({ message: 'Erro ao criar pagamento' }));
+      const errorMessage = Array.isArray(error?.message)
+        ? error.message.join(', ')
+        : (error?.message || error?.error || `Erro ${response.status}`);
+      return NextResponse.json({ error: errorMessage, message: errorMessage }, { status: response.status });
     }
 
     const data = await response.json();
     return NextResponse.json(data);
-  } catch (error) {
-    console.error('Error creating payment:', error);
+  } catch (error: any) {
+    console.error('Erro na criação de pagamento POST /api/payments/create:', error?.message || error);
     return NextResponse.json(
-      { error: 'Failed to create payment' },
+      { error: error?.message || 'Falha ao registrar pagamento' },
       { status: 500 }
     );
   }
