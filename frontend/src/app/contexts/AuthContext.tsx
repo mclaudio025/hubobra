@@ -6,19 +6,20 @@ interface User {
   id: string;
   email: string;
   name: string;
-  role: 'USER' | 'ADMIN' | 'MANAGER';
+  role: 'USER' | 'ADMIN' | 'MANAGER' | 'EXPEDITION';
 }
 
 interface AuthContextType {
   user: User | null;
   token: string | null;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<any>;
   register: (name: string, email: string, password: string) => Promise<void>;
   logout: () => void;
   loading: boolean;
   isAuthenticated: boolean;
   isAdmin: boolean;
   isManager: boolean;
+  isExpedition: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -109,6 +110,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isAuthenticated = !!user && !!token;
   const isAdmin = user?.role === 'ADMIN';
   const isManager = user?.role === 'MANAGER' || isAdmin;
+  const isExpedition = user?.role === 'EXPEDITION' || user?.role === 'ADMIN' || user?.role === 'MANAGER';
 
   return (
     <AuthContext.Provider
@@ -122,6 +124,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isAuthenticated,
         isAdmin,
         isManager,
+        isExpedition,
       }}
     >
       {children}

@@ -533,6 +533,136 @@ export class OrdersService {
     return updatedPayment;
   }
 
+  async findExpeditionQueue(statusFilter?: string, search?: string) {
+    const where: any = {};
+
+    if (statusFilter && statusFilter !== 'ALL') {
+      where.status = statusFilter;
+    } else {
+      // Por padrão na expedição, listar pedidos prontos para separação/despacho
+      where.status = {
+        in: [OrderStatus.PROCESSING, OrderStatus.CONFIRMED, OrderStatus.PENDING],
+      };
+    }
+
+    if (search) {
+      const cleanSearch = search.trim();
+      where.OR = [
+        { orderNumber: { contains: cleanSearch, mode: "insensitive" } },
+        { user: { name: { contains: cleanSearch, mode: "insensitive" } } },
+        { user: { email: { contains: cleanSearch, mode: "insensitive" } } },
+        { shippingAddress: { city: { contains: cleanSearch, mode: "insensitive" } } },
+        { shippingAddress: { district: { contains: cleanSearch, mode: "insensitive" } } },
+      ];
+    }
+
+    const orders = await this.prisma.order.findMany({
+      where,
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        shippingAddress: true,
+        items: {
+          include: {
+            product: {
+              select: {
+                id: true,
+                name: true,
+                sku: true,
+                unit: true,
+                unitMultiplier: true,
+                images: {
+                  take: 1,
+                  orderBy: { order: "asc" },
+                },
+              },
+            },
+          },
+        },
+        payment: {
+          select: {
+            method: true,
+            status: true,
+            amount: true,
+          },
+        },
+      },
+      orderBy: { createdAt: "asc" }, // FIFO: primeiro pedido a entrar é o primeiro a ser despachado
+    });
+
+    return {
+      total: orders.length,
+      orders,
+    };
+  }
+
+  async dispatchOrder(
+    id: string,
+    operatorData: {
+      operatorName?: string;
+      driverName?: string;
+      deliveryMethod?: string;
+      vehiclePlate?: string;
+      notes?: string;
+    },
+  ) {
+    const order = await this.findById(id);
+
+    const now = new Date().toLocaleString("pt-BR", { timeZone: "America/Fortaleza" });
+    const logEntries = [
+      `[${now}] Despachado por: ${operatorData.operatorName || "Operador de Expedição"}`,
+      operatorData.driverName ? `Entregador: ${operatorData.driverName}` : null,
+      operatorData.deliveryMethod ? `Modalidade: ${operatorData.deliveryMethod}` : null,
+      operatorData.vehiclePlate ? `Placa/Veículo: ${operatorData.vehiclePlate}` : null,
+      operatorData.notes ? `Obs: ${operatorData.notes}` : null,
+    ].filter(Boolean).join(" | ");
+
+    const updatedNotes = order.notes
+      ? `${order.notes}\n${logEntries}`.trim()
+      : logEntries;
+
+    const updatedOrder = await this.prisma.order.update({
+      where: { id },
+      data: {
+        status: OrderStatus.SHIPPED,
+        notes: updatedNotes,
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        shippingAddress: true,
+        items: {
+          include: {
+            product: {
+              select: {
+                id: true,
+                name: true,
+                sku: true,
+              },
+            },
+          },
+        },
+        payment: true,
+      },
+    });
+
+    return {
+      success: true,
+      message: "Pedido liberado para entrega com sucesso!",
+      order: updatedOrder,
+    };
+  }
+
   async cancel(id: string, reason?: string) {
     return this.updateStatus(id, {
       status: OrderStatus.CANCELLED,

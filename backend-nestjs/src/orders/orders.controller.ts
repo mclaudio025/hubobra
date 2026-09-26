@@ -52,6 +52,52 @@ export class OrdersController {
     return this.ordersService.findById(id);
   }
 
+  @Get("expedition")
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.MANAGER, UserRole.EXPEDITION)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "Fila de pedidos para expedição e despacho" })
+  @ApiQuery({ name: "status", required: false, type: String })
+  @ApiQuery({ name: "search", required: false, type: String })
+  @ApiResponse({ status: 200, description: "Fila de pedidos da expedição" })
+  findExpeditionQueue(
+    @Query("status") status?: string,
+    @Query("search") search?: string,
+  ) {
+    return this.ordersService.findExpeditionQueue(status, search);
+  }
+
+  @Patch(":id/dispatch")
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.MANAGER, UserRole.EXPEDITION)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "Liberar pedido para entrega (Expedição)" })
+  @ApiResponse({ status: 200, description: "Pedido liberado com sucesso" })
+  @ApiBody({
+    schema: {
+      type: "object",
+      properties: {
+        driverName: { type: "string" },
+        deliveryMethod: { type: "string" },
+        vehiclePlate: { type: "string" },
+        notes: { type: "string" },
+      },
+    },
+  })
+  dispatchOrder(
+    @Param("id") id: string,
+    @Body() dispatchData: any,
+    @Request() req: any,
+  ) {
+    return this.ordersService.dispatchOrder(id, {
+      operatorName: req.user?.name || req.user?.email || "Operador de Expedição",
+      driverName: dispatchData?.driverName,
+      deliveryMethod: dispatchData?.deliveryMethod,
+      vehiclePlate: dispatchData?.vehiclePlate,
+      notes: dispatchData?.notes,
+    });
+  }
+
   @Post()
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()

@@ -13,10 +13,11 @@ interface ConditionalLayoutProps {
 export default function ConditionalLayout({ children }: ConditionalLayoutProps) {
   const pathname = usePathname();
   const isAdminArea = pathname.startsWith('/admin');
+  const isExpeditionArea = pathname.startsWith('/expedicao');
   const isReceiptPage = pathname.includes('/recibo');
 
-  if (isAdminArea || isReceiptPage) {
-    // Na área administrativa ou páginas de recibo, renderizar apenas o conteúdo sem navegação pública
+  if (isAdminArea || isReceiptPage || isExpeditionArea) {
+    // Na área administrativa, expedição ou páginas de recibo, renderizar apenas o conteúdo sem navegação pública
     return <>{children}</>;
   }
 

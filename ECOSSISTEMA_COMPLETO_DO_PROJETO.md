@@ -149,6 +149,17 @@ graph TD
 
 ---
 
+### 📦 3.5. PWA Mobile-First de Expedição & Despacho (`/expedicao`)
+- [x] **Aplicativo Independente Standalone:** Instalável na tela inicial do celular do operador sem passar por lojas de aplicativos.
+- [x] **Isolamento Total:** Layout de alto contraste industrial, sem interferência ou menus da loja virtual do cliente.
+- [x] **Autenticação Segura por Papel (`EXPEDITION`):** Acesso restrito apenas à fila de pedidos em separação e despacho, sem acesso a dados financeiros ou administrativos da loja.
+- [x] **Fila de Saída em Tempo Real:** Sincronização e polling de pedidos prontos para despacho com busca rápida por código de pedido ou cliente.
+- [x] **Checklist de Carga:** Conferência tátil com checkbox para bater os materiais embalados antes do carregamento.
+- [x] **Liberação Imediata em 1 Clique (🚀 Saiu para Entrega):** Atualização atômica do status para `SHIPPED` no banco de dados e notificação em tempo real.
+- [x] **Rastreio de Entregador:** Registro do motoboy/motorista responsável e placa do veículo no histórico do pedido.
+
+---
+
 ## 🗄️ 4. Modelagem de Dados (Entidades do Prisma)
 
 O banco de dados PostgreSQL foi desenhado para escalabilidade e arquitetura multi-loja:
