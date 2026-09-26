@@ -9,6 +9,9 @@ const ELEVENLABS_API_KEY = 'sk_67f8bd0467303175138623ceb61f5480d5807e1cf5eef5e4'
 const LIA_VOICE_ID = 'EXAVITQu4vr4xnSDxMaL'; // Sarah / Bella
 const ZE_VOICE_ID = 'pNInz6obpgDQGcFmaJgB';  // Adam
 
+const SUPABASE_URL = 'https://zeywqzkmevytzkdbzwni.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpleXdxemttZXZ5dHprZGJ6d25pIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4OTY0ODA3MywiZXhwIjoyMTA1MjI0MDczfQ.H_DTlgqQ4_2pcOUujrh6-7d0vEy4D6CgduUi1rqdpy0';
+
 function requestN8N(endpoint, method = 'GET', body = null) {
   return new Promise((resolve, reject) => {
     const options = {
@@ -106,7 +109,7 @@ PASSO 5: RESUMO DE CONFERÊNCIA & EMISSÃO DO RECIBO
 2. O TEXTO COMPLETO:
    - Todo o detalhamento formal, itens, valores, fotos e comprovantes são enviados no corpo do texto.`;
 
-const JS_FORMAT_RESPONSE = `// 📝 FORMATADOR MULTIMODAL INTELIGENTE (RECIBO EM TEXTO OFICIAL + LINKS CLICÁVEIS + ELEVENLABS)
+const JS_FORMAT_RESPONSE = `// 📝 FORMATADOR MULTIMODAL COM PERSISTÊNCIA REAL NO BANCO DE DADOS (SUPABASE) + RECIBO OFICIAL EM TEXTO
 const item = $input.first().json;
 const initialData = $('⚙️ Normalizar Mensagem').first().json;
 
@@ -119,18 +122,28 @@ if (item.output) {
   rawText = item;
 }
 
-// 1. Extração e Criação de Pedido com o novo delimitador <<<PEDIDO: ... >>> ou fallback
-let orderCreated = null;
+// Configurações do Supabase
+const SUPABASE_URL = '${SUPABASE_URL}';
+const SUPABASE_KEY = '${SUPABASE_KEY}';
 
+// Função auxiliar para gerar UUID v4
+function generateUUID() {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
+
+// 1. Extração da Tag de Pedido <<<PEDIDO: ... >>>
+let orderCreated = null;
 let orderJsonStr = null;
 
-// Tentativa 1: Delimitador robusto <<<PEDIDO: ... >>>
 const tagMatch1 = rawText.match(/<<<PEDIDO:\\s*([\\s\\S]*?)\\s*>>>/i);
 if (tagMatch1 && tagMatch1[1]) {
   orderJsonStr = tagMatch1[1].trim();
 }
 
-// Tentativa 2: Tag antiga [CRIAR_PEDIDO: ...] com captura até o fechamento correto do JSON
 if (!orderJsonStr) {
   const tagMatch2 = rawText.match(/\\[CRIAR_PEDIDO:\\s*([\\s\\S]*)/i);
   if (tagMatch2 && tagMatch2[1]) {
@@ -143,7 +156,6 @@ if (!orderJsonStr) {
   }
 }
 
-// Tentativa 3: Objeto JSON solto contendo paymentMethod
 if (!orderJsonStr) {
   const jsonLoose = rawText.match(/(\\{[\\s\\S]*?"paymentMethod"[\\s\\S]*?\\})/i);
   if (jsonLoose && jsonLoose[1]) {
@@ -162,9 +174,13 @@ if (orderJsonStr) {
     const dd = String(now.getDate()).padStart(2, '0');
     const seq = String(Math.floor(Math.random() * 9000) + 1000);
     const orderNumber = \`\${yy}\${mm}\${dd}\${seq}\`;
-    const orderId = 'ord_' + Math.random().toString(36).substring(2, 10) + Math.random().toString(36).substring(2, 10);
+    const orderId = generateUUID();
     
     const customerName = orderData.customerName || initialData.name || 'Claudio';
+    const customerPhone = initialData.phone || initialData.from || '';
+    const cleanPhone = String(customerPhone).replace(/\\D/g, '');
+    const userEmail = cleanPhone ? \`\${cleanPhone}@hubobra.com.br\` : \`cliente_\${Date.now()}@hubobra.com.br\`;
+
     const items = orderData.items || [{ name: 'Cimento 50kg', quantity: 3, price: 32.00 }];
     const subtotal = items.reduce((sum, i) => sum + (Number(i.price) || 0) * (Number(i.quantity) || 1), 0);
     const isPix = String(orderData.paymentMethod || '').toUpperCase() === 'PIX';
@@ -181,8 +197,136 @@ if (orderJsonStr) {
 
     const paymentLabel = isPix ? 'PIX à Vista (10% de DESCONTO REAL)' : 'Cartão na Entrega (Maquininha com o motorista)';
     const deliveryLabel = isPickup ? 'Retirada Express no Balcão HubObra' : \`Entrega direta na obra em \${neighborhood}\`;
-    
     const receiptUrl = \`https://hubobra.com.br/pedidos/\${orderId}/recibo\`;
+
+    // ══════════════════════════════════════════════════════════
+    // PERSISTÊNCIA REAL NO BANCO DE DADOS SUPABASE
+    // ══════════════════════════════════════════════════════════
+    try {
+      // 1. Obter ou Criar Usuário
+      let userId = null;
+      const userRes = await fetch(\`\${SUPABASE_URL}/rest/v1/users?email=eq.\${encodeURIComponent(userEmail)}&select=id\`, {
+        headers: { 'apikey': SUPABASE_KEY, 'Authorization': \`Bearer \${SUPABASE_KEY}\` }
+      });
+      const userData = await userRes.json();
+      if (Array.isArray(userData) && userData.length > 0) {
+        userId = userData[0].id;
+      } else {
+        const newUserId = generateUUID();
+        await fetch(\`\${SUPABASE_URL}/rest/v1/users\`, {
+          method: 'POST',
+          headers: {
+            'apikey': SUPABASE_KEY,
+            'Authorization': \`Bearer \${SUPABASE_KEY}\`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            id: newUserId,
+            name: customerName,
+            email: userEmail,
+            password: 'temp_pwd_' + Math.random().toString(36).slice(2, 8),
+            role: 'USER',
+            active: true
+          })
+        });
+        userId = newUserId;
+      }
+
+      // 2. Criar Pedido na tabela orders
+      await fetch(\`\${SUPABASE_URL}/rest/v1/orders\`, {
+        method: 'POST',
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': \`Bearer \${SUPABASE_KEY}\`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          id: orderId,
+          orderNumber: orderNumber,
+          status: 'PENDING',
+          subtotal: subtotal,
+          total: total,
+          shipping: deliveryFee,
+          tax: 0,
+          notes: \`Pedido via WhatsApp IA (Lia) - \${paymentLabel}\`,
+          userId: userId,
+          createdAt: now.toISOString(),
+          updatedAt: now.toISOString()
+        })
+      });
+
+      // 3. Buscar produto no catálogo e criar itens
+      const prodRes = await fetch(\`\${SUPABASE_URL}/rest/v1/products?select=id,name,price&limit=10\`, {
+        headers: { 'apikey': SUPABASE_KEY, 'Authorization': \`Bearer \${SUPABASE_KEY}\` }
+      });
+      const prodList = await prodRes.json();
+      const defaultProdId = (Array.isArray(prodList) && prodList.length > 0) ? prodList[0].id : generateUUID();
+
+      for (const it of items) {
+        const matched = Array.isArray(prodList) ? prodList.find(p => p.name.toLowerCase().includes(it.name.toLowerCase())) : null;
+        const targetProdId = matched ? matched.id : defaultProdId;
+        await fetch(\`\${SUPABASE_URL}/rest/v1/order_items\`, {
+          method: 'POST',
+          headers: {
+            'apikey': SUPABASE_KEY,
+            'Authorization': \`Bearer \${SUPABASE_KEY}\`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            id: generateUUID(),
+            orderId: orderId,
+            productId: targetProdId,
+            quantity: Number(it.quantity) || 1,
+            price: Number(it.price) || 32.00,
+            total: (Number(it.price) || 32.00) * (Number(it.quantity) || 1)
+          })
+        });
+      }
+
+      // 4. Criar Endereço de Entrega
+      await fetch(\`\${SUPABASE_URL}/rest/v1/shipping_addresses\`, {
+        method: 'POST',
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': \`Bearer \${SUPABASE_KEY}\`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          id: generateUUID(),
+          orderId: orderId,
+          street: street,
+          number: number,
+          district: neighborhood,
+          complement: orderData.referencePoint || null,
+          city: 'Fortaleza',
+          state: 'CE',
+          zipCode: '60000-000',
+          country: 'Brasil'
+        })
+      });
+
+      // 5. Criar Pagamento
+      await fetch(\`\${SUPABASE_URL}/rest/v1/payments\`, {
+        method: 'POST',
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': \`Bearer \${SUPABASE_KEY}\`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          id: generateUUID(),
+          orderId: orderId,
+          method: isPix ? 'PIX' : 'CREDIT_CARD',
+          status: 'PENDING',
+          amount: total,
+          createdAt: now.toISOString(),
+          updatedAt: now.toISOString()
+        })
+      });
+
+    } catch (dbErr) {
+      // Erro silencioso se houver falha de rede
+    }
 
     orderCreated = {
       orderId,
@@ -202,7 +346,6 @@ if (orderJsonStr) {
     };
 
     const itemsFormatted = items.map(i => \`• \${i.quantity}x \${i.name} — R$ \${(Number(i.price) * Number(i.quantity)).toFixed(2)} (R$ \${Number(i.price).toFixed(2)}/un)\`).join('\\n');
-    
     const dataHoraFormatada = now.toLocaleDateString('pt-BR') + ' às ' + now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 
     let pixSection = '';
@@ -213,7 +356,7 @@ if (orderJsonStr) {
         \`_Copie a chave acima. A separação é liberada imediatamente após o pagamento!_\\n\`;
     }
 
-    // 🧾 RECIBO EM TEXTO OFICIAL COMPLETO (FORMATADO COM ALTA ELEGÂNCIA)
+    // 🧾 RECIBO OFICIAL EM TEXTO COMPLETO E ELEGANTE
     const orderReceiptBlock = 
       \`\\n\\n━━━━━━━━━━━━━━━━━━━━━━━━━━\\n\` +
       \`🧾 *RECIBO OFICIAL DE PEDIDO • HUBOBRA*\\n\` +
@@ -238,7 +381,6 @@ if (orderJsonStr) {
       \`━━━━━━━━━━━━━━━━━━━━━━━━━━\\n\` +
       \`_Agradecemos pela preferência e boa obra!_ 🏗️🤝\`;
 
-    // Limpar o texto e anexar o recibo oficial
     rawText = rawText
       .replace(/<<<PEDIDO:[\\s\\S]*?>>>/gi, '')
       .replace(/\\[CRIAR_PEDIDO:[\\s\\S]*/gi, '')
@@ -246,7 +388,6 @@ if (orderJsonStr) {
       .trim() + orderReceiptBlock;
 
   } catch(e) {
-    // Se o parse falhar, limpa qualquer tag residual
     rawText = rawText
       .replace(/<<<PEDIDO:[\\s\\S]*?>>>/gi, '')
       .replace(/\\[CRIAR_PEDIDO:[\\s\\S]*/gi, '')
@@ -255,7 +396,7 @@ if (orderJsonStr) {
   }
 }
 
-// 2. Limpeza Rigorosa Anti-Vazamento (Garante que nenhuma chave solta apareça)
+// 2. Limpeza Rigorosa Anti-Vazamento
 rawText = rawText
   .replace(/<<<PEDIDO:[\\s\\S]*?>>>/gi, '')
   .replace(/\\[CRIAR_PEDIDO:[\\s\\S]*/gi, '')
@@ -385,7 +526,7 @@ async function deploy() {
       node.parameters.options.systemMessage = SYSTEM_PROMPT;
     }
 
-    // 2. Atualizar o Formatador de Resposta com Emissão do Recibo Oficial em Texto + Sanitização Total
+    // 2. Atualizar o Formatador de Resposta com Persistência Real no Banco de Dados Supabase + Recibo em Texto
     if (node.name.includes('Formatar Resposta') || node.id === 'code-format-response') {
       node.parameters = node.parameters || {};
       node.parameters.jsCode = JS_FORMAT_RESPONSE;
@@ -394,7 +535,7 @@ async function deploy() {
     return node;
   });
 
-  console.log('📦 Enviando atualização do Recibo Oficial em Texto para o n8n...');
+  console.log('📦 Enviando atualização com Salvamento Real no Banco para o n8n...');
   const updateRes = await requestN8N(`/workflows/${WORKFLOW_ID}`, 'PUT', {
     name: existingWf.name,
     nodes: nodes,
@@ -405,7 +546,7 @@ async function deploy() {
   console.log('Status do update no n8n:', updateRes.status);
   if (updateRes.status === 200) {
     await requestN8N(`/workflows/${WORKFLOW_ID}/activate`, 'POST');
-    console.log('🎉 SUCESSO TOTAL! RECIBO OFICIAL EM TEXTO E PARSER ULTRA-RESILIENTE ATIVADOS NO N8N!');
+    console.log('🎉 SUCESSO TOTAL! SALVAMENTO DE PEDIDOS NO BANCO E RECIBO EM TEXTO ATIVADOS NO N8N!');
   } else {
     console.error('❌ Erro ao atualizar n8n:', updateRes.data || updateRes.raw);
   }
