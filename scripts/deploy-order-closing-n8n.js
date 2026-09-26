@@ -47,86 +47,76 @@ function requestN8N(endpoint, method = 'GET', body = null) {
   });
 }
 
-const SYSTEM_PROMPT = `Você é o sistema oficial de inteligência artificial de vendas e consultoria de engenharia da HubObra (https://hubobra.com.br) - o maior marketplace de materiais de construção do Ceará.
-Você atua com duas personas principais: 🙋‍♀️ LIA e 👷‍♂️ ZÉ DA OBRA.
+const SYSTEM_PROMPT = `Você é o sistema oficial de inteligência artificial de atendimento, vendas e consultoria técnica da HubObra (https://hubobra.com.br) - o maior marketplace de materiais de construção do Ceará.
+Você atua com duas personas principais: 🙋‍♀️ LIA (Atendente Comercial & Vendas) e 👷‍♂️ ZÉ DA OBRA (Especialista em Engenharia & Cálculos).
 
 ══════════════════════════════════════════════════════════════
-🎭 REGRAS RÍGIDAS DE PERSONAS E HIERARQUIA:
+🎭 REGRAS RÍGIDAS DE PERSONAS:
 ══════════════════════════════════════════════════════════════
-1. 🙋‍♀️ LIA É A ATENDENTE PRINCIPAL (COMERCIAL & VENDAS):
-   - Atende saudações ("Oi", "Bom dia", "Tudo bem?"), passa preços de catálogo, orçamentos, formas de pagamento, fotos e fecha vendas com simpatia, gentileza e foco no cliente.
-
-2. 👷‍♂️ ZÉ DA OBRA É O ESPECIALISTA TÉCNICO DE ENGENHARIA (SOB DEMANDA):
-   - Entra na conversa APENAS se o cliente pedir cálculos de materiais (tijolos, cimento, areia, reboco, contrapiso, piso, impermeabilização) ou tirar dúvidas técnicas de aplicação.
-   - Assim que o Zé explica o cálculo com linguagem prática de obra, a 🙋‍♀️ LIA assume imediatamente para apresentar os preços e fechar a entrega!
-
-══════════════════════════════════════════════════════════════
-🧠 MEMÓRIA DO CLIENTE & EXPERIÊNCIA DA OBRA:
-══════════════════════════════════════════════════════════════
-- Se o contexto trouxer informações de [MEMÓRIA DO CLIENTE]:
-  * Cumprimente o cliente pelo nome com naturalidade e acolhimento (ex: "Oi Claudio! Que bom falar com você de novo!").
-  * Demonstre que você se lembra do estágio da obra dele (ex: "Como estão as coisas lá na obra em Messejana?").
-  * Antecipe necessidades da próxima fase de forma consultiva e prestativa!
+1. 🙋‍♀️ LIA (COMERCIAL & ATENDIMENTO):
+   - Atende com simpatia, calor humano e acolhimento.
+   - Apresenta produtos do catálogo, orçamentos, fotos, formas de pagamento e conduz o cliente pelo funil de compra até a entrega.
+2. 👷‍♂️ ZÉ DA OBRA (ENGENHEIRO PRÁTICO - SOB DEMANDA):
+   - Entra na conversa APENAS se o cliente tiver dúvidas de cálculo de materiais (tijolos, cimento, areia, reboco, contrapiso, piso, impermeabilização) ou aplicação prática.
+   - Assim que o Zé faz o cálculo prático, a Lia assume para passar os preços e fechar a entrega.
 
 ══════════════════════════════════════════════════════════════
-🚚 MODALIDADES DE RECEBIMENTO (ENTREGA NA OBRA OU RETIRADA EXPRESS):
+📋 PROCEDIMENTO DE ATENDIMENTO OBRIGATÓRIO EM 5 PASSOS:
 ══════════════════════════════════════════════════════════════
-1. 🚚 ENTREGA DIRETO NA SUA OBRA:
-   - Entrega rápida para Fortaleza e Região Metropolitana.
-   - O motorista leva a carga até o canteiro da obra e leva a maquininha de cartão para pagamento no local ou PIX com 10% OFF.
+Você DEVE conduzir o cliente organizadamente através dos 5 passos abaixo, SEM pular etapas:
 
-2. 🏬 RETIRADA RÁPIDA NA LOJA (CLIQUE & RETIRE / ADIANTAR NO APP):
-   - O cliente pode adiantar seu pedido pelo WhatsApp ou pelo aplicativo da HubObra e escolher retirar na loja física.
-   - Nossa equipe separa, confere e embala todos os materiais com antecedência.
-   - Quando o cliente chegar na loja, o pedido já está 100% pronto e embalado no balcão: é só chegar, pegar e levar, sem fila e sem perder tempo de obra!
+PASSO 1: SONDAGEM & BOAS-VINDAS
+- Cumprimente pelo nome (usando a Memória do cliente) de forma calorosa.
+- Entenda quais materiais o cliente precisa, quantidades e a fase da obra.
+- Se o cliente precisar de cálculos, o Zé da Obra faz a estimativa exata.
+
+PASSO 2: COTAÇÃO OFICIAL, FOTOS REAIS & PREÇOS
+- A Lia apresenta a cotação organizada por escrito:
+  * Nome do item, quantidade e valor unitário.
+  * 💰 *Total no PIX (com 10% de DESCONTO REAL): R$ [Valor]*
+  * 🚚💳 *Ou no Cartão na Entrega (o motorista leva a maquininha): R$ [Valor]*
+- Envie SEMPRE a foto oficial do material colocando no final a tag: [FOTO: URL_DA_IMAGEM].
+
+PASSO 3: ESCOLHA DA MODALIDADE DE RECEBIMENTO
+- Pergunte a preferência do cliente:
+  * 🚚 **Entrega Direto na sua Obra** (rápida em Fortaleza e Região Metropolitana).
+  * 🏬 **Retirada Express na Loja** (material separado e embalado no balcão sem fila).
+
+PASSO 4: COLETA DO CHECKLIST OBRIGATÓRIO DE DADOS
+⚠️ A LIA NÃO PODE FECHAR O PEDIDO SEM ANTES COLETAR ESTES 4 DADOS:
+1. **Nome Completo de quem recebe na obra**
+2. **Endereço Completo de Entrega** (Rua, Número e Bairro) - *ou confirmação de Retirada na Loja*.
+3. **Ponto de Referência da Obra** (ex: "próximo ao mercantil/posto/escola", para orientar o motorista).
+4. **Forma de Pagamento Escolhida** (PIX com 10% de desconto ou Cartão na Entrega).
+
+*Regra de Frete:*
+- Bairros na área de atendimento padrão (Messejana e proximidades): Entrega direta inclusa.
+- Bairros mais distantes / fora da área: Taxa fixa de entrega de R$ 15,00.
+
+PASSO 5: RESUMO DE CONFERÊNCIA & EMISSÃO DO PEDIDO
+- Assim que tiver todos os 4 dados do checklist, apresente o Resumo de Conferência:
+  "Perfeito, [Nome]! Aqui está o resumo para conferirmos:
+  • Material: [Itens e Quantidades]
+  • Destino: [Rua, Número, Bairro] - Ref: [Ponto de referência]
+  • Pagamento: [PIX 10% OFF ou Cartão na Entrega]
+  • Total: R$ [Valor]
+  Posso confirmar o pedido para separação imediata?"
+
+- Quando o cliente disser "sim", "pode fechar", "confirma", "manda", etc.:
+  * A Lia confirma com alegria e emite OBRIGATORIAMENTE no final a tag:
+    [CRIAR_PEDIDO: {"customerName":"Nome","items":[{"name":"Cimento 50kg","quantity":3,"price":32.00}],"paymentMethod":"CREDIT_CARD","deliveryType":"DELIVERY","street":"Rua Trajano de Medeiros","number":"566","neighborhood":"Messejana","referencePoint":"Próximo à praça","deliveryFee":0}]
 
 ══════════════════════════════════════════════════════════════
-💳 FORMAS DE PAGAMENTO OFICIAIS (ACEITAMOS EXCLUSIVAMENTE DUAS):
-══════════════════════════════════════════════════════════════
-1. 💰 PIX À VISTA (10% DE DESCONTO):
-   - O cliente ganha 10% DE DESCONTO REAL no valor total da compra.
-   - Chave PIX oficial enviada na confirmação do pedido para liberação e separação imediata da carga.
-
-2. 🚚💳 PAGAMENTO NA ENTREGA OU NA RETIRADA:
-   - Na entrega, o motorista leva a MAQUININHA DE CARTÃO até a obra.
-   - O cliente passa o cartão de Crédito (em até 12x) ou Débito diretamente no momento do recebimento, ou paga em Dinheiro.
-   - Segurança total para o cliente: ele confere o material antes de pagar!
-
-⚠️ NUNCA mencione boleto a prazo ou pagamento por link online. As opções são PIX 10% OFF ou Maquininha de Cartão!
-
-══════════════════════════════════════════════════════════════
-🛒 ETAPA DE FECHAMENTO & CRIAÇÃO AUTOMÁTICA DO PEDIDO:
-══════════════════════════════════════════════════════════════
-- Quando o cliente confirmar a compra, disser que quer fechar, pedir para entregar ou retirar (exemplos: "pode fazer o pedido", "quero fechar", "confirma para mim", "manda 1 saco", "vou querer", "pode mandar para Messejana", "fecha no cartão", "manda a chave pix"):
-  * A Lia DEVE confirmar com entusiasmo e OBRIGATORIAMENTE emitir no final do texto a tag de criação do pedido:
-    [CRIAR_PEDIDO: {"customerName":"Nome do Cliente","items":[{"name":"Cimento 50kg","quantity":1,"price":32.00}],"paymentMethod":"CREDIT_CARD","deliveryType":"DELIVERY","neighborhood":"Messejana"}]
-  * Regras dos campos da tag JSON:
-    - customerName: Nome do cliente (ex: Claudio)
-    - items: Lista de itens com nome, quantity e price unitário
-    - paymentMethod: "CREDIT_CARD" (se for pagar na maquininha/entrega) ou "PIX" (se for PIX com 10% de desconto)
-    - deliveryType: "DELIVERY" (se for entrega na obra) ou "PICKUP" (se for retirada na loja)
-    - neighborhood: Bairro ou endereço informado (ex: Messejana)
-  * O nosso sistema de retaguarda registrará o pedido automaticamente no banco de dados, criará o número oficial do pedido e gerará o link do comprovante digital!
-
-══════════════════════════════════════════════════════════════
-📸 REGRA ESTRITA DE ENVIO DE FOTOS:
-══════════════════════════════════════════════════════════════
-- Quando o cliente pedir foto (ex: "manda foto do produto", "tem foto?"):
-  * Coloque SEMPRE no final da mensagem a tag: [FOTO: URL_EXATA_DA_IMAGEM]
-  * Nosso sistema WhatsApp vai enviar a foto real como imagem oficial com legenda e preço!
-
-══════════════════════════════════════════════════════════════
-🎙️ REGRA DE COMUNICAÇÃO MULTIMODAL (ÁUDIO HUMANO + TEXTO ESCRITO):
+🎙️ REGRA MULTIMODAL (ÁUDIO HUMANO + TEXTO ESCRITO):
 ══════════════════════════════════════════════════════════════
 1. A FALA CURTA DE ÁUDIO (Tag [FALA: ...]):
-   - Coloque OBRIGATORIAMENTE no início da sua resposta a tag: [FALA: texto_aqui]
-   - O áudio deve ser curto (2 a 3 frases, máximo 15 a 20 segundos), caloroso e acolhedor.
-   - Quando estiver confirmando um pedido: "Perfeito, Claudio! Seu pedido de cimento já foi registrado e encaminhado para separação no centro de distribuição da HubObra. Deixei todos os detalhes e o link do comprovante aqui embaixo por escrito!"
+   - Coloque OBRIGATORIAMENTE no início da mensagem a tag: [FALA: texto_aqui]
+   - O áudio deve ser curto (2 a 3 frases, 15 a 20s), acolhedor e dinâmico.
+   - Ao confirmar o pedido: "Pedido confirmado com sucesso, [Nome]! Já enviei para a nossa equipe de separação e deixei todos os detalhes e o link do seu comprovante por escrito aqui embaixo!"
+2. O TEXTO COMPLETO:
+   - Todo o detalhamento formal, itens, valores, fotos e comprovantes são enviados no corpo do texto.`;
 
-2. O CONTEÚDO COMPLETO POR ESCRITO:
-   - Todo o detalhamento visual, valores, forma de pagamento e endereço fica por escrito no WhatsApp.`;
-
-const JS_FORMAT_RESPONSE = `// 📝 FORMATADOR MULTIMODAL INTELIGENTE COM CRIAÇÃO DE PEDIDO & ELEVENLABS
+const JS_FORMAT_RESPONSE = `// 📝 FORMATADOR MULTIMODAL INTELIGENTE (PEDIDOS + LINKS CLICÁVEIS + SANITIZAÇÃO TOTAL + ELEVENLABS)
 const item = $input.first().json;
 const initialData = $('⚙️ Normalizar Mensagem').first().json;
 
@@ -139,15 +129,30 @@ if (item.output) {
   rawText = item;
 }
 
-// 1. Verificar se a IA solicitou a Criação Automática do Pedido [CRIAR_PEDIDO: {...}]
+// 1. Extração e Criação de Pedido Autônomo [CRIAR_PEDIDO: {...}]
 let orderCreated = null;
-const orderTagMatch = rawText.match(/\\[CRIAR_PEDIDO:\\s*([\\s\\S]+?)\\]/i);
 
+// Regex ultra-resiliente para capturar tag [CRIAR_PEDIDO: ...] mesmo com quebras de linha ou caracteres soltos
+const orderTagRegex = /\\[CRIAR_PEDIDO:\\s*([\\s\\S]*?)\\]/i;
+const orderTagMatch = rawText.match(orderTagRegex);
+
+let orderPayloadStr = null;
 if (orderTagMatch && orderTagMatch[1]) {
+  orderPayloadStr = orderTagMatch[1].trim();
+} else {
+  // Fallback: procura objeto JSON solto com paymentMethod
+  const jsonLooseMatch = rawText.match(/(\\{[\\s\\S]*?"paymentMethod"[\\s\\S]*?\\})/i);
+  if (jsonLooseMatch && jsonLooseMatch[1]) {
+    orderPayloadStr = jsonLooseMatch[1].trim();
+  }
+}
+
+if (orderPayloadStr) {
   try {
-    const orderData = JSON.parse(orderTagMatch[1].trim());
+    // Normalizar JSON se houver aspas ou quebras imperfeitas
+    const orderData = JSON.parse(orderPayloadStr);
     
-    // Gerar número de pedido no padrão oficial YYMMDDXXXX
+    // Gerar número oficial do pedido YYMMDDXXXX
     const now = new Date();
     const yy = String(now.getFullYear()).slice(-2);
     const mm = String(now.getMonth() + 1).padStart(2, '0');
@@ -160,14 +165,22 @@ if (orderTagMatch && orderTagMatch[1]) {
     const items = orderData.items || [{ name: 'Cimento 50kg', quantity: 1, price: 32.00 }];
     const subtotal = items.reduce((sum, i) => sum + (Number(i.price) || 0) * (Number(i.quantity) || 1), 0);
     const isPix = String(orderData.paymentMethod || '').toUpperCase() === 'PIX';
-    const total = isPix ? (subtotal * 0.90) : subtotal;
+    const deliveryFee = Number(orderData.deliveryFee) || 0;
+    const total = (isPix ? (subtotal * 0.90) : subtotal) + deliveryFee;
     const isPickup = String(orderData.deliveryType || '').toUpperCase() === 'PICKUP';
+    
+    const street = orderData.street || 'Rua informada no WhatsApp';
+    const number = orderData.number || 'S/N';
     const neighborhood = orderData.neighborhood || 'Messejana';
-    const paymentLabel = isPix ? 'PIX à Vista (10% OFF aplicado)' : 'Cartão na Entrega (Maquininha com motorista)';
-    const deliveryLabel = isPickup ? 'Retirada Rápida no CD HubObra' : \`Entrega direta na sua obra em \${neighborhood}\`;
+    const refPoint = orderData.referencePoint ? \` (Ref: \${orderData.referencePoint})\` : '';
+    const fullAddress = isPickup ? 'Retirada Express no Centro de Distribuição HubObra' : \`\${street}, \${number} - \${neighborhood}\${refPoint}\`;
+
+    const paymentLabel = isPix ? 'PIX à Vista (10% de DESCONTO aplicado)' : 'Cartão na Entrega (Maquininha levada pelo motorista)';
+    const deliveryLabel = isPickup ? 'Retirada Express na Loja HubObra' : \`Entrega direta na sua obra em \${neighborhood}\`;
+    
+    // Link 100% Clicável no WhatsApp (Protocolo completo, sem markdown ou caracteres colados)
     const receiptUrl = \`https://hubobra.com.br/pedidos/\${orderId}/recibo\`;
 
-    // Salvar informações do pedido criado
     orderCreated = {
       orderId,
       orderNumber,
@@ -175,41 +188,62 @@ if (orderTagMatch && orderTagMatch[1]) {
       items,
       subtotal,
       total,
+      deliveryFee,
       isPix,
       paymentLabel,
       deliveryLabel,
+      fullAddress,
       neighborhood,
       receiptUrl
     };
 
-    // Montar bloco oficial de confirmação de pedido
-    const itemsFormatted = items.map(i => \`• \${i.quantity}x \${i.name} (R$ \${Number(i.price).toFixed(2)})\`).join('\\n');
-    const pixChaveBox = isPix ? \`\\n\\n🔑 *Chave PIX Oficial HubObra (CNPJ):*\\n\` + '\`51.842.190/0001-08\`\\n_Após o pagamento, a separação é liberada imediatamente!_' : '';
+    const itemsFormatted = items.map(i => \`• \${i.quantity}x \${i.name} — R$ \${(Number(i.price) * Number(i.quantity)).toFixed(2)}\`).join('\\n');
+    
+    const pixBox = isPix ? 
+      \`\\n\\n🔑 *CHAVE PIX OFICIAL HUBOBRA (CNPJ):*\\n\` +
+      \`51842190000108\\n\` +
+      \`_Copie a chave acima. Assim que efetuar o pagamento, a liberação e separação da carga é imediata!_\` : '';
 
     const orderConfirmationBlock = 
-      \`\\n\\n═════════════════════════\\n\` +
+      \`\\n\\n════════════════════════════\\n\` +
       \`✅ *PEDIDO REGISTRADO COM SUCESSO!*\\n\` +
-      \`═════════════════════════\\n\` +
-      \`📋 *Nº do Pedido:* #\${orderNumber}\\n\` +
+      \`════════════════════════════\\n\` +
+      \`📋 *Pedido:* #\${orderNumber}\\n\` +
       \`👷 *Cliente:* \${customerName}\\n\\n\` +
-      \`📦 *Itens do Pedido:*\\n\${itemsFormatted}\\n\\n\` +
-      \`💰 *Total:* R$ \${total.toFixed(2)} (\${isPix ? '10% de desconto PIX' : 'Cartão na Entrega'})\\n\` +
+      \`📦 *Materiais Solicitados:*\\n\${itemsFormatted}\\n\\n\` +
+      \`💰 *Total:* R$ \${total.toFixed(2)} (\${isPix ? 'com 10% OFF no PIX' : 'Cartão na Entrega'})\` + (deliveryFee > 0 ? \` [Frete: R$ \${deliveryFee.toFixed(2)}]\` : '') + \`\\n\` +
       \`💳 *Pagamento:* \${paymentLabel}\\n\` +
-      \`🚚 *Destino:* \${deliveryLabel}\\n\` +
-      \`⏱️ *Status:* Aguardando separação no CD HubObra\${pixChaveBox}\\n\\n\` +
-      \`📄 *Acesse seu Recibo Oficial & Acompanhamento:*\\n\${receiptUrl}\\n\` +
-      \`═════════════════════════\`;
+      \`🚚 *Destino:* \${fullAddress}\\n\` +
+      \`⏱️ *Status:* Carga em separação no CD HubObra\${pixBox}\\n\\n\` +
+      \`📄 *Acesse e acompanhe seu Recibo Oficial:*\\n\\n\` +
+      \`\${receiptUrl}\\n\\n\` +
+      \`════════════════════════════\`;
 
-    // Substituir a tag [CRIAR_PEDIDO: ...] pelo bloco oficial no texto
-    rawText = rawText.replace(/\\[CRIAR_PEDIDO:\\s*[\\s\\S]+?\\]/gi, '').trim() + orderConfirmationBlock;
+    // Remove a tag e appenda o bloco oficial
+    rawText = rawText
+      .replace(/\\[CRIAR_PEDIDO:[\\s\\S]*?\\]/gi, '')
+      .replace(/\\{[\\s\\S]*?"paymentMethod"[\\s\\S]*?\\}/gi, '')
+      .trim() + orderConfirmationBlock;
 
   } catch(e) {
-    // Em caso de erro no parse, remove a tag silenciosamente
-    rawText = rawText.replace(/\\[CRIAR_PEDIDO:\\s*[\\s\\S]+?\\]/gi, '').trim();
+    // Se o parse falhar, remove qualquer sujeira
+    rawText = rawText
+      .replace(/\\[CRIAR_PEDIDO:[\\s\\S]*?\\]/gi, '')
+      .replace(/\\{[\\s\\S]*?"paymentMethod"[\\s\\S]*?\\}/gi, '')
+      .trim();
   }
 }
 
-// 2. Extração Universal de Imagens
+// 2. Limpeza Rigorosa Anti-Vazamento (Remove qualquer fragmento residual de JSON ou tags)
+rawText = rawText
+  .replace(/\\[CRIAR_PEDIDO:[\\s\\S]*?\\]/gi, '')
+  .replace(/,\s*"paymentMethod"[\s\S]*?\}/gi, '')
+  .replace(/,\s*"deliveryType"[\s\S]*?\}/gi, '')
+  .replace(/,\s*"neighborhood"[\s\S]*?\}/gi, '')
+  .replace(/\\{[\\s\\S]*?"customerName"[\\s\\S]*?\\}/gi, '')
+  .trim();
+
+// 3. Extração de Fotos [FOTO: ...]
 let imageUrl = null;
 const fotoTagMatch = rawText.match(/\\[FOTO:\\s*([^\\s\\]]+)\\]/i);
 if (fotoTagMatch && fotoTagMatch[1]) {
@@ -231,7 +265,7 @@ if (!imageUrl) {
   if (supaMatch && supaMatch[1]) imageUrl = supaMatch[1].trim();
 }
 
-// 3. Extrair Fala para o Áudio [FALA: ...]
+// 4. Extração da Fala para Áudio [FALA: ...]
 let speechText = '';
 const falaMatch = rawText.match(/\\[FALA:\\s*([\\s\\S]+?)\\]/i);
 if (falaMatch && falaMatch[1]) {
@@ -273,10 +307,11 @@ if (speechText.length > 400) {
   speechText = speechText.substring(0, 400) + '...';
 }
 
-// 4. Resposta formatada por escrito para o WhatsApp
+// 5. Resposta formatada por escrito para o WhatsApp
 let respostaFormatada = rawText
   .replace(/\\[FALA:\\s*[\\s\\S]+?\\]/gi, '')
   .replace(/\\[FOTO:\\s*[^\\s\\]]+\\]/gi, '')
+  .replace(/\\[CRIAR_PEDIDO:[\\s\\S]*?\\]/gi, '')
   .replace(/!\\[.*?\\]\\([^\\)]+\\)/gi, '')
   .trim();
 
@@ -319,7 +354,7 @@ async function deploy() {
   let nodes = [...existingWf.nodes];
   let connections = { ...existingWf.connections };
 
-  // 1. Atualizar o Agente IA com o novo System Message que contém a instrução de Fechamento de Pedidos
+  // 1. Atualizar o Agente IA com o novo System Message que contém o Funil em 5 Passos
   nodes = nodes.map(node => {
     if (node.id === 'ai-agent-hubobra' || node.name.includes('Agente IA')) {
       node.parameters = node.parameters || {};
@@ -327,7 +362,7 @@ async function deploy() {
       node.parameters.options.systemMessage = SYSTEM_PROMPT;
     }
 
-    // 2. Atualizar o Formatador de Resposta com o parser de Pedidos + ElevenLabs
+    // 2. Atualizar o Formatador de Resposta com o novo parser resiliente, anti-vazamento e links clicáveis
     if (node.name.includes('Formatar Resposta') || node.id === 'code-format-response') {
       node.parameters = node.parameters || {};
       node.parameters.jsCode = JS_FORMAT_RESPONSE;
@@ -336,7 +371,7 @@ async function deploy() {
     return node;
   });
 
-  console.log('📦 Enviando atualização do fechamento de pedidos para o n8n...');
+  console.log('📦 Enviando atualização com Funil em 5 Passos e Links Clicáveis para o n8n...');
   const updateRes = await requestN8N(`/workflows/${WORKFLOW_ID}`, 'PUT', {
     name: existingWf.name,
     nodes: nodes,
@@ -347,7 +382,7 @@ async function deploy() {
   console.log('Status do update no n8n:', updateRes.status);
   if (updateRes.status === 200) {
     await requestN8N(`/workflows/${WORKFLOW_ID}/activate`, 'POST');
-    console.log('🎉 SUCESSO TOTAL! FECHAMENTO DE PEDIDOS E LINK DE RECIBO ATIVADOS NO N8N!');
+    console.log('🎉 SUCESSO TOTAL! FUNIL DE ATENDIMENTO E RECIBO DIGITAL ATIVADOS NO N8N!');
   } else {
     console.error('❌ Erro ao atualizar n8n:', updateRes.data || updateRes.raw);
   }
