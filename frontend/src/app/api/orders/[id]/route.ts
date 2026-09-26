@@ -15,13 +15,26 @@ export async function GET(
       );
     }
 
-    const response = await fetchBackend(`/orders/${orderId}`, {
+    const authHeader = request.headers.get('Authorization') || '';
+    const endpoint = authHeader ? `/orders/${orderId}` : `/orders/${orderId}/public`;
+
+    let response = await fetchBackend(endpoint, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': request.headers.get('Authorization') || '',
+        ...(authHeader ? { 'Authorization': authHeader } : {}),
       },
     });
+
+    if (!response.ok && response.status === 401) {
+      // Fallback para endpoint público caso o token esteja expirado ou ausente
+      response = await fetchBackend(`/orders/${orderId}/public`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+    }
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({ message: 'Pedido não encontrado' }));

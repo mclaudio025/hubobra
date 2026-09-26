@@ -36,6 +36,22 @@ import { Roles } from "../auth/decorators/roles.decorator";
 export class OrdersController {
   constructor(private readonly ordersService: OrdersService) {}
 
+  @Post('bot-create')
+  @ApiOperation({ summary: 'Criar novo pedido via Bot de WhatsApp / IA' })
+  @ApiResponse({ status: 201, description: 'Pedido criado com sucesso' })
+  @ApiResponse({ status: 400, description: 'Dados inválidos' })
+  createBotOrder(@Body() botOrderDto: any) {
+    return this.ordersService.createBotOrder(botOrderDto);
+  }
+
+  @Get(':id/public')
+  @ApiOperation({ summary: 'Buscar comprovante/recibo público do pedido por ID' })
+  @ApiResponse({ status: 200, description: 'Pedido encontrado' })
+  @ApiResponse({ status: 404, description: 'Pedido não encontrado' })
+  findOnePublic(@Param('id') id: string) {
+    return this.ordersService.findById(id);
+  }
+
   @Post()
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()

@@ -37,20 +37,24 @@ export default function OrderReceiptPage() {
   const { addToast } = useToast();
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      router.push('/login');
-      return;
-    }
-
     if (orderId) {
       loadOrder();
     }
-  }, [orderId, isAuthenticated]);
+  }, [orderId]);
 
   const loadOrder = async () => {
     try {
       setLoading(true);
-      const orderData = await ordersApi.getOrder(orderId);
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      const res = await fetch(`/api/orders/${orderId}`, {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+      });
+
+      if (!res.ok) {
+        throw new Error('Comprovante não localizado');
+      }
+
+      const orderData = await res.json();
       setOrder(orderData);
       
       // Pré-preencher telefone se disponível
@@ -62,10 +66,9 @@ export default function OrderReceiptPage() {
       console.error('Erro ao carregar recibo:', error);
       addToast({
         type: 'error',
-        title: 'Erro',
+        title: 'Aviso',
         message: 'Não foi possível carregar os dados do comprovante'
       });
-      router.push('/pedidos');
     } finally {
       setLoading(false);
     }

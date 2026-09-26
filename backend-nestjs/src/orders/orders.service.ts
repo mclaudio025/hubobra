@@ -173,6 +173,188 @@ export class OrdersService {
     }
   }
 
+  async createBotOrder(data: {
+    customerName?: string;
+    customerPhone: string;
+    customerEmail?: string;
+    items?: Array<{
+      productId?: string;
+      productName?: string;
+      name?: string;
+      quantity?: number;
+      price?: number;
+    }>;
+    deliveryType?: string;
+    shippingAddress?: {
+      street?: string;
+      number?: string;
+      complement?: string;
+      district?: string;
+      neighborhood?: string;
+      city?: string;
+      state?: string;
+      zipCode?: string;
+      reference?: string;
+    };
+    paymentMethod?: string;
+    notes?: string;
+  }) {
+    const cleanPhone = (data.customerPhone || '').replace(/\D/g, '');
+    const email = data.customerEmail || (cleanPhone ? `${cleanPhone}@hubobra.com.br` : `cliente_${Date.now()}@hubobra.com.br`);
+    const name = data.customerName || 'Cliente WhatsApp';
+
+    // 1. Localizar ou Criar Usuário
+    let user = await this.prisma.user.findFirst({
+      where: {
+        OR: [
+          { email: email },
+          ...(cleanPhone ? [{ email: { contains: cleanPhone } }] : [])
+        ]
+      }
+    });
+
+    if (!user) {
+      user = await this.prisma.user.create({
+        data: {
+          name,
+          email,
+          password: 'hubobra_temp_pwd_' + Math.random().toString(36).slice(2, 8),
+          role: 'USER',
+        }
+      });
+    }
+
+    // 2. Processar itens e resolver produtos
+    const orderItemsToCreate: Array<{ productId: string; quantity: number; price: number; total: number; name: string }> = [];
+    
+    for (const item of (data.items || [])) {
+      const qty = Number(item.quantity) || 1;
+      let unitPrice = Number(item.price) || 0;
+      let resolvedProduct: any = null;
+
+      if (item.productId) {
+        resolvedProduct = await this.prisma.product.findUnique({ where: { id: item.productId } });
+      }
+
+      const searchName = item.productName || item.name || '';
+      if (!resolvedProduct && searchName) {
+        resolvedProduct = await this.prisma.product.findFirst({
+          where: {
+            OR: [
+              { name: { contains: searchName, mode: 'insensitive' } },
+              { description: { contains: searchName, mode: 'insensitive' } }
+            ]
+          }
+        });
+      }
+
+      if (!resolvedProduct) {
+        resolvedProduct = await this.prisma.product.findFirst({
+          where: { active: true }
+        });
+      }
+
+      if (resolvedProduct) {
+        if (!unitPrice || unitPrice <= 0) {
+          unitPrice = Number(resolvedProduct.price) || 0;
+        }
+        orderItemsToCreate.push({
+          productId: resolvedProduct.id,
+          name: resolvedProduct.name,
+          quantity: qty,
+          price: unitPrice,
+          total: unitPrice * qty
+        });
+      }
+    }
+
+    if (orderItemsToCreate.length === 0) {
+      const defaultProduct = await this.prisma.product.findFirst({ where: { active: true } });
+      if (defaultProduct) {
+        orderItemsToCreate.push({
+          productId: defaultProduct.id,
+          name: defaultProduct.name,
+          quantity: 1,
+          price: defaultProduct.price || 32.00,
+          total: defaultProduct.price || 32.00
+        });
+      }
+    }
+
+    const subtotal = orderItemsToCreate.reduce((sum, i) => sum + i.total, 0);
+    const isPix = (data.paymentMethod || '').toUpperCase() === 'PIX';
+    const total = isPix ? (subtotal * 0.90) : subtotal;
+
+    const orderNumber = await this.generateOrderNumber();
+    const isPickup = (data.deliveryType || '').toUpperCase() === 'PICKUP';
+
+    const newOrder = await this.prisma.order.create({
+      data: {
+        orderNumber,
+        userId: user.id,
+        subtotal,
+        total,
+        shipping: 0,
+        tax: 0,
+        notes: data.notes || `Pedido gerado pela IA WhatsApp (${data.paymentMethod || 'Cartão na Entrega'})`,
+        status: OrderStatus.PENDING,
+        items: {
+          create: orderItemsToCreate.map(i => ({
+            productId: i.productId,
+            quantity: i.quantity,
+            price: i.price,
+            total: i.total
+          }))
+        },
+        shippingAddress: {
+          create: {
+            street: isPickup ? 'Retirada Express no Centro de Distribuição HubObra' : (data.shippingAddress?.street || 'Endereço informado na obra'),
+            number: data.shippingAddress?.number || 'S/N',
+            complement: data.shippingAddress?.complement || null,
+            district: data.shippingAddress?.district || data.shippingAddress?.neighborhood || 'Messejana',
+            city: data.shippingAddress?.city || 'Fortaleza',
+            state: data.shippingAddress?.state || 'CE',
+            zipCode: data.shippingAddress?.zipCode || '60000-000',
+            country: 'Brasil'
+          }
+        },
+        payment: {
+          create: {
+            method: isPix ? 'PIX' : (data.paymentMethod || 'CREDIT_CARD'),
+            amount: total,
+            status: PaymentStatus.PENDING,
+          }
+        }
+      },
+      include: {
+        items: { include: { product: true } },
+        shippingAddress: true,
+        payment: true,
+        user: true
+      }
+    });
+
+    return {
+      success: true,
+      order: {
+        id: newOrder.id,
+        orderNumber: newOrder.orderNumber,
+        total: newOrder.total,
+        subtotal: newOrder.subtotal,
+        status: newOrder.status,
+        paymentMethod: newOrder.payment?.method,
+        receiptUrl: `https://hubobra.com.br/pedidos/${newOrder.id}/recibo`,
+        items: newOrder.items.map(i => ({
+          name: i.product?.name,
+          quantity: i.quantity,
+          price: i.price,
+          total: i.total
+        })),
+        shippingAddress: newOrder.shippingAddress
+      }
+    };
+  }
+
   async findAll(
     page: number = 1,
     limit: number = 20,
