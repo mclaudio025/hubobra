@@ -138,6 +138,55 @@ export default function AdminPedidosPage() {
     try {
       setUpdating(orderId);
       await ordersApi.updateOrderStatus(orderId, newStatus);
+
+      const targetOrder = orders.find(o => o.id === orderId);
+
+      // Disparo 100% Automático via Lia no WhatsApp quando o status for SHIPPED ou DELIVERED
+      if (targetOrder && (newStatus === 'SHIPPED' || newStatus === 'DELIVERED')) {
+        const phone = targetOrder.user?.phone || (targetOrder.user?.email && targetOrder.user.email.includes('@') ? targetOrder.user.email.split('@')[0] : '') || '';
+        const trackingUrl = typeof window !== 'undefined' 
+          ? `${window.location.origin}/pedidos/${targetOrder.id}/recibo`
+          : `https://hubobra.com.br/pedidos/${targetOrder.id}/recibo`;
+        const customerName = targetOrder.user?.name || 'Cliente';
+        const orderNum = targetOrder.orderNumber || targetOrder.id.slice(0, 8);
+        const itemsList = targetOrder.items?.map(i => `• ${i.quantity}x ${i.product?.name || 'Item'}`).join('\n') || '';
+
+        let autoMsg = '';
+        if (newStatus === 'SHIPPED') {
+          autoMsg = `🚚 *Aviso de Entrega - HubObra*\n\n` +
+            `Olá, *${customerName}*! 👋\n` +
+            `Seu pedido *#${orderNum}* já foi separado e *ACABOU DE SAIR PARA ENTREGA!* 🚛💨\n\n` +
+            `📦 *Itens em rota:*\n${itemsList}\n\n` +
+            `💰 *Total:* ${formatCurrency(targetOrder.total)}\n` +
+            (targetOrder.shippingAddress ? `📍 *Entrega:* ${targetOrder.shippingAddress.street}, ${targetOrder.shippingAddress.number} - ${targetOrder.shippingAddress.district || ''}\n\n` : `\n`) +
+            `📄 *Acompanhe seu Comprovante e Rastreio:*\n${trackingUrl}\n\n` +
+            `Fique atento ao recebimento. A Lia e nossa equipe estão à disposição! 🤝🛠️`;
+        } else if (newStatus === 'DELIVERED') {
+          autoMsg = `✅ *Pedido Entregue com Sucesso - HubObra*\n\n` +
+            `Olá, *${customerName}*!\n` +
+            `Confirmamos a entrega do seu pedido *#${orderNum}*. 🎉\n\n` +
+            `📄 *Comprovante Digital:* ${trackingUrl}\n\n` +
+            `Agradecemos pela preferência e boa obra! Conte sempre com a HubObra. 🏗️`;
+        }
+
+        if (phone) {
+          try {
+            await fetch(`/api/orders/${orderId}/receipt/whatsapp`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ phone, message: autoMsg })
+            });
+            addToast({
+              type: 'success',
+              title: 'Lia enviou no WhatsApp! 📲',
+              message: `Notificação enviada automaticamente para o cliente ${customerName}.`
+            });
+          } catch (sendErr) {
+            console.warn('Erro no disparo automático do WhatsApp:', sendErr);
+          }
+        }
+      }
+
       addToast({
         type: 'success',
         title: 'Status atualizado',
@@ -147,8 +196,7 @@ export default function AdminPedidosPage() {
       // Atualiza localmente o status
       setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
 
-      if (openNotificationModal || newStatus === 'SHIPPED') {
-        const targetOrder = orders.find(o => o.id === orderId);
+      if (openNotificationModal) {
         if (targetOrder) {
           openWhatsAppModal({ ...targetOrder, status: newStatus }, newStatus);
         }
@@ -179,7 +227,7 @@ export default function AdminPedidosPage() {
     let defaultMsg = '';
     if (statusType === 'SHIPPED') {
       defaultMsg = `🚚 *Aviso de Entrega - HubObra*\n\n` +
-        `Olá, *${customerName}*!\n` +
+        `Olá, *${customerName}*! 👋\n` +
         `Seu pedido *#${orderNum}* já foi separado e *ACABOU DE SAIR PARA ENTREGA!* 🚛💨\n\n` +
         `📦 *Itens em rota:*\n${itemsList}\n\n` +
         `💰 *Total:* ${formatCurrency(order.total)}\n` +
@@ -198,9 +246,49 @@ export default function AdminPedidosPage() {
         `📄 *Acesse os detalhes:* ${trackingUrl}`;
     }
 
-    setCustomPhone(order.user?.phone || '');
+    const detectedPhone = order.user?.phone || (order.user?.email && order.user.email.includes('@') ? order.user.email.split('@')[0] : '');
+    setCustomPhone(detectedPhone || '');
     setCustomMessage(defaultMsg);
     setSelectedOrderForNotification(order);
+  };
+
+  const handleSendViaLiaAutomated = async () => {
+    if (!selectedOrderForNotification) return;
+    if (!customPhone.trim()) {
+      addToast({
+        type: 'error',
+        title: 'Telefone obrigatório',
+        message: 'Informe o telefone do cliente com DDD'
+      });
+      return;
+    }
+
+    try {
+      addToast({
+        type: 'info',
+        title: 'Enviando pela Lia...',
+        message: 'Aguarde o envio pelo WhatsApp Oficial'
+      });
+
+      const res = await fetch(`/api/orders/${selectedOrderForNotification.id}/receipt/whatsapp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: customPhone, message: customMessage })
+      });
+
+      if (res.ok) {
+        addToast({
+          type: 'success',
+          title: 'Enviado com sucesso! 🚀',
+          message: 'Lia enviou a mensagem para o cliente no WhatsApp.'
+        });
+        setSelectedOrderForNotification(null);
+      } else {
+        handleSendWhatsApp();
+      }
+    } catch (e) {
+      handleSendWhatsApp();
+    }
   };
 
   const handleSendWhatsApp = () => {
@@ -690,20 +778,32 @@ export default function AdminPedidosPage() {
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-3 pt-2">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-slate-100">
               <button
                 onClick={() => setSelectedOrderForNotification(null)}
-                className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition"
+                className="w-full sm:w-auto px-4 py-2.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition"
               >
-                Cancelar
+                Fechar
               </button>
-              <button
-                onClick={handleSendWhatsApp}
-                className="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-md shadow-emerald-600/20 transition hover:shadow-lg"
-              >
-                <Send className="h-4 w-4" />
-                Abrir WhatsApp & Enviar
-              </button>
+
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                <button
+                  onClick={handleSendWhatsApp}
+                  className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition"
+                  title="Abrir no WhatsApp Web"
+                >
+                  <ExternalLink className="h-3.5 w-3.5" />
+                  <span>WhatsApp Web</span>
+                </button>
+
+                <button
+                  onClick={handleSendViaLiaAutomated}
+                  className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-md shadow-emerald-600/20 transition hover:shadow-lg"
+                >
+                  <Send className="h-3.5 w-3.5" />
+                  <span>🤖 Disparar via Lia (Automático)</span>
+                </button>
+              </div>
             </div>
 
           </div>

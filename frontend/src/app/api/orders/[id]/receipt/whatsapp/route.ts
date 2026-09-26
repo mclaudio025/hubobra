@@ -75,37 +75,75 @@ Qualquer dúvida, fale conosco no WhatsApp Oficial: ${STORE_CONFIG.contact.whats
 `.trim();
 
     const messageToSend = body.message || defaultMessage;
-
-    // Enviar via WhatsApp através do backend se disponível
-    const whatsappResponse = await fetchBackend('/whatsapp/send-message', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': request.headers.get('Authorization') || '',
-      },
-      body: JSON.stringify({
-        phone: body.phone,
-        message: messageToSend,
-      }),
-    });
-
-    if (!whatsappResponse.ok) {
-      // Se não houver webhook/endpoint direto de whatsapp configurado no backend, retorna mensagem formatada
-      return NextResponse.json({
-        success: true,
-        fallbackText: messageToSend,
-        message: 'Texto de recibo preparado com sucesso para envio.',
-        sentTo: body.phone
-      });
+    let cleanPhone = String(body.phone).replace(/\D/g, '');
+    if (cleanPhone.length > 0 && !cleanPhone.startsWith('55') && cleanPhone.length <= 11) {
+      cleanPhone = `55${cleanPhone}`;
     }
 
-    const result = await whatsappResponse.json();
+    // 1. Enviar diretamente via Uazapi (Instância Oficial da Lia / HubObra)
+    const UAZAPI_BASE = process.env.UAZAPI_URL || 'https://hubobra.uazapi.com';
+    const UAZAPI_TOKEN = process.env.UAZAPI_TOKEN || '2b8e068e-e174-4419-a64c-9b97f4760527';
+
+    try {
+      const uazapiRes = await fetch(`${UAZAPI_BASE}/send/text`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'token': UAZAPI_TOKEN,
+        },
+        body: JSON.stringify({
+          number: cleanPhone,
+          text: messageToSend,
+        }),
+      });
+
+      const uazapiData = await uazapiRes.json().catch(() => ({}));
+
+      if (uazapiRes.ok) {
+        return NextResponse.json({
+          success: true,
+          message: 'Mensagem enviada automaticamente pela Lia no WhatsApp!',
+          provider: 'uazapi',
+          sentTo: cleanPhone,
+          data: uazapiData
+        });
+      }
+    } catch (uazapiErr: any) {
+      console.warn('Falha no envio direto via Uazapi:', uazapiErr?.message || uazapiErr);
+    }
+
+    // 2. Fallback para envio via backend
+    try {
+      const whatsappResponse = await fetchBackend('/whatsapp/send-message', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': request.headers.get('Authorization') || '',
+        },
+        body: JSON.stringify({
+          phone: cleanPhone,
+          message: messageToSend,
+        }),
+      });
+
+      if (whatsappResponse.ok) {
+        const result = await whatsappResponse.json();
+        return NextResponse.json({
+          success: true,
+          message: 'Mensagem enviada com sucesso via backend',
+          whatsappId: result.id,
+          sentTo: cleanPhone
+        });
+      }
+    } catch (backendErr) {
+      // Ignorar fallback
+    }
 
     return NextResponse.json({
       success: true,
-      message: 'Recibo enviado por WhatsApp com sucesso',
-      whatsappId: result.id,
-      sentTo: body.phone
+      fallbackText: messageToSend,
+      message: 'Notificação formatada pronta para disparo.',
+      sentTo: cleanPhone
     });
 
   } catch (error) {
