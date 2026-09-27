@@ -67,11 +67,49 @@ export class ExtractorService {
   }
 
   /**
-   * 1. Conector Carajás (VTEX Catalog System)
+   * 1. Conector Carajás (VTEX Intelligent Search & Catalog System)
    */
   async searchCarajas(query: string): Promise<ExtractedProduct[]> {
     try {
-      const url = `https://www.carajas.com.br/api/catalog_system/pub/products/search?ft=${encodeURIComponent(query)}&_from=0&_to=19`;
+      // 1. Tentar Intelligent Search (sinônimos + IA)
+      try {
+        const isUrl = `https://www.carajas.com.br/api/io/_v/api/intelligent-search/product_search/?query=${encodeURIComponent(query)}`;
+        const res = await this.axiosClient.get(isUrl);
+        const products = res.data?.products;
+        if (Array.isArray(products) && products.length > 0) {
+          return products
+            .map((item: any) => {
+              const sku = item.items?.[0] || {};
+              const seller = sku.sellers?.[0]?.commertialOffer || {};
+              const image =
+                sku.images?.[0]?.imageUrl ||
+                item.items?.[0]?.images?.[0]?.imageUrl ||
+                "";
+
+              return {
+                store: "Carajás",
+                storeLogo: "https://www.carajas.com.br/arquivos/logo-carajas.png",
+                productId: `carajas-${item.productId}`,
+                name: this.cleanProductName(item.productName || item.name),
+                brand: item.brand || "Carajás",
+                ean: sku.ean || item.productReference || "",
+                price: Number(seller.Price) || Number(seller.ListPrice) || 0,
+                listPrice: Number(seller.ListPrice) || Number(seller.Price) || 0,
+                available: seller.AvailableQuantity > 0,
+                url: item.link || `https://www.carajas.com.br/${item.linkText}/p`,
+                image: image,
+                categories: item.categories || [],
+                description: item.description || "",
+              };
+            })
+            .filter((i: ExtractedProduct) => i.price > 0 && i.name.length > 0);
+        }
+      } catch (isErr) {
+        // Fallback para Catalog
+      }
+
+      // 2. Fallback para Catalog System direto (sem _from/_to que gera 400 na Carajás)
+      const url = `https://carajas.vtexcommercestable.com.br/api/catalog_system/pub/products/search?ft=${encodeURIComponent(query)}`;
       const res = await this.axiosClient.get(url, {
         headers: {
           Referer: "https://www.carajas.com.br/",
@@ -118,7 +156,7 @@ export class ExtractorService {
    */
   async searchAcal(query: string): Promise<ExtractedProduct[]> {
     try {
-      const url = `https://www.acalhomecenter.com.br/api/catalog_system/pub/products/search?ft=${encodeURIComponent(query)}&_from=0&_to=19`;
+      const url = `https://www.acalhomecenter.com.br/api/catalog_system/pub/products/search?ft=${encodeURIComponent(query)}`;
       const res = await this.axiosClient.get(url, {
         headers: {
           Referer: "https://www.acalhomecenter.com.br/",
@@ -165,7 +203,7 @@ export class ExtractorService {
    */
   async searchTelhanorte(query: string): Promise<ExtractedProduct[]> {
     try {
-      const url = `https://www.telhanorte.com.br/api/catalog_system/pub/products/search?ft=${encodeURIComponent(query)}&_from=0&_to=19`;
+      const url = `https://www.telhanorte.com.br/api/catalog_system/pub/products/search?ft=${encodeURIComponent(query)}`;
       const res = await this.axiosClient.get(url, {
         headers: {
           Referer: "https://www.telhanorte.com.br/",
@@ -208,11 +246,49 @@ export class ExtractorService {
   }
 
   /**
-   * 4. Conector Obramax (VTEX Catalog System)
+   * 4. Conector Obramax (VTEX Intelligent Search com sinônimos de construção)
    */
   async searchObramax(query: string): Promise<ExtractedProduct[]> {
     try {
-      const url = `https://www.obramax.com.br/api/catalog_system/pub/products/search?ft=${encodeURIComponent(query)}&_from=0&_to=19`;
+      // 1. Tentar Intelligent Search (sinônimos + IA)
+      try {
+        const isUrl = `https://www.obramax.com.br/api/io/_v/api/intelligent-search/product_search/?query=${encodeURIComponent(query)}`;
+        const res = await this.axiosClient.get(isUrl);
+        const products = res.data?.products;
+        if (Array.isArray(products) && products.length > 0) {
+          return products
+            .map((item: any) => {
+              const sku = item.items?.[0] || {};
+              const seller = sku.sellers?.[0]?.commertialOffer || {};
+              const image =
+                sku.images?.[0]?.imageUrl ||
+                item.items?.[0]?.images?.[0]?.imageUrl ||
+                "";
+
+              return {
+                store: "Obramax",
+                storeLogo: "https://lojaobramax.vteximg.com.br/arquivos/logo-obramax.png",
+                productId: `obramax-${item.productId}`,
+                name: this.cleanProductName(item.productName || item.name),
+                brand: item.brand || "Obramax",
+                ean: sku.ean || item.productReference || "",
+                price: Number(seller.Price) || Number(seller.ListPrice) || 0,
+                listPrice: Number(seller.ListPrice) || Number(seller.Price) || 0,
+                available: seller.AvailableQuantity > 0,
+                url: item.link || `https://www.obramax.com.br/${item.linkText}/p`,
+                image: image,
+                categories: item.categories || [],
+                description: item.description || "",
+              };
+            })
+            .filter((i: ExtractedProduct) => i.price > 0 && i.name.length > 0);
+        }
+      } catch (isErr) {
+        // Fallback para Catalog
+      }
+
+      // 2. Fallback para Catalog System tradicional
+      const url = `https://www.obramax.com.br/api/catalog_system/pub/products/search?ft=${encodeURIComponent(query)}`;
       const res = await this.axiosClient.get(url, {
         headers: {
           Referer: "https://www.obramax.com.br/",

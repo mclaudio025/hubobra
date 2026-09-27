@@ -67,62 +67,32 @@ class BarcodeLookupService {
   /// Busca produtos diretamente na Carajás Home Center (API VTEX)
   Future<List<AutoEnrichedProductData>> _searchCarajas(String query) async {
     try {
+      // 1. Intelligent Search
+      try {
+        final isUrl = Uri.parse('https://www.carajas.com.br/api/io/_v/api/intelligent-search/product_search/?query=${Uri.encodeComponent(query)}');
+        final response = await http.get(isUrl, headers: _headers).timeout(const Duration(seconds: 5));
+        if (response.statusCode >= 200 && response.statusCode < 300) {
+          final Map<String, dynamic> jsonBody = json.decode(response.body);
+          final List<dynamic> prods = jsonBody['products'] ?? [];
+          if (prods.isNotEmpty) {
+            return _parseVtexJsonList(prods, 'Carajás');
+          }
+        }
+      } catch (_) {}
+
+      // 2. Catalog System
       final url = Uri.parse(
-        'https://www.carajas.com.br/api/catalog_system/pub/products/search?ft=${Uri.encodeComponent(query)}&_from=0&_to=15',
+        'https://carajas.vtexcommercestable.com.br/api/catalog_system/pub/products/search?ft=${Uri.encodeComponent(query)}',
       );
       final headers = Map<String, String>.from(_headers)
         ..['Referer'] = 'https://www.carajas.com.br/';
-      final response = await http.get(url, headers: headers).timeout(const Duration(seconds: 6));
+      final response = await http.get(url, headers: headers).timeout(const Duration(seconds: 5));
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
         final List<dynamic> data = json.decode(response.body);
-        final List<AutoEnrichedProductData> list = [];
-
-        for (final item in data) {
-          final items = item['items'] as List<dynamic>? ?? [];
-          final firstSku = items.isNotEmpty ? items[0] : {};
-          final sellers = firstSku['sellers'] as List<dynamic>? ?? [];
-          final commOffer = sellers.isNotEmpty ? sellers[0]['commertialOffer'] ?? {} : {};
-          final images = firstSku['images'] as List<dynamic>? ?? [];
-          final imgUrl = images.isNotEmpty ? images[0]['imageUrl'] : null;
-
-          final rawName = item['productName'] ?? item['name'] ?? '';
-          final cleanName = cleanProductName(rawName);
-          final price = (commOffer['Price'] as num?)?.toDouble() ?? 0.0;
-          final listPrice = (commOffer['ListPrice'] as num?)?.toDouble() ?? price;
-          final ean = firstSku['ean'] ?? item['productReference'] ?? '';
-          final brand = item['brand'] ?? 'Carajás';
-          final desc = item['description'] ?? '';
-
-          if (cleanName.isNotEmpty) {
-            final imgList = images
-                .map((im) => WebImageItem(
-                      url: im['imageUrl'] ?? '',
-                      title: cleanName,
-                      cleanName: cleanName,
-                      cleanBrand: brand,
-                    ))
-                .where((im) => im.url.isNotEmpty)
-                .toList();
-
-            list.add(AutoEnrichedProductData(
-              name: cleanName,
-              brand: brand,
-              barcode: ean,
-              description: desc.isNotEmpty ? desc : 'Produto $cleanName de alta qualidade ($brand).',
-              imageUrl: imgUrl,
-              price: price,
-              listPrice: listPrice,
-              store: 'Carajás',
-              candidateImages: imgList,
-            ));
-          }
-        }
-        return list;
+        return _parseVtexJsonList(data, 'Carajás');
       }
-    } catch (e) {
-      // Ignora erro silenciosamente
-    }
+    } catch (_) {}
     return [];
   }
 
@@ -130,126 +100,114 @@ class BarcodeLookupService {
   Future<List<AutoEnrichedProductData>> _searchAcal(String query) async {
     try {
       final url = Uri.parse(
-        'https://www.acalhomecenter.com.br/api/catalog_system/pub/products/search?ft=${Uri.encodeComponent(query)}&_from=0&_to=15',
+        'https://www.acalhomecenter.com.br/api/catalog_system/pub/products/search?ft=${Uri.encodeComponent(query)}',
       );
       final headers = Map<String, String>.from(_headers)
         ..['Referer'] = 'https://www.acalhomecenter.com.br/';
-      final response = await http.get(url, headers: headers).timeout(const Duration(seconds: 6));
+      final response = await http.get(url, headers: headers).timeout(const Duration(seconds: 5));
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
         final List<dynamic> data = json.decode(response.body);
-        final List<AutoEnrichedProductData> list = [];
-
-        for (final item in data) {
-          final items = item['items'] as List<dynamic>? ?? [];
-          final firstSku = items.isNotEmpty ? items[0] : {};
-          final sellers = firstSku['sellers'] as List<dynamic>? ?? [];
-          final commOffer = sellers.isNotEmpty ? sellers[0]['commertialOffer'] ?? {} : {};
-          final images = firstSku['images'] as List<dynamic>? ?? [];
-          final imgUrl = images.isNotEmpty ? images[0]['imageUrl'] : null;
-
-          final rawName = item['productName'] ?? item['name'] ?? '';
-          final cleanName = cleanProductName(rawName);
-          final price = (commOffer['Price'] as num?)?.toDouble() ?? 0.0;
-          final listPrice = (commOffer['ListPrice'] as num?)?.toDouble() ?? price;
-          final ean = firstSku['ean'] ?? item['productReference'] ?? '';
-          final brand = item['brand'] ?? 'Acal';
-          final desc = item['description'] ?? '';
-
-          if (cleanName.isNotEmpty) {
-            final imgList = images
-                .map((im) => WebImageItem(
-                      url: im['imageUrl'] ?? '',
-                      title: cleanName,
-                      cleanName: cleanName,
-                      cleanBrand: brand,
-                    ))
-                .where((im) => im.url.isNotEmpty)
-                .toList();
-
-            list.add(AutoEnrichedProductData(
-              name: cleanName,
-              brand: brand,
-              barcode: ean,
-              description: desc.isNotEmpty ? desc : 'Produto $cleanName de alta qualidade ($brand).',
-              imageUrl: imgUrl,
-              price: price,
-              listPrice: listPrice,
-              store: 'Acal',
-              candidateImages: imgList,
-            ));
-          }
-        }
-        return list;
-      }
-    } catch (e) {
-      // Ignora erro silenciosamente
-    }
-    return [];
-  }
-
-  /// Busca produtos diretamente na Normatel Home Center
-  Future<List<AutoEnrichedProductData>> _searchNormatel(String query) async {
-    try {
-      final url = Uri.parse('https://www.normatel.com.br/busca?termo=${Uri.encodeComponent(query)}');
-      final headers = Map<String, String>.from(_headers)
-        ..['Referer'] = 'https://www.normatel.com.br/';
-      final response = await http.get(url, headers: headers).timeout(const Duration(seconds: 6));
-
-      if (response.statusCode >= 200 && response.statusCode < 300) {
-        final html = response.body;
-        final imgRegex = RegExp(r'https://normatel\.fbitsstatic\.net/img/p/([a-z0-9-]+)/(\d+)-1\.jpg[^\s"\x27]*', caseSensitive: false);
-        final matches = imgRegex.allMatches(html);
-
-        final List<AutoEnrichedProductData> list = [];
-        final Set<String> seen = {};
-
-        for (final m in matches) {
-          final slug = m.group(1) ?? '';
-          final fullImg = '${m.group(0)?.split('?').first}?w=500&h=500';
-          if (slug.isEmpty || seen.contains(slug)) continue;
-          seen.add(slug);
-
-          final cleanName = cleanProductName(
-            slug.replaceAll(RegExp(r'-\d+$'), '').split('-').map((w) => w.isNotEmpty ? '${w[0].toUpperCase()}${w.substring(1)}' : '').join(' ')
-          );
-
-          final imgPos = m.start;
-          final chunkEnd = (imgPos + 1500) < html.length ? (imgPos + 1500) : html.length;
-          final chunk = html.substring(imgPos, chunkEnd);
-          final priceMatch = RegExp(r'data-price=([\d\.]+)').firstMatch(chunk) ?? RegExp(r'R\$\s*([\d\.,]+)').firstMatch(chunk);
-          double price = 49.9;
-          if (priceMatch != null) {
-            final rawPrice = priceMatch.group(1)!.replaceAll('.', '').replaceAll(',', '.');
-            price = double.tryParse(rawPrice) ?? 49.9;
-          }
-
-          if (cleanName.isNotEmpty) {
-            list.add(AutoEnrichedProductData(
-              name: cleanName,
-              brand: 'Normatel',
-              barcode: '',
-              description: 'Produto $cleanName disponível na Normatel Home Center.',
-              imageUrl: fullImg,
-              price: price,
-              listPrice: price * 1.15,
-              store: 'Normatel',
-              candidateImages: [
-                WebImageItem(
-                  url: fullImg,
-                  title: cleanName,
-                  cleanName: cleanName,
-                  cleanBrand: 'Normatel',
-                ),
-              ],
-            ));
-          }
-          if (list.length >= 15) break;
-        }
-        return list;
+        return _parseVtexJsonList(data, 'Acal');
       }
     } catch (_) {}
     return [];
+  }
+
+  /// Busca produtos diretamente na Telhanorte (API VTEX)
+  Future<List<AutoEnrichedProductData>> _searchTelhanorte(String query) async {
+    try {
+      final url = Uri.parse(
+        'https://www.telhanorte.com.br/api/catalog_system/pub/products/search?ft=${Uri.encodeComponent(query)}',
+      );
+      final headers = Map<String, String>.from(_headers)
+        ..['Referer'] = 'https://www.telhanorte.com.br/';
+      final response = await http.get(url, headers: headers).timeout(const Duration(seconds: 5));
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final List<dynamic> data = json.decode(response.body);
+        return _parseVtexJsonList(data, 'Telhanorte');
+      }
+    } catch (_) {}
+    return [];
+  }
+
+  /// Busca produtos diretamente na Obramax (API VTEX Intelligent Search)
+  Future<List<AutoEnrichedProductData>> _searchObramax(String query) async {
+    try {
+      // 1. Intelligent Search para sinônimos
+      try {
+        final isUrl = Uri.parse('https://www.obramax.com.br/api/io/_v/api/intelligent-search/product_search/?query=${Uri.encodeComponent(query)}');
+        final response = await http.get(isUrl, headers: _headers).timeout(const Duration(seconds: 5));
+        if (response.statusCode >= 200 && response.statusCode < 300) {
+          final Map<String, dynamic> jsonBody = json.decode(response.body);
+          final List<dynamic> prods = jsonBody['products'] ?? [];
+          if (prods.isNotEmpty) {
+            return _parseVtexJsonList(prods, 'Obramax');
+          }
+        }
+      } catch (_) {}
+
+      // 2. Catalog Fallback
+      final url = Uri.parse(
+        'https://www.obramax.com.br/api/catalog_system/pub/products/search?ft=${Uri.encodeComponent(query)}',
+      );
+      final headers = Map<String, String>.from(_headers)
+        ..['Referer'] = 'https://www.obramax.com.br/';
+      final response = await http.get(url, headers: headers).timeout(const Duration(seconds: 5));
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final List<dynamic> data = json.decode(response.body);
+        return _parseVtexJsonList(data, 'Obramax');
+      }
+    } catch (_) {}
+    return [];
+  }
+
+  /// Converte JSON padrão VTEX em AutoEnrichedProductData
+  List<AutoEnrichedProductData> _parseVtexJsonList(List<dynamic> data, String storeName) {
+    final List<AutoEnrichedProductData> list = [];
+    for (final item in data) {
+      final items = item['items'] as List<dynamic>? ?? [];
+      final firstSku = items.isNotEmpty ? items[0] : {};
+      final sellers = firstSku['sellers'] as List<dynamic>? ?? [];
+      final commOffer = sellers.isNotEmpty ? sellers[0]['commertialOffer'] ?? {} : {};
+      final images = firstSku['images'] as List<dynamic>? ?? [];
+      final imgUrl = images.isNotEmpty ? images[0]['imageUrl'] : null;
+
+      final rawName = item['productName'] ?? item['name'] ?? '';
+      final cleanName = cleanProductName(rawName);
+      final price = (commOffer['Price'] as num?)?.toDouble() ?? 0.0;
+      final listPrice = (commOffer['ListPrice'] as num?)?.toDouble() ?? price;
+      final ean = firstSku['ean'] ?? item['productReference'] ?? '';
+      final brand = item['brand'] ?? storeName;
+      final desc = item['description'] ?? '';
+
+      if (cleanName.isNotEmpty) {
+        final imgList = images
+            .map((im) => WebImageItem(
+                  url: im['imageUrl'] ?? '',
+                  title: cleanName,
+                  cleanName: cleanName,
+                  cleanBrand: brand,
+                ))
+            .where((im) => im.url.isNotEmpty)
+            .toList();
+
+        list.add(AutoEnrichedProductData(
+          name: cleanName,
+          brand: brand,
+          barcode: ean,
+          description: desc.isNotEmpty ? desc : 'Produto $cleanName de alta qualidade ($brand).',
+          imageUrl: imgUrl,
+          price: price,
+          listPrice: listPrice,
+          store: storeName,
+          candidateImages: imgList,
+        ));
+      }
+    }
+    return list;
   }
 
   /// Consulta por código de barras EAN nos Home Centers
@@ -261,9 +219,11 @@ class BarcodeLookupService {
     final results = await Future.wait([
       _searchCarajas(cleanBarcode),
       _searchAcal(cleanBarcode),
+      _searchTelhanorte(cleanBarcode),
+      _searchObramax(cleanBarcode),
     ]);
 
-    final all = [...results[0], ...results[1]];
+    final all = [...results[0], ...results[1], ...results[2], ...results[3]];
 
     // 1. Tenta match exato por código EAN
     for (final prod in all) {
@@ -307,10 +267,11 @@ class BarcodeLookupService {
     final results = await Future.wait([
       _searchCarajas(clean),
       _searchAcal(clean),
-      _searchNormatel(clean),
+      _searchTelhanorte(clean),
+      _searchObramax(clean),
     ]);
 
-    final all = [...results[0], ...results[1], ...results[2]];
+    final all = [...results[0], ...results[1], ...results[2], ...results[3]];
     
     // Remove duplicidades por nome
     final List<AutoEnrichedProductData> uniqueList = [];
