@@ -1,5 +1,6 @@
 import { Injectable, Logger } from "@nestjs/common";
 import axios from "axios";
+import { Prisma } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 
 export interface ExtractedProduct {
@@ -327,26 +328,29 @@ export class ExtractorService {
         let categoryId = defaultCategory.id;
         const lowerName = (item.name + " " + (item.categoryName || "")).toLowerCase();
 
+        const orConditions: Prisma.CategoryWhereInput[] = [
+          { name: { contains: lowerName.split(" ")[0], mode: "insensitive" } },
+        ];
+
+        if (lowerName.includes("tinta") || lowerName.includes("verniz") || lowerName.includes("esmalte sint")) {
+          orConditions.push({ name: { contains: "Tinta", mode: "insensitive" } });
+        }
+        if (lowerName.includes("piso") || lowerName.includes("porcelanato") || lowerName.includes("revestimento")) {
+          orConditions.push({ name: { contains: "Piso", mode: "insensitive" } });
+        }
+        if (lowerName.includes("cimento") || lowerName.includes("argamassa")) {
+          orConditions.push({ name: { contains: "Cimento", mode: "insensitive" } });
+        }
+        if (lowerName.includes("tubo") || lowerName.includes("conexão") || lowerName.includes("tigre") || lowerName.includes("torneira")) {
+          orConditions.push({ name: { contains: "Hidráulica", mode: "insensitive" } });
+        }
+        if (lowerName.includes("fio") || lowerName.includes("cabo") || lowerName.includes("disjuntor") || lowerName.includes("tomada")) {
+          orConditions.push({ name: { contains: "Elétrica", mode: "insensitive" } });
+        }
+
         const matchedCategory = await this.prisma.category.findFirst({
           where: {
-            OR: [
-              { name: { contains: lowerName.split(" ")[0], mode: "insensitive" } },
-              ...(lowerName.includes("tinta") || lowerName.includes("verniz") || lowerName.includes("esmalte sint")
-                ? [{ name: { contains: "Tinta", mode: "insensitive" } }]
-                : []),
-              ...(lowerName.includes("piso") || lowerName.includes("porcelanato") || lowerName.includes("revestimento")
-                ? [{ name: { contains: "Piso", mode: "insensitive" } }]
-                : []),
-              ...(lowerName.includes("cimento") || lowerName.includes("argamassa")
-                ? [{ name: { contains: "Cimento", mode: "insensitive" } }]
-                : []),
-              ...(lowerName.includes("tubo") || lowerName.includes("conexão") || lowerName.includes("tigre") || lowerName.includes("torneira")
-                ? [{ name: { contains: "Hidráulica", mode: "insensitive" } }]
-                : []),
-              ...(lowerName.includes("fio") || lowerName.includes("cabo") || lowerName.includes("disjuntor") || lowerName.includes("tomada")
-                ? [{ name: { contains: "Elétrica", mode: "insensitive" } }]
-                : []),
-            ],
+            OR: orConditions,
           },
         });
 

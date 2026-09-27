@@ -37,6 +37,7 @@ import { UpdateProductDto } from "./dto/update-product.dto";
 import { BulkCreateProductDto } from "./dto/bulk-create-product.dto";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
+import { Roles } from "../auth/decorators/roles.decorator";
 import { ExtractorService } from "./extractor.service";
 
 @ApiTags("products")
