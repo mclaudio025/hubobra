@@ -59,14 +59,26 @@ export default function PriceManagementPage() {
     loadPriceReport();
   }, []);
 
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8081';
+
   const loadPriceReport = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/price-management/report');
-      if (response.ok) {
-        const data = await response.json();
-        setProducts(data.products);
-        setStats(data.stats);
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      let res = await fetch('/api/price-management/report', {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+
+      if (!res.ok && API_URL) {
+        res = await fetch(`${API_URL}/price-management/report`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+      }
+
+      if (res.ok) {
+        const data = await res.json();
+        setProducts(data.products || []);
+        setStats(data.stats || null);
       }
     } catch (error) {
       toast({
@@ -99,23 +111,43 @@ export default function PriceManagementPage() {
     }
 
     try {
-      const response = await fetch('/api/price-management/bulk-update', {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      const headers: any = {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      };
+
+      let response = await fetch('/api/price-management/bulk-update', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           productIds: selectedProducts,
           updateType: bulkUpdateType,
           value: parseFloat(bulkUpdateValue),
           reason: bulkUpdateReason,
-          applyToPromotional: true
+          applyToComparePrice: true
         })
       });
+
+      if (!response.ok && API_URL) {
+        response = await fetch(`${API_URL}/price-management/bulk-update`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            productIds: selectedProducts,
+            updateType: bulkUpdateType,
+            value: parseFloat(bulkUpdateValue),
+            reason: bulkUpdateReason,
+            applyToComparePrice: true
+          })
+        });
+      }
 
       if (response.ok) {
         const result = await response.json();
         toast({
           title: 'Sucesso',
-          description: result.message
+          description: result.message || 'Preços atualizados com sucesso'
         });
         loadPriceReport();
         setSelectedProducts([]);
@@ -133,27 +165,36 @@ export default function PriceManagementPage() {
 
   const handleExportExcel = async () => {
     try {
-      const response = await fetch('/api/price-management/export/excel');
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+      let response = await fetch('/api/price-management/export/excel', { headers });
+      if (!response.ok && API_URL) {
+        response = await fetch(`${API_URL}/price-management/export/excel`, { headers });
+      }
+
       if (response.ok) {
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `relatorio-precos-${new Date().toISOString().split('T')[0]}.xlsx`;
+        a.download = `catalogo-precos-${new Date().toISOString().split('T')[0]}.xlsx`;
         document.body.appendChild(a);
         a.click();
         window.URL.revokeObjectURL(url);
         document.body.removeChild(a);
         
         toast({
-          title: 'Sucesso',
-          description: 'Relatório exportado com sucesso'
+          title: 'Planilha Exportada!',
+          description: 'Arquivo .xlsx baixado com sucesso. Você pode editá-lo e importá-lo de volta.'
         });
+      } else {
+        throw new Error('Falha ao exportar');
       }
     } catch (error) {
       toast({
         title: 'Erro',
-        description: 'Erro ao exportar relatório',
+        description: 'Erro ao exportar planilha Excel',
         variant: 'destructive'
       });
     }
@@ -167,28 +208,42 @@ export default function PriceManagementPage() {
     formData.append('file', file);
 
     try {
-      const response = await fetch('/api/price-management/import/excel', {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+      let response = await fetch('/api/price-management/import/excel', {
         method: 'POST',
+        headers,
         body: formData
       });
+
+      if (!response.ok && API_URL) {
+        response = await fetch(`${API_URL}/price-management/import/excel`, {
+          method: 'POST',
+          headers,
+          body: formData
+        });
+      }
 
       if (response.ok) {
         const result = await response.json();
         toast({
-          title: 'Sucesso',
-          description: result.message
+          title: 'Planilha Importada com Sucesso!',
+          description: result.message || 'Preços e estoques atualizados.'
         });
         loadPriceReport();
+      } else {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.message || 'Erro ao processar planilha');
       }
-    } catch (error) {
+    } catch (error: any) {
       toast({
-        title: 'Erro',
-        description: 'Erro ao importar arquivo',
+        title: 'Erro na Importação',
+        description: error.message || 'Erro ao importar arquivo Excel',
         variant: 'destructive'
       });
     }
 
-    // Limpar input
     event.target.value = '';
   };
 

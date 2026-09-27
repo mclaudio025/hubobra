@@ -195,12 +195,14 @@ export class PriceManagementService {
           id: true,
           name: true,
           sku: true,
+          barcode: true,
+          cost: true,
           price: true,
           comparePrice: true,
           stock: true,
           active: true,
           updatedAt: true,
-          brand: true, // Brand é string, não relação
+          brand: true,
           category: { select: { name: true } },
         },
         orderBy: [{ category: { name: "asc" } }, { name: "asc" }],
@@ -231,37 +233,57 @@ export class PriceManagementService {
       const report = await this.generatePriceReport(filters);
 
       const excelData = report.products.map((product) => ({
-        ID: product.id,
-        SKU: product.sku,
-        Nome: product.name,
-        Categoria: product.category?.name || "Sem categoria",
-        Marca: product.brand || "Sem marca",
-        Preço: product.price,
+        "ID": product.id,
+        "SKU": product.sku,
+        "Código de Barras (EAN)": product.barcode || "",
+        "Nome do Produto": product.name,
+        "Categoria": product.category?.name || "Sem categoria",
+        "Marca": product.brand || "Sem marca",
+        "Preço de Venda": product.price,
         "Preço Comparativo": product.comparePrice || "",
-        Estoque: product.stock,
-        Ativo: product.active ? "Sim" : "Não",
-        "Última Atualização": product.updatedAt.toLocaleDateString("pt-BR"),
+        "Preço de Custo": product.cost || "",
+        "Estoque": product.stock,
+        "Ativo": product.active ? "Sim" : "Não",
+        "Última Atualização": product.updatedAt ? new Date(product.updatedAt).toLocaleDateString("pt-BR") : "",
       }));
 
       const worksheet = XLSX.utils.json_to_sheet(excelData);
-      const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, "Produtos");
 
-      // Adicionar estatísticas
+      // Largura automática das colunas
+      worksheet["!cols"] = [
+        { wch: 38 }, // ID
+        { wch: 16 }, // SKU
+        { wch: 22 }, // EAN
+        { wch: 45 }, // Nome
+        { wch: 24 }, // Categoria
+        { wch: 18 }, // Marca
+        { wch: 16 }, // Preço Venda
+        { wch: 18 }, // Preço Comparativo
+        { wch: 16 }, // Preço Custo
+        { wch: 12 }, // Estoque
+        { wch: 10 }, // Ativo
+        { wch: 18 }, // Data
+      ];
+
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Catálogo_Preços");
+
+      // Adicionar aba de resumo
       const statsData = [
-        ["Estatísticas do Relatório", ""],
+        ["Resumo do Catálogo HubObra", ""],
         ["Total de Produtos", report.stats.totalProducts],
-        ["Preço Médio", `R$ ${report.stats.averagePrice.toFixed(2)}`],
+        ["Preço Médio de Venda", `R$ ${report.stats.averagePrice.toFixed(2)}`],
         ["Menor Preço", `R$ ${report.stats.minPrice.toFixed(2)}`],
         ["Maior Preço", `R$ ${report.stats.maxPrice.toFixed(2)}`],
-        ["Com Preço Comparativo", report.stats.productsWithComparePrice],
-        ["Sem Estoque", report.stats.outOfStock],
-        ["Inativos", report.stats.inactive],
-        ["Gerado em", report.generatedAt.toLocaleString("pt-BR")],
+        ["Produtos com Desconto (De/Por)", report.stats.productsWithComparePrice],
+        ["Produtos com Estoque Zerado", report.stats.outOfStock],
+        ["Produtos Inativos", report.stats.inactive],
+        ["Planilha Gerada em", new Date().toLocaleString("pt-BR")],
       ];
 
       const statsWorksheet = XLSX.utils.aoa_to_sheet(statsData);
-      XLSX.utils.book_append_sheet(workbook, statsWorksheet, "Estatísticas");
+      statsWorksheet["!cols"] = [{ wch: 30 }, { wch: 25 }];
+      XLSX.utils.book_append_sheet(workbook, statsWorksheet, "Resumo");
 
       return XLSX.write(workbook, { type: "buffer", bookType: "xlsx" });
     } catch (error) {
@@ -276,67 +298,109 @@ export class PriceManagementService {
       const worksheet = workbook.Sheets[workbook.SheetNames[0]];
       const data = XLSX.utils.sheet_to_json(worksheet);
 
-      const updates = [];
-      const errors = [];
+      const updates: Array<{
+        productId: string;
+        oldPrice: number;
+        newPrice: number;
+        comparePrice?: number;
+        cost?: number;
+        stock?: number;
+        productName: string;
+      }> = [];
+      const errors: string[] = [];
 
       for (let i = 0; i < data.length; i++) {
         const row: any = data[i];
 
         try {
-          const productId = row["ID"];
-          const newPrice = parseFloat(row["Preço"]);
+          const id = row["ID"] || row["id"] || row["Id"];
+          const sku = row["SKU"] || row["sku"] || row["Sku"] || row["Código"];
+          const ean = row["Código de Barras (EAN)"] || row["EAN"] || row["Código de Barras"] || row["Barcode"] || row["barcode"];
+          
+          const rawPrice = row["Preço de Venda"] ?? row["Preço"] ?? row["Preco"] ?? row["price"] ?? row["Price"];
+          const rawComparePrice = row["Preço Comparativo"] ?? row["comparePrice"] ?? row["Preço De"];
+          const rawCost = row["Preço de Custo"] ?? row["Custo"] ?? row["cost"] ?? row["Cost"];
+          const rawStock = row["Estoque"] ?? row["stock"] ?? row["Stock"] ?? row["Qtd"];
 
-          if (!productId || isNaN(newPrice)) {
-            errors.push(`Linha ${i + 2}: ID ou preço inválido`);
+          if (!id && !sku && !ean) {
+            errors.push(`Linha ${i + 2}: Nenhum identificador encontrado (ID, SKU ou EAN necessário).`);
             continue;
           }
 
-          const product = await this.prisma.product.findUnique({
-            where: { id: productId },
-            select: { id: true, price: true, name: true },
-          });
+          let product: any = null;
+          if (id) {
+            product = await this.prisma.product.findUnique({ where: { id: String(id).trim() } });
+          }
+          if (!product && sku) {
+            product = await this.prisma.product.findUnique({ where: { sku: String(sku).trim() } });
+          }
+          if (!product && ean) {
+            product = await this.prisma.product.findFirst({ where: { barcode: String(ean).trim() } });
+          }
 
           if (!product) {
-            errors.push(`Linha ${i + 2}: Produto ${productId} não encontrado`);
+            errors.push(`Linha ${i + 2}: Produto não localizado (ID: ${id || "-"}, SKU: ${sku || "-"}, EAN: ${ean || "-"})`);
+            continue;
+          }
+
+          const newPrice = rawPrice !== undefined && rawPrice !== "" ? parseFloat(String(rawPrice).replace(",", ".")) : product.price;
+          const comparePrice = rawComparePrice !== undefined && rawComparePrice !== "" ? parseFloat(String(rawComparePrice).replace(",", ".")) : undefined;
+          const cost = rawCost !== undefined && rawCost !== "" ? parseFloat(String(rawCost).replace(",", ".")) : undefined;
+          const stock = rawStock !== undefined && rawStock !== "" ? parseInt(String(rawStock), 10) : undefined;
+
+          if (isNaN(newPrice) || newPrice < 0) {
+            errors.push(`Linha ${i + 2}: Preço de venda inválido para ${product.name}`);
             continue;
           }
 
           updates.push({
-            productId,
+            productId: product.id,
             oldPrice: product.price,
             newPrice,
+            comparePrice: !isNaN(comparePrice as number) ? comparePrice : undefined,
+            cost: !isNaN(cost as number) ? cost : undefined,
+            stock: !isNaN(stock as number) ? stock : undefined,
             productName: product.name,
           });
-        } catch (error) {
+        } catch (error: any) {
           errors.push(`Linha ${i + 2}: ${error.message}`);
         }
       }
 
       if (updates.length === 0) {
-        throw new Error("Nenhuma atualização válida encontrada");
+        throw new Error(`Nenhum produto válido foi identificado para atualização. Erros: ${errors.slice(0, 5).join("; ")}`);
       }
 
-      // Executar atualizações
+      // Executar atualizações atômicas
       const result = await this.prisma.$transaction(async (tx) => {
-        const updatePromises = updates.map((update) =>
-          tx.product.update({
+        for (const update of updates) {
+          const dataToUpdate: any = {
+            price: update.newPrice,
+            updatedAt: new Date(),
+          };
+          if (update.comparePrice !== undefined) dataToUpdate.comparePrice = update.comparePrice;
+          if (update.cost !== undefined) dataToUpdate.cost = update.cost;
+          if (update.stock !== undefined) dataToUpdate.stock = update.stock;
+
+          await tx.product.update({
             where: { id: update.productId },
-            data: { price: update.newPrice, updatedAt: new Date() },
-          }),
-        );
+            data: dataToUpdate,
+          });
+        }
 
-        await Promise.all(updatePromises);
+        const priceChangedUpdates = updates.filter(u => Math.abs(u.oldPrice - u.newPrice) > 0.001);
+        if (priceChangedUpdates.length > 0) {
+          const historyRecords = priceChangedUpdates.map((update) => ({
+            productId: update.productId,
+            oldPrice: update.oldPrice,
+            newPrice: update.newPrice,
+            reason: "Atualização em massa via Planilha Excel (.xlsx)",
+            userId,
+            createdAt: new Date(),
+          }));
 
-        const historyRecords = updates.map((update) => ({
-          productId: update.productId,
-          oldPrice: update.oldPrice,
-          newPrice: update.newPrice,
-          reason: "Importação via Excel",
-          userId,
-          createdAt: new Date(),
-        }));
-
-        await tx.priceHistory.createMany({ data: historyRecords });
+          await tx.priceHistory.createMany({ data: historyRecords });
+        }
 
         return { updatedCount: updates.length };
       });
@@ -345,10 +409,10 @@ export class PriceManagementService {
         success: true,
         updatedCount: result.updatedCount,
         errors,
-        message: `${result.updatedCount} produtos atualizados. ${errors.length} erros encontrados.`,
+        message: `${result.updatedCount} produtos atualizados com sucesso via Excel. ${errors.length > 0 ? `${errors.length} avisos.` : ''}`,
       };
-    } catch (error) {
-      this.logger.error("Erro na importação:", error);
+    } catch (error: any) {
+      this.logger.error("Erro na importação Excel:", error);
       throw error;
     }
   }
