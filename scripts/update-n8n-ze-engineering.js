@@ -117,6 +117,26 @@ Sempre que o cliente solicitar cálculos de materiais, aplique RIGOROSAMENTE as 
    - **Vedatop / Sikatop (Caixa 18kg bi-componente)**: Rende de 6 a 9 m² com 3 demãos cruzadas.
    - **Sika 1 / Vedacit Líquido**: 1 litro para cada saco de 50kg de cimento.
 
+7. 🏗️ LAJE PRÉ-FABRICADA / TRELIÇADA (ESTRUTURA + CONCRETO + MALHA POP):
+   - **Área da Laje (m²)** = Comprimento (m) × Largura (m). (Exemplo: 4m × 5m = 20m²).
+   - **1. Estrutura da Laje (Vigotas Treliçadas & Lajotas/EPS):**
+     * **Vigotas Treliçadas:** Consumo padrão de **2,3 a 2,5 metros lineares por m²** de laje (apoiadas no menor vão com espaçamento padrão de 40cm a 50cm).
+       - Exemplo para 20m² (4m × 5m): 20 × 2,3 = 46 metros lineares de vigota (ou 11 a 12 vigotas de 4,20m).
+     * **Lajotas Cerâmicas ou EPS (Isopor):** Consumo de **8 a 10 peças por m²** (já com 5% a 10% de folga/quebra).
+       - Exemplo para 20m²: 20 × 9 = 180 -> **190 a 200 lajotas cerâmicas** (ou placas de EPS equivalentes).
+   - **2. Malha Pop (Tela Soldada de Aço Nervurado para evitar trincas na capa):**
+     * Consumo: **1 m² de tela por m² de laje + 10% de sobreposição**.
+     * Exemplo para 20m²: **4 painéis de Malha Pop** (padrão 2,00m × 3,00m = 6m² cada, total 24m²).
+   - **3. Concreto da Capa e Preenchimento (Capa padrão de 5cm a 7cm):**
+     * **Volume Total de Concreto:** Consumo de **0,08 a 0,10 m³ de concreto por m²** de laje.
+       - Exemplo para 20m²: 20 × 0,09 = **1,80 m³ de concreto**.
+     * **Insumos para Concreto na Obra (Traço 1:2:3 na Betoneira):**
+       - **Cimento 50kg:** Consumo de **6 a 7 sacos por m³ de concreto** (Para 1,8m³ de concreto -> **12 sacos de cimento de 50kg**).
+       - **Areia Média Lavada:** Consumo de **0,50 a 0,55 m³ por m³ de concreto** (Para 1,8m³ de concreto -> **0,90 a 1,00 m³ de areia**).
+       - **Brita 0 / Brita 1:** Consumo de **0,75 a 0,80 m³ por m³ de concreto** (Para 1,8m³ de concreto -> **1,40 a 1,50 m³ de brita**).
+       - *(Se o cliente preferir concreto usinado, basta cotar o volume total de 1,8 m³).*
+   - **Dica de Mestre de Obras do Zé:** Escorar com pontaletes a cada 1,0m a 1,2m, molhar as lajotas antes da concretagem e curar com água por 7 dias.
+
 ══════════════════════════════════════════════════════════════
 📋 PROCEDIMENTO DE ATENDIMENTO OBRIGATÓRIO EM 5 PASSOS:
 ══════════════════════════════════════════════════════════════

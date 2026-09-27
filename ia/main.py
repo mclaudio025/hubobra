@@ -565,6 +565,43 @@ def calculate_materials(project_type: str, dimensions: Dict[str, float], specifi
                 "Aplique 1 demão de selador antes da tinta para uniformizar a absorção e economizar tinta."
             ]
             
+    # 6. Laje Pré-Fabricada / Treliçada
+    elif any(k in pt for k in ["laje", "treliçada", "vigota"]):
+        length = dimensions.get("length", 0)
+        width = dimensions.get("width", 0)
+        area = dimensions.get("area", 0)
+        if area <= 0 and length > 0 and width > 0:
+            area = length * width
+            
+        if area > 0:
+            # 1. Vigotas: ~2.3m lineares por m²
+            vigotas_m = round(area * 2.3, 1)
+            # 2. Lajotas Cerâmicas / EPS: 9 peças por m² (já com 10% quebra = ~9.5)
+            lajotas = int(math.ceil(area * 9.5))
+            # 3. Malha Pop: painéis de 2x3m (6m²) com 10% sobreposição
+            malha_panels = max(1, int(math.ceil((area * 1.10) / 6.0)))
+            # 4. Concreto da Capa: 0.09 m³ por m²
+            concreto_m3 = round(area * 0.09, 2)
+            # 5. Insumos para concreto na betoneira:
+            cement_bags = max(1, int(math.ceil(concreto_m3 * 6.5)))
+            sand_m3 = round(concreto_m3 * 0.52, 2)
+            gravel_m3 = round(concreto_m3 * 0.78, 2)
+            
+            materials = [
+                {"name": f"Vigotas Treliçadas (apoiadas no menor vão)", "quantity": vigotas_m, "unit": "metros", "price": 18.50, "total": round(vigotas_m * 18.50, 2)},
+                {"name": "Lajota Cerâmica para Laje H8/H12", "quantity": lajotas, "unit": "unidades", "price": 1.95, "total": round(lajotas * 1.95, 2)},
+                {"name": "Malha Pop Q-61 / Q-92 (Painel 2x3m)", "quantity": malha_panels, "unit": "painéis", "price": 45.00, "total": round(malha_panels * 45.00, 2)},
+                {"name": "Cimento Todas as Obras 50kg (Concreto Capa)", "quantity": cement_bags, "unit": "sacos", "price": 42.00, "total": round(cement_bags * 42.00, 2)},
+                {"name": "Areia Média Lavada", "quantity": sand_m3, "unit": "m³", "price": 85.00, "total": round(sand_m3 * 85.00, 2)},
+                {"name": "Brita 1 para Concreto", "quantity": gravel_m3, "unit": "m³", "price": 95.00, "total": round(gravel_m3 * 95.00, 2)},
+            ]
+            total_cost = sum(item["total"] for item in materials)
+            recommendations = [
+                f"Para {area:.1f}m² de laje pré-fabricada, você precisará de {vigotas_m}m lineares de vigotas treliçadas e {lajotas} lajotas cerâmicas (já com margem de quebra).",
+                f"A capa de concreto ({concreto_m3}m³) consome {cement_bags} sacos de cimento de 50kg, {sand_m3}m³ de areia e {gravel_m3}m³ de brita, armada com {malha_panels} painéis de Malha Pop.",
+                "Faça o escoramento adequado com pontaletes a cada 1,0m a 1,2m antes de concretar.",
+                "Molhe bem as lajotas antes do lançamento do concreto e faça a cura úmida por 7 dias."
+            ]
     return {
         "materials": materials,
         "total_cost": total_cost,

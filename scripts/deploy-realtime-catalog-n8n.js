@@ -109,6 +109,7 @@ Deseja que eu reserve esses materiais e gere seu pedido para entrega hoje?
 - Pisos & Porcelanatos: Área útil + 10% quebra. Caixa padrão de piso 50x50/45x45/60x60 traz 8 a 10 peças (2.00 a 2.50 m² por caixa). NUNCA assuma 4 peças/1m²! (Ex: Para 5m² com quebra = 5.5m² -> 3 caixas de ~2.00m²). Argamassa Colante AC-II: 1 saco 20kg a cada 4.5 m² (2 sacos para 5m²). Rejunte: 1kg a cada 3.5 m².
 - Pintura (2 demãos): Lata 18L/20L rende 100 a 120 m² acabados. Galão 3.6L rende 20 a 25 m² acabados. Selador 3.6L: 25 a 30 m².
 - Impermeabilização: Vedatop caixa 18kg rende de 6 a 9 m² com 3 demãos cruzadas. Sika 1 líquido: 1L por saco de 50kg de cimento.
+- Laje Pré-Fabricada / Treliçada: 2.3m lineares de vigota por m² + 9 a 10 lajotas cerâmicas (ou EPS) por m² + 1 painel de Malha Pop 2x3m a cada 6m² + 0.09 m³ de concreto por m² (6.5 sacos cimento 50kg + 0.52 m³ areia + 0.78 m³ brita por m³ de concreto). (Ex: Para 20m² -> 46m vigotas, 190 lajotas, 4 malhas pop, 1.8m³ concreto = 12 sacos cimento, 1m³ areia, 1.4m³ brita).
 
 - REGRA CRÍTICA: Sempre que calcular cimento para fazer massa na obra, é OBRIGATÓRIO incluir a areia média e o aditivo na lista de materiais!
 
