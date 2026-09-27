@@ -21,9 +21,12 @@ export interface BulkPriceUpdateDto {
 
 export interface PriceReportFilter {
   categoryId?: string;
+  category?: string;
+  categoryName?: string;
   brand?: string; // Brand é string no schema
   priceRange?: { min: number; max: number };
   lastUpdated?: { from: Date; to: Date };
+  productIds?: string[] | string;
 }
 
 @Injectable()
@@ -174,7 +177,26 @@ export class PriceManagementService {
     try {
       const whereClause: any = {};
 
-      if (filters.categoryId) whereClause.categoryId = filters.categoryId;
+      if (filters.categoryId && filters.categoryId !== 'all' && filters.categoryId !== 'todas') {
+        whereClause.categoryId = filters.categoryId;
+      }
+      const cat = filters.categoryName || filters.category;
+      if (cat && cat !== 'all' && cat !== 'todas') {
+        whereClause.category = {
+          name: { contains: cat, mode: 'insensitive' },
+        };
+      }
+
+      if (filters.productIds) {
+        const ids = Array.isArray(filters.productIds)
+          ? filters.productIds
+          : typeof filters.productIds === 'string'
+          ? (filters.productIds as string).split(',').map((s) => s.trim()).filter(Boolean)
+          : [];
+        if (ids.length > 0) {
+          whereClause.id = { in: ids };
+        }
+      }
       if (filters.brand) whereClause.brand = filters.brand;
       if (filters.priceRange) {
         whereClause.price = {
