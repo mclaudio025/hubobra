@@ -67,6 +67,8 @@ export default function ExtractorAdminPage() {
   const [importedIds, setImportedIds] = useState<Set<string>>(new Set());
   const { toast } = useToast();
 
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8081';
+
   const handleSearch = async (queryToSearch?: string) => {
     const query = queryToSearch !== undefined ? queryToSearch : searchTerm;
     if (!query.trim()) {
@@ -81,14 +83,21 @@ export default function ExtractorAdminPage() {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch(
-        `/api/products/extractor/search?query=${encodeURIComponent(query.trim())}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+      const headers: Record<string, string> = {};
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      let res = await fetch(
+        `${API_URL}/products/extractor/search?query=${encodeURIComponent(query.trim())}`,
+        { headers }
       );
+
+      // Fallback para rota local se necessário
+      if (!res.ok) {
+        res = await fetch(
+          `/api/products/extractor/search?query=${encodeURIComponent(query.trim())}`,
+          { headers }
+        );
+      }
 
       if (!res.ok) throw new Error('Falha ao consultar Home Centers');
 
@@ -96,7 +105,7 @@ export default function ExtractorAdminPage() {
       setProducts(data.products || []);
       setSelectedItems([]);
 
-      if (data.products?.length === 0) {
+      if (!data.products || data.products.length === 0) {
         toast({
           title: 'Nenhum produto encontrado',
           description: `Nenhum item localizado nas lojas para "${query}". Tente outro termo.`,
@@ -141,14 +150,24 @@ export default function ExtractorAdminPage() {
         ],
       };
 
-      const res = await fetch('/api/products/extractor/import', {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      let res = await fetch(`${API_URL}/products/extractor/import`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
+        headers,
         body: JSON.stringify(payload),
       });
+
+      if (!res.ok) {
+        res = await fetch('/api/products/extractor/import', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(payload),
+        });
+      }
 
       if (!res.ok) throw new Error('Falha ao importar produto');
       const data = await res.json();
@@ -210,14 +229,24 @@ export default function ExtractorAdminPage() {
         })),
       };
 
-      const res = await fetch('/api/products/extractor/import', {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      let res = await fetch(`${API_URL}/products/extractor/import`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
+        headers,
         body: JSON.stringify(payload),
       });
+
+      if (!res.ok) {
+        res = await fetch('/api/products/extractor/import', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(payload),
+        });
+      }
 
       if (!res.ok) throw new Error('Falha na importação em massa');
       const data = await res.json();
