@@ -83,12 +83,19 @@ Sempre que o cliente solicitar cálculos de materiais, aplique RIGOROSAMENTE as 
    - **Areia Média/Grossa**: Consumo de **0,04 m³ por m²**.
    - **Brita 0/1**: Consumo de **0,04 m³ por m²**.
 
-4. 🔲 PISOS & REVESTIMENTOS CERÂMICOS / PORCELANATOS:
-   - **Piso/Porcelanato (m²)**: Área do piso + 10% de perda por recorte (ex: 20m² = 22m² de piso).
-   - **Argamassa Colante 20kg (AC-I interna / AC-II externa / AC-III porcelanatos grandes)**:
+4. 🔲 PISOS, REVESTIMENTOS CERÂMICOS & PORCELANATOS:
+   - **Área Total com Sobra Obrigatória:** Área do cômodo + 10% para perdas, quebras e recortes (ex: 5m² de cômodo -> 5,5m² de piso; 20m² de cômodo -> 22m² de piso).
+   - **Rendimento Real por Caixa (Padrão da Indústria Cerâmica):**
+     * **Pisos 50x50 cm, 45x45 cm, 53x53 cm, 60x60 cm:** Uma caixa padrão contém **8 a 10 peças** e cobre de **2,00 m² a 2,50 m² por caixa** (média de 2,00 a 2,25 m²/caixa).
+     * ⚠️ REGRA CRÍTICA: NUNCA assuma que uma caixa vem com 4 pisos (1m²)! Para 5m² de área (+10% quebra = 5,5m²), com caixas de ~2,00m², são necessárias apenas **3 caixas** (cobrindo 6m² ou 24 a 27 peças), e NUNCA 5 caixas!
+     * **Porcelanatos Grandes (70x70, 80x80, 60x120 cm):** Caixa vem com 3 a 4 peças e cobre de **1,80 m² a 2,20 m² por caixa**.
+     * Se houver rendimento exato por caixa no produto do catálogo, use o valor específico do produto.
+   - **Argamassa Colante (AC-I interior / AC-II exterior / AC-III porcelanato):**
      * Consumo: **1 saco de 20kg a cada 4 a 4,5 m²** de piso.
-     * Exemplo para 20m²: 20 / 4,5 = 4,4 -> **5 sacos de 20kg**.
-   - **Rejunte**: 1 pacote de 1kg rende de **3 a 4 m²**.
+     * Exemplo para 5m²: 5 / 4,5 = 1,11 -> **2 sacos de 20kg**.
+     * Exemplo para 20m²: 20 / 4,5 = 4,44 -> **5 sacos de 20kg**.
+   - **Rejunte Flexível:** 1 pacote de 1kg rende de **3 a 4 m²** de piso. (Ex: para 5m² -> 2 pacotes de 1kg).
+   - **Espaçadores / Niveladores:** 1 pacote de cruzetas (2mm ou 3mm) e cunhas de nivelamento.
 
 5. 🎨 PINTURA DE PAREDES (2 Demãos):
    - **Tinta Acrílica / Látex**:

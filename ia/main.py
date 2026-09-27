@@ -522,17 +522,19 @@ def calculate_materials(project_type: str, dimensions: Dict[str, float], specifi
         area = dimensions.get("area", 0)
         if area > 0:
             floor_m2 = round(area * 1.10, 2)  # +10% recorte
+            m2_per_box = float(specifications.get("m2_per_box", 2.00))  # Padrão da indústria cerâmica: 2.00 a 2.25 m²/caixa
+            boxes = max(1, int(math.ceil(floor_m2 / m2_per_box)))
             mortar_bags = max(1, int(math.ceil(area / 4.5)))
             grout_kg = max(1, int(math.ceil(area / 3.5)))
             
             materials = [
-                {"name": "Piso / Porcelanato Cerâmico (com 10% sobra)", "quantity": floor_m2, "unit": "m²", "price": 49.90, "total": round(floor_m2 * 49.90, 2)},
+                {"name": f"Piso Cerâmico / Porcelanato ({boxes} cx de ~{m2_per_box:.2f}m² = {boxes * m2_per_box:.2f}m²)", "quantity": boxes, "unit": "caixas", "price": round(m2_per_box * 45.0, 2), "total": round(boxes * m2_per_box * 45.0, 2)},
                 {"name": "Argamassa Colante AC-II 20kg", "quantity": mortar_bags, "unit": "sacos", "price": 24.90, "total": round(mortar_bags * 24.90, 2)},
                 {"name": "Rejunte Flexível 1kg", "quantity": grout_kg, "unit": "pcts", "price": 12.50, "total": round(grout_kg * 12.50, 2)},
             ]
             total_cost = sum(item["total"] for item in materials)
             recommendations = [
-                f"Para {area:.1f}m² de área útil, compre {floor_m2}m² de piso para cobrir perdas e recortes.",
+                f"Para {area:.1f}m² de área útil (+10% de folga/recortes = {floor_m2}m²), são necessárias {boxes} caixas de piso (considerando rendimento padrão de {m2_per_box:.2f}m² por caixa).",
                 f"Consumo de {mortar_bags} sacos de 20kg de argamassa colante e {grout_kg}kg de rejunte.",
                 "Utilize espaçadores e niveladores de piso para um assentamento 100% plano."
             ]
