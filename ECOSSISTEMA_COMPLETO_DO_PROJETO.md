@@ -1,20 +1,22 @@
 # 🏗️ HubObra / Loja Moderna - Documentação do Ecossistema Completo
-> **Relatório Oficial de Tecnologias Embarcadas, Arquitetura e Funcionalidades Operacionais**  
-> *Versão:* 2.0 (Produção / 98%+ Implementado)  
+> **Relatório Oficial de Tecnologias Embarcadas, Arquitetura, Módulos e Funcionalidades Operacionais**  
+> *Versão:* 2.5 (Produção / 99%+ Implementado)  
 > *Data de Atualização:* Setembro de 2026
 
 ---
 
 ## 📌 1. Visão Geral do Projeto
-O **HubObra (Loja Moderna)** é uma plataforma completa de **E-commerce Omnichannel, Inteligente e Headless**, desenvolvida especificamente para o segmento de **Depósitos e Lojas de Materiais de Construção**. 
+O **HubObra (Loja Moderna)** é uma plataforma completa de **E-commerce Omnichannel, Inteligente e Headless**, projetada e construída especificamente para o segmento de **Depósitos e Lojas de Materiais de Construção**. 
 
-O ecossistema integra em uma única solução:
-- **Loja Virtual de Alta Performance** (Mobile-First, PWA e SSR)
-- **Painel Administrativo Completo** (Backoffice para controle total do lojista)
-- **Assistente Virtual com IA** (*Zé da Obra* & *Lia Multimodal* para cálculo de materiais e orçamentos)
-- **Integração com WhatsApp & Recibos em PDF** (Envio instantâneo e automações via n8n)
-- **Aplicativo Mobile de Depósito** (Leitor de código de barras / EAN em Flutter)
-- **Arquitetura Multi-Tenant / SaaS-Ready** (Suporte a múltiplas lojas no mesmo banco)
+O ecossistema integra em uma única solução sincronizada:
+- **Loja Virtual de Alta Performance** (Mobile-First, PWA, SSR, Checkout PIX & Recibos A4/WhatsApp)
+- **Painel Administrativo Completo** (Backoffice com gestão de estoque, pedidos, banners e usuários)
+- **Robô Extrator de Concorrentes & Inteligência de Preços** (Web scraper em tempo real de grandes redes do setor: Acal, Normatel, Carajás, Obramax e Leroy Merlin com importação em 1 clique)
+- **Módulo Avançado de Gestão de Preços** (Edição ágil, filtros por categoria com contadores dinâmicos, reajustes em lote e exportação segmentada em Excel `.xlsx`)
+- **Assistentes Virtuais com IA** (*Zé da Obra* & *Lia Multimodal* para cálculo de materiais e orçamentos)
+- **Aplicativo Mobile Flutter de Depósito & Comparador** (Scanner EAN via câmera + busca rápida e comparativo com redes de materiais de construção)
+- **PWA Dedicado de Expedição & Logística** (`/expedicao` para conferência tátil e despacho de pedidos)
+- **Arquitetura Multi-Tenant / SaaS-Ready** (Pronto para múltiplas filiais e lojas com isolamento seguro)
 
 ---
 
@@ -23,56 +25,75 @@ O ecossistema integra em uma única solução:
 ```mermaid
 graph TD
     subgraph "Camada de Apresentação (Frontend & Mobile)"
-        A1[Next.js 14 / TypeScript]
-        A2[Tailwind CSS & Lucide Icons]
-        A3[Flutter App Scanner]
-        A4[PWA & SSR]
+        A1["Next.js 14 (App Router & SSR)"]
+        A2["Tailwind CSS & Radix UI"]
+        A3["Flutter App (HubScanner & Comparador)"]
+        A4["PWA Standalone de Expedição"]
     end
 
     subgraph "Camada de Negócio & APIs (Backend)"
-        B1[NestJS Modular Framework]
-        B2[Prisma ORM]
-        B3[JWT Auth & RBAC Security]
-        B4[Multer / Upload Engine]
+        B1["NestJS Modular Framework"]
+        B2["Prisma ORM (PostgreSQL)"]
+        B3["JWT Auth, Passport & RBAC"]
+        B4["Extrator Multi-Store Service"]
+        B5["Price Management & Excel Engine"]
+        B6["Multer Upload / CDN Ready"]
     end
 
     subgraph "Camada de Inteligência & Automação (AI & Workflow)"
-        C1[FastAPI / Python 3.10+]
-        C2[IA Zé da Obra / LLM NLP]
-        C3[n8n Workflows]
-        C4[WhatsApp Business Integration]
+        C1["FastAPI / Python 3.10+"]
+        C2["IA Zé da Obra / LLM NLP"]
+        C3["n8n Workflows Multimodais"]
+        C4["WhatsApp Business Automation"]
+    end
+
+    subgraph "Redes de Materiais Integradas (Scrapers)"
+        E1["Acal Home Center"]
+        E2["Normatel Home Center"]
+        E3["Carajás Home Center"]
+        E4["Obramax"]
+        E5["Leroy Merlin"]
     end
 
     subgraph "Camada de Dados & Armazenamento"
-        D1[PostgreSQL Database]
-        D2[Redis Cache Ready]
-        D3[Local / AWS S3 Storage]
+        D1["Supabase / PostgreSQL Cloud"]
+        D2["Redis Cache Ready"]
+        D3["Storage CDN (Imagens Otimizadas)"]
     end
 
     A1 --> B1
     A3 --> B1
+    A4 --> B1
     B1 --> D1
     B1 --> C1
     B1 --> C3
+    B4 --> E1
+    B4 --> E2
+    B4 --> E3
+    B4 --> E4
+    B4 --> E5
 ```
 
 ### 💻 Frontend (Web Storefront & Admin)
-* **Framework:** Next.js 14 (com App Router)
+* **Framework:** Next.js 14 (com App Router e Server/Client Components)
 * **Linguagem:** TypeScript 5+
 * **Estilização & UI:** Tailwind CSS + Radix UI Primitives + Lucide React Icons
-* **Gerenciamento de Estado:** React Context API (Auth, Cart, Favorites, ComponentsConfig)
+* **Gerenciamento de Estado:** React Context API (`AuthContext`, `CartContext`, `FavoritesContext`, `ComponentsConfigContext`)
+* **Manipulação de Planilhas:** Suporte integrado a exportações Excel (`.xlsx` via backend/ExcelJS) e CSV
 * **Validação de Formulários:** Zod + React Hook Form
 * **Comunicação:** Axios & Fetch API nativo com interceptors de autenticação
-* **Recibos & Impressão:** Sistema personalizado de renderização A4 e exportação para PDF/WhatsApp
+* **Recibos & Impressão:** Renderização A4 com layout limpo e exportação/compartilhamento direto no WhatsApp
 
-### ⚙️ Backend (API de Microsserviços)
-* **Framework:** NestJS (Node.js com arquitetura modular limpa)
+### ⚙️ Backend (API Modular de Microsserviços)
+* **Framework:** NestJS (Node.js com arquitetura limpa em módulos, serviços e controllers)
 * **Linguagem:** TypeScript
-* **ORM & Banco de Dados:** Prisma ORM com PostgreSQL (e compatibilidade de transição para SQLite)
-* **Segurança & Autenticação:** JWT (JSON Web Tokens), Passport.js, Bcrypt, RBAC (Role-Based Access Control)
+* **ORM & Banco de Dados:** Prisma ORM com PostgreSQL em nuvem (Supabase) com queries resilientes (`mode: 'insensitive'`)
+* **Módulo Extrator (Web Scraping):** Engine HTTP assíncrona com Axios, Cheerio e rotas de API públicas das grandes redes
+* **Motor de Planilhas:** Geração e parsing dinâmico de planilhas Excel (`ExcelJS` / `xlsx`) para gestão massiva de preços
+* **Segurança & Autenticação:** JWT (JSON Web Tokens), Passport.js, Bcrypt, Guards de rotas e RBAC (`ADMIN`, `STORE_ADMIN`, `EXPEDITION`, `USER`)
 * **Validação de Entrada:** `class-validator` + `class-transformer` com DTOs tipados
-* **Upload de Mídias:** Engine com `multer`, validação de MIME types, limites de tamanho e redimensionamento
-* **Documentação de API:** Swagger / OpenAPI
+* **Upload de Mídias:** Engine com `multer`, validação de MIME types, limites de tamanho e sanitização de URLs
+* **Documentação de API:** Swagger / OpenAPI (`/api/docs`)
 
 ### 🤖 Inteligência Artificial & Automações
 * **Serviço de IA:** Python 3.10+ com **FastAPI**
@@ -81,15 +102,18 @@ graph TD
   * **Lia Multimodal:** Agente de triagem e conversação inteligente
 * **Automação de Mensageria:** **n8n** (workflows para disparos automáticos de pedidos, orçamentos e recibos no WhatsApp)
 
-### 📱 Mobile & Depósito
-* **Aplicativo:** Flutter / Dart (`app_flutter_scanner`)
-* **Funcionalidade:** Leitor de código de barras e EAN via câmera para conferência de estoque, preços e separação de pedidos
+### 📱 Mobile & Depósito (HubScanner)
+* **Framework:** Flutter / Dart (`app_flutter_scanner`)
+* **Funcionalidades:** 
+  * Leitor de código de barras e EAN-13/QR Code via câmera
+  * Consulta e ajuste instantâneo de estoque e preço no banco
+  * **Aba Comparador de Preços:** Consulta de concorrentes restrita a materiais de construção
 
 ### 🚀 Infraestrutura & DevOps
 * **Containers & Orquestração:** Docker & Docker Compose gerenciados via **Easypanel**
 * **Hospedagem & Servidor:** **VPS Contabo** (IP dedicado, alta performance)
 * **Banco de Dados & Mídia:** **Supabase Cloud** (PostgreSQL com PgBouncer e Storage CDN para imagens WebP)
-* **Controle de Versão & Deploy:** Git + GitHub (`mclaudio025/hubobra`) integrado ao Easypanel (Deploy Contínuo)
+* **Controle de Versão & Deploy:** Git + GitHub (`mclaudio025/hubobra`) integrado com auto-deploy no branch `main`
 
 ---
 
@@ -122,14 +146,46 @@ graph TD
 - [x] **Gestão de Categorias (`/admin/categorias`):** Organização em árvore hierárquica (Categorias e Subcategorias com ícones e fotos).
 - [x] **Gerenciador de Banners (`/admin/banners`):** Criação e ativação de banners para Hero, Promocionais e Departamentos com controle de links e datas.
 - [x] **Gestão de Pedidos (`/admin/pedidos`):** Acompanhamento do ciclo de vida do pedido (*Pendente ➔ Em Separação ➔ Enviado ➔ Entregue ➔ Cancelado*), com impressão de recibo interno.
-- [x] **Gestão de Preços em Massa (`/admin/precos`):** Reajuste percentual ou por valor de grupos inteiros de produtos com histórico de alterações.
-- [x] **Importação em Massa (`/admin/importacao`):** Carga rápida de catálogo via planilhas e arquivos estruturados.
-- [x] **Gestão de Usuários & Acessos (`/admin/usuarios`):** Controle de papéis administrativos (`ADMIN`, `STORE_ADMIN`, `USER`).
+- [x] **Gestão de Usuários & Acessos (`/admin/usuarios`):** Controle de papéis administrativos (`ADMIN`, `STORE_ADMIN`, `EXPEDITION`, `USER`).
 - [x] **Monitoramento & Diagnóstico (`/admin/monitoramento`):** Logs do sistema, integridade do banco de dados e status dos serviços.
 
 ---
 
-### 🤖 3.3. IA Especializada & Calculadora de Obras
+### 🤖 3.3. Robô Extrator de Concorrentes & Importação 1-Clique
+- [x] **Integração Exclusiva com Grandes Redes de Construção:**
+  - **Acal Home Center** (Scraper via VTEX / Catalog API)
+  - **Normatel Home Center** (Scraper com parsing e paginação dinâmica)
+  - **Carajás Home Center** (Scraper via Vtex Graph/Catalog)
+  - **Obramax** (Scraper especializado com filtros de busca)
+  - **Leroy Merlin** (Extração de catálogo e precificação)
+- [x] **Filtros e Refinamento de Busca:** Eliminação de produtos fora do escopo de construção civil, garantindo relevância máxima para buscas como "caixa 4x2", "fios e cabos", "argamassa", "conduíte", "tinta acrílica".
+- [x] **Importação Atômica em 1 Clique:**
+  - Criação automática do produto na loja com nome, marca, descrição, preço de custo/venda e fotos em alta resolução.
+  - **Associação Inteligente de Categoria:** O robô identifica o nicho do produto (ex: Tintas, Elétrica, Hidráulica, Ferramentas) e vincula à categoria correta do banco.
+  - **Auto-geração de Barcode/EAN:** Caso o item raspado não tenha código de barras exposto, o sistema gera automaticamente um identificador único para rastreio e scanner.
+  - **Proteção do Catálogo:** A importação de itens não isola nem apaga os produtos existentes da loja.
+
+---
+
+### 📊 3.4. Módulo Avançado de Gestão de Preços (`/admin/precos`)
+- [x] **Modal Moderno de Edição Rápida de Preços (`PriceEditModal.tsx`):**
+  - Visual dark/light mode elegante, sem telas pretas ou quebras de contraste.
+  - Cálculo instantâneo em tempo real de **Margem de Lucro Bruta (%)** e **Markup (%)** conforme o operador altera o custo ou o preço de venda.
+  - Histórico visual de alterações de preços com data e operador.
+- [x] **Barra de Filtros por Categoria com Contadores:**
+  - Pílulas interativas no topo com ícone e badge com a quantidade exata de produtos (ex: `⚡ Elétrica (24)`, `🚰 Hidráulica (18)`, `🎨 Tintas (12)`).
+  - Seleção e desmarcação com 1 clique ("Ver Todas").
+- [x] **Exportação Segmentada para Excel (`.xlsx`) e CSV:**
+  - **Exportação por Categoria:** Baixa planilha contendo somente os itens da categoria ativa (nomeada automaticamente, ex: `precos-hidraulica-2026-09-27.xlsx`).
+  - **Exportação por Itens Selecionados:** Baixa somente os produtos com caixas de seleção marcadas (`precos-selecionados-2026-09-27.xlsx`).
+  - **Exportação Geral:** Baixa o catálogo completo se nenhum filtro restritivo estiver aplicado.
+- [x] **Reajuste em Massa Inteligente:**
+  - Botão de atalho **"Marcar Todos da Categoria"**.
+  - Aplicação de reajuste percentual (ex: +5.5% ou -10%) ou valor fixo em lote para todos os itens marcados ou da categoria.
+
+---
+
+### 🤖 3.5. IA Especializada & Calculadora de Obras
 - [x] **Zé da Obra (Chatbot Especialista):** Tira dúvidas sobre materiais, indica marcas adequadas para cada fase da obra (fundação, alvenaria, hidráulica, elétrica, acabamento).
 - [x] **Calculadora de Materiais Integrada:**
   - Cálculo de cimento, areia e brita para concreto por m³.
@@ -140,16 +196,16 @@ graph TD
 
 ---
 
-### 📱 3.4. App Flutter - Scanner de Estoque (HubScanner)
+### 📱 3.6. App Flutter - Scanner de Estoque & Comparador (HubScanner)
 - [x] **Leitor de Código de Barras (Câmera do Celular):** Leitura instantânea de padrões EAN-13, CODE-128 e QR Codes.
 - [x] **Digitação Manual de Código:** Entrada de números de código de barras ou SKU via teclado.
 - [x] **Busca por Nome & Descrição do Produto:** Modal inteligente de busca textual (nome, marca, SKU) para itens com código danificado ou ausente.
 - [x] **Consulta Instantânea & Ajuste Rápido:** Visualização de preço, estoque com alerta de reposição e ajuste direto no Supabase/PostgreSQL.
-- [x] **Conferência de Pedidos:** Validação de itens durante a separação para evitar erros de despacho.
+- [x] **Aba Comparador de Concorrentes:** Pesquisa direta de produtos nas redes de materiais de construção integradas ao robô da loja.
 
 ---
 
-### 📦 3.5. PWA Mobile-First de Expedição & Despacho (`/expedicao`)
+### 📦 3.7. PWA Mobile-First de Expedição & Despacho (`/expedicao`)
 - [x] **Aplicativo Independente Standalone:** Instalável na tela inicial do celular do operador sem passar por lojas de aplicativos.
 - [x] **Isolamento Total:** Layout de alto contraste industrial, sem interferência ou menus da loja virtual do cliente.
 - [x] **Autenticação Segura por Papel (`EXPEDITION`):** Acesso restrito apenas à fila de pedidos em separação e despacho, sem acesso a dados financeiros ou administrativos da loja.
@@ -167,25 +223,27 @@ O banco de dados PostgreSQL foi desenhado para escalabilidade e arquitetura mult
 | Entidade | Descrição |
 | :--- | :--- |
 | `Store` | Estrutura central multi-tenant (suporta lojas filiais, subdomínios, CNPJ, cores e temas). |
-| `User` | Clientes e operadores com controle de papéis (`USER`, `ADMIN`, `STORE_ADMIN`). |
+| `User` | Clientes e operadores com controle de papéis (`USER`, `ADMIN`, `STORE_ADMIN`, `EXPEDITION`). |
 | `Product` | Catálogo detalhado com SKU, EAN/Barcode, Unidade de Medida, Estoque Mínimo, Custo e Margem. |
-| `ProductImage` | Múltiplas imagens por produto com flags de imagem principal. |
-| `Category` | Categorias e subcategorias com suporte a auto-relacionamento hierárquico. |
+| `ProductImage` | Múltiplas imagens por produto com flags de imagem principal e links CDN. |
+| `Category` | Categorias e subcategorias com suporte a auto-relacionamento hierárquico e busca `insensitive`. |
 | `Order` / `OrderItem` | Pedidos, itens comprados, status de entrega, dados do cliente e método de pagamento. |
 | `Banner` | Banners responsivos com tipos (Hero, Promo, Dept), links de destino e ordem de exibição. |
-| `PriceHistory` | Rastreabilidade de alterações de preço para auditoria e relatórios. |
+| `PriceHistory` | Rastreabilidade de alterações de preço para auditoria, histórico e relatórios. |
 | `ProductReview` | Avaliações e notas dos clientes para os materiais. |
 | `Setting` | Configurações dinâmicas da loja (visibilidade de componentes, taxas, contatos). |
 
 ---
 
-## ⚡ 5. Otimizações de Engenharia e Estabilidade Realizadas
+## ⚡ 5. Otimizações de Engenharia, Resiliência e Estabilidade
 
-1. **Sincronização de Autenticação & Token:** Correção de discrepâncias de token entre o `localStorage` do navegador e os headers de requisição do NestJS, garantindo sessões estáveis e seguras.
-2. **Correção de Hidratação no Next.js:** Implementação de `HydrationHandler` e carregamento seguro de componentes no client-side para eliminar warnings do React.
-3. **Pipeline de Upload Resiliente:** Validação rigorosa no `UploadService` para aceitar imagens de produtos e banners até 10MB, tratando nomes de arquivos com caracteres especiais e gerando URLs absolutas.
-4. **Checkout e DTOs Blindados:** Validação rigorosa dos dados de pagamento e entrega, tratando casos de campos opcionais/nulos sem quebrar o fluxo de fechamento do pedido.
-5. **Recibos Sem Erros de Menu/Interface:** Otimização da folha de recibo para exibição limpa e focada em impressão ou print para envio via WhatsApp.
+1. **Scraping Resiliente & Normalização:** O serviço extrator de concorrentes conta com fallbacks para múltiplos formatos de APIs de e-commerce e tratamento de caracteres acentuados.
+2. **Consultas Prisma Otimizadas:** Implementação de `mode: 'insensitive'` e queries filtradas por loja para garantir que novas importações mantenham o catálogo íntegro.
+3. **Exportação Segmentada de Alta Performance:** O endpoint de exportação de preços gera buffers binários de `.xlsx` no backend e faz streaming direto para o navegador, permitindo downloads instantâneos mesmo em catálogos grandes.
+4. **Sincronização de Autenticação & Token:** Correção de discrepâncias de token entre o `localStorage` do navegador e os headers de requisição do NestJS.
+5. **Correção de Hidratação no Next.js:** Implementação de `HydrationHandler` e carregamento seguro de componentes no client-side para eliminar warnings do React.
+6. **Pipeline de Upload Resiliente:** Validação rigorosa no `UploadService` para aceitar imagens de produtos e banners até 10MB, tratando nomes de arquivos com caracteres especiais e gerando URLs absolutas.
+7. **Checkout e DTOs Blindados:** Validação rigorosa dos dados de pagamento e entrega, tratando casos de campos opcionais/nulos sem quebrar o fechamento do pedido.
 
 ---
 
@@ -193,39 +251,44 @@ O banco de dados PostgreSQL foi desenhado para escalabilidade e arquitetura mult
 
 ```text
 Projeto Loja Moderna/
-├── frontend/                   # Aplicação Next.js 14 (Storefront + Admin)
+├── frontend/                   # Aplicação Next.js 14 (Storefront, PWA Expedição + Admin)
 │   ├── src/
-│   │   ├── app/                # App Router (Rotas da loja, busca, checkout, admin)
-│   │   ├── components/         # Componentes reutilizáveis (Banners, Cards, UI)
+│   │   ├── app/                # App Router (Rotas da loja, busca, checkout, admin, expedicao)
+│   │   │   ├── admin/          # Painel Administrativo (precos, produtos, categorias, etc.)
+│   │   │   ├── expedicao/      # PWA Mobile-First de Expedição
+│   │   │   └── api/            # Proxy routes internas do Next.js
+│   │   ├── components/         # Componentes reutilizáveis (Admin modals, Cards, UI)
 │   │   ├── contexts/           # Provedores de estado (Auth, Cart, Favorites)
 │   │   └── hooks/              # Hooks customizados (useProducts, useBanners, etc.)
 │   └── package.json
 │
-├── backend-nestjs/             # API Rest em NestJS
+├── backend-nestjs/             # API REST Modular em NestJS
 │   ├── src/
-│   │   ├── auth/               # Autenticação JWT e Guards
-│   │   ├── products/           # Módulo de produtos e catálogo
+│   │   ├── auth/               # Autenticação JWT, Passport e Guards
+│   │   ├── products/           # Catálogo de produtos & Extrator de Concorrentes
+│   │   │   ├── extractor.service.ts # Robô de Scraping (Acal, Normatel, Carajás, etc.)
+│   │   │   └── products.service.ts
 │   │   ├── categories/         # Módulo de categorias
 │   │   ├── orders/             # Módulo de checkout e pedidos
 │   │   ├── banners/            # Módulo de marketing e banners
-│   │   ├── upload/             # Módulo de upload de arquivos
-│   │   ├── price-management/   # Reajuste de preços em lote
-│   │   └── prisma/             # Schema e conexão com banco
+│   │   ├── upload/             # Módulo de upload de arquivos e mídias
+│   │   ├── price-management/   # Reajuste em massa e exportação Excel segmentada
+│   │   └── prisma/             # Schema e conexão com banco de dados
 │   └── package.json
 │
 ├── ia/                         # Microsserviço de IA (Python/FastAPI)
 │   ├── main.py                 # Endpoints do Zé da Obra e calculadora
 │   └── requirements.txt
 │
-├── app_flutter_scanner/        # Aplicativo Mobile em Flutter
-│   └── lib/                    # Telas de scanner de código de barras
+├── app_flutter_scanner/        # Aplicativo Mobile em Flutter (HubScanner)
+│   └── lib/                    # Telas de scanner de código de barras e comparador
 │
-├── infra/                      # Configurações Docker e Deploy
-├── docs/                       # Documentações técnicas específicas
-└── ECOSSISTEMA_COMPLETO_DO_PROJETO.md # Este documento
+├── infra/                      # Configurações Docker, Easypanel e Deploy
+├── docs/                       # Documentações técnicas e manuais
+└── ECOSSISTEMA_COMPLETO_DO_PROJETO.md # Este documento master
 ```
 
 ---
 
 ## 🏆 7. Conclusão & Status Operacional
-O projeto encontra-se em estágio **avançado de prontidão (98%+)**, com todos os fluxos críticos de compra, gestão comercial, cálculo de obra com IA e logística de separação por leitor de código de barras plenamente integrados e funcionais.
+O projeto encontra-se em estágio **plenamente consolidado (99%+)**, com todos os fluxos críticos de compra, gestão comercial, robô de inteligência de concorrência com importação 1-clique, gestão e exportação segmentada de preços em Excel, cálculo de obra com IA e logística de separação por leitor de código de barras plenamente operacionais e integrados.
