@@ -16,7 +16,9 @@ import {
   Calendar,
   Eye,
   EyeOff,
-  RefreshCw
+  RefreshCw,
+  Truck,
+  Lock
 } from 'lucide-react';
 import { useUsers } from '../../hooks/useApi';
 
@@ -25,7 +27,7 @@ interface User {
   name: string;
   email: string;
   phone?: string;
-  role: 'ADMIN' | 'MANAGER' | 'USER';
+  role: 'ADMIN' | 'MANAGER' | 'USER' | 'EXPEDITION';
   isActive: boolean;
   createdAt: string;
   lastLogin?: string;
@@ -155,9 +157,10 @@ export default function UsuariosPage() {
 
   const getRoleColor = (role: string) => {
     const colors = {
-      ADMIN: 'bg-red-100 text-red-800',
-      MANAGER: 'bg-blue-100 text-blue-800',
-      USER: 'bg-green-100 text-green-800'
+      ADMIN: 'bg-red-100 text-red-800 border border-red-200',
+      MANAGER: 'bg-blue-100 text-blue-800 border border-blue-200',
+      EXPEDITION: 'bg-orange-100 text-orange-800 border border-orange-200 font-semibold',
+      USER: 'bg-green-100 text-green-800 border border-green-200'
     };
     return colors[role as keyof typeof colors] || 'bg-gray-100 text-gray-800';
   };
@@ -165,11 +168,13 @@ export default function UsuariosPage() {
   const getRoleIcon = (role: string) => {
     switch (role) {
       case 'ADMIN':
-        return <ShieldCheck className="h-4 w-4" />;
+        return <ShieldCheck className="h-4 w-4 text-red-600" />;
       case 'MANAGER':
-        return <Shield className="h-4 w-4" />;
+        return <Shield className="h-4 w-4 text-blue-600" />;
+      case 'EXPEDITION':
+        return <Truck className="h-4 w-4 text-orange-600" />;
       default:
-        return <Users className="h-4 w-4" />;
+        return <Users className="h-4 w-4 text-green-600" />;
     }
   };
 
@@ -296,7 +301,8 @@ export default function UsuariosPage() {
                 <option value="all">Todas as funções</option>
                 <option value="ADMIN">Admin</option>
                 <option value="MANAGER">Manager</option>
-                <option value="USER">Usuário</option>
+                <option value="EXPEDITION">Expedição (Depósito)</option>
+                <option value="USER">Usuário / Cliente</option>
               </select>
             </div>
             <select
@@ -542,96 +548,126 @@ function UserModal({ isOpen, onClose, onSubmit, user, title }: UserModalProps) {
     name: user?.name || '',
     email: user?.email || '',
     phone: user?.phone || '',
+    password: '',
     role: user?.role || 'USER',
     isActive: user?.isActive ?? true
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(formData);
+    const dataToSend: any = { ...formData };
+    if (!dataToSend.password && user) {
+      delete dataToSend.password; // Não sobrescreve se estiver editando e deixou em branco
+    }
+    onSubmit(dataToSend);
   };
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">{title}</h2>
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl border border-gray-100">
+        <h2 className="text-xl font-bold text-gray-900 mb-4">{title}</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Nome
+            <label className="block text-sm font-semibold text-gray-700 mb-1">
+              Nome Completo
             </label>
             <input
               type="text"
               value={formData.name}
               onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Ex: João da Expedição"
+              className="w-full border border-gray-300 rounded-xl px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
               required
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Email
+            <label className="block text-sm font-semibold text-gray-700 mb-1">
+              E-mail de Login
             </label>
             <input
               type="email"
               value={formData.email}
               onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="expedicao@hubobra.com.br"
+              className="w-full border border-gray-300 rounded-xl px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
               required
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Telefone
+            <label className="block text-sm font-semibold text-gray-700 mb-1">
+              {user ? 'Nova Senha / PIN (Opcional)' : 'Senha / PIN de Acesso (Mín. 6 dígitos)'}
+            </label>
+            <div className="relative">
+              <input
+                type="password"
+                value={formData.password}
+                onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
+                placeholder={user ? 'Deixe em branco para não alterar' : '••••••••'}
+                minLength={user ? 0 : 6}
+                required={!user}
+                className="w-full border border-gray-300 rounded-xl px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+              />
+            </div>
+            {!user && (
+              <p className="text-[11px] text-gray-500 mt-1">
+                Esta senha será usada pelo operador para entrar no app de expedição.
+              </p>
+            )}
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1">
+              Telefone / WhatsApp (Opcional)
             </label>
             <input
               type="tel"
               value={formData.phone}
               onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="(85) 99999-9999"
+              className="w-full border border-gray-300 rounded-xl px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Função
+            <label className="block text-sm font-semibold text-gray-700 mb-1">
+              Função / Nível de Acesso
             </label>
             <select
               value={formData.role}
               onChange={(e) => setFormData(prev => ({ ...prev, role: e.target.value as any }))}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full border border-gray-300 rounded-xl px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white font-medium"
             >
-              <option value="USER">Usuário</option>
-              <option value="MANAGER">Manager</option>
-              <option value="ADMIN">Admin</option>
+              <option value="EXPEDITION">🚚 Expedição (Operador de Depósito)</option>
+              <option value="USER">👤 Usuário / Cliente Comum</option>
+              <option value="MANAGER">👔 Manager (Gerente de Loja)</option>
+              <option value="ADMIN">🛡️ Admin (Acesso Completo)</option>
             </select>
           </div>
-          <div className="flex items-center">
+          <div className="flex items-center pt-1">
             <input
               type="checkbox"
               id="isActive"
               checked={formData.isActive}
               onChange={(e) => setFormData(prev => ({ ...prev, isActive: e.target.checked }))}
-              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded cursor-pointer"
             />
-            <label htmlFor="isActive" className="ml-2 block text-sm text-gray-900">
-              Usuário ativo
+            <label htmlFor="isActive" className="ml-2 block text-sm font-medium text-gray-800 cursor-pointer">
+              Usuário ativo e liberado para acesso
             </label>
           </div>
-          <div className="flex justify-end space-x-3 pt-4">
+          <div className="flex justify-end space-x-3 pt-4 border-t border-gray-100">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition"
+              className="px-4 py-2.5 border border-gray-300 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50 transition cursor-pointer"
             >
               Cancelar
             </button>
             <button
               type="submit"
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+              className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-xl shadow-md shadow-blue-600/20 transition cursor-pointer"
             >
-              {user ? 'Atualizar' : 'Criar'}
+              {user ? 'Salvar Alterações' : 'Cadastrar Usuário'}
             </button>
           </div>
         </form>
