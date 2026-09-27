@@ -96,7 +96,7 @@ class _HomeCenterExtractorScreenState extends State<HomeCenterExtractorScreen> {
     }).toList();
 
     return Scaffold(
-      backgroundColor: AppTheme.darkBackground,
+      backgroundColor: AppTheme.darkBg,
       appBar: AppBar(
         backgroundColor: AppTheme.darkSurface,
         elevation: 0,
@@ -155,7 +155,7 @@ class _HomeCenterExtractorScreenState extends State<HomeCenterExtractorScreen> {
                           )
                         : null,
                     filled: true,
-                    fillColor: AppTheme.darkBackground,
+                    fillColor: AppTheme.darkBg,
                     contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -173,7 +173,7 @@ class _HomeCenterExtractorScreenState extends State<HomeCenterExtractorScreen> {
                         padding: const EdgeInsets.only(right: 8),
                         child: ActionChip(
                           label: Text(pill, style: const TextStyle(fontSize: 11, color: Colors.white70)),
-                          backgroundColor: AppTheme.darkBackground,
+                          backgroundColor: AppTheme.darkBg,
                           side: BorderSide(color: Colors.white.withOpacity(0.1)),
                           onPressed: () {
                             _searchController.text = pill;
@@ -277,9 +277,9 @@ class _HomeCenterExtractorScreenState extends State<HomeCenterExtractorScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         decoration: BoxDecoration(
-          color: isSelected ? AppTheme.primary : AppTheme.darkBackground,
+          color: isSelected ? AppTheme.primary : AppTheme.darkBg,
           borderRadius: BorderRadius.circular(6),
-          border: BorderSide(
+          border: Border.all(
             color: isSelected ? AppTheme.primary : Colors.white.withOpacity(0.1),
           ),
         ),

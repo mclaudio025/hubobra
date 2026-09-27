@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import '../utils/text_normalizer.dart';
 
 class WebImageItem {
   final String url;
