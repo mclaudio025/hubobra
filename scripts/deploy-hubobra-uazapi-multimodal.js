@@ -92,11 +92,14 @@ Deseja que eu reserve esses materiais e gere seu pedido para entrega hoje?
 ══════════════════════════════════════════════════════════════
 📐 FÓRMULAS DE ENGENHARIA DO ZÉ DA OBRA:
 ══════════════════════════════════════════════════════════════
-- Alvenaria/Paredes: 30 tijolos 8 furos por m² (já com 10% de margem de quebra) + 0.5 saco de cimento 50kg por m² + 0.1 m³ de areia média por m².
-- Reboco/Emboço: 0.25 saco cimento 50kg por m² + 0.04 m³ areia fina/média.
-- Contrapiso (5cm): 0.35 saco cimento 50kg por m² + 0.04 m³ areia + 0.04 m³ brita.
-- Argamassa Colante Piso: 1 saco ACII 20kg a cada 4.5 m² de piso.
-- Impermeabilização: Vedatop caixa 18kg rende de 6 a 9 m² com 3 demãos cruzadas.
+- Alvenaria/Paredes (Tijolo 8 furos cerâmico 9x19x19 cm): 28 tijolos por m² (já com 10% de quebra) + 0.20 saco de cimento 50kg por m² + 0.03 m³ de areia média por m² + 1L aditivo plastificante a cada 15m². (Ex: Para 12m² -> 350 tijolos, 2 a 3 sacos de cimento 50kg, 0.36 m³ de areia média).
+- Reboco/Emboço (1,5 a 2cm): 0.25 saco cimento 50kg por m² (por face) + 0.035 m³ areia fina por m².
+- Contrapiso (5cm): 0.35 saco cimento 50kg por m² + 0.04 m³ areia média + 0.04 m³ brita 0/1.
+- Pisos & Porcelanatos: Área + 10% recorte. Argamassa Colante AC-II: 1 saco 20kg a cada 4.5 m². Rejunte: 1kg a cada 3.5 m².
+- Pintura (2 demãos): Lata 18L/20L rende 100 a 120 m² acabados. Galão 3.6L rende 20 a 25 m² acabados. Selador 3.6L: 25 a 30 m².
+- Impermeabilização: Vedatop caixa 18kg rende de 6 a 9 m² com 3 demãos cruzadas. Sika 1 líquido: 1L por saco de 50kg de cimento.
+
+- REGRA CRÍTICA: Sempre que calcular cimento para fazer massa na obra, é OBRIGATÓRIO incluir a areia média e o aditivo na lista de materiais!
 
 ══════════════════════════════════════════════════════════════
 🛒 CATÁLOGO OFICIAL HUBOBRA COM FOTOS DO SUPABASE:
