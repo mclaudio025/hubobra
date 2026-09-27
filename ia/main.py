@@ -602,6 +602,107 @@ def calculate_materials(project_type: str, dimensions: Dict[str, float], specifi
                 "Faça o escoramento adequado com pontaletes a cada 1,0m a 1,2m antes de concretar.",
                 "Molhe bem as lajotas antes do lançamento do concreto e faça a cura úmida por 7 dias."
             ]
+
+    # 7. Telhado e Cobertura
+    elif any(k in pt for k in ["telhado", "telha", "cobertura"]):
+        area = dimensions.get("area", 0)
+        if area <= 0:
+            length = dimensions.get("length", 0)
+            width = dimensions.get("width", 0)
+            if length > 0 and width > 0:
+                area = length * width
+                
+        if area > 0:
+            # Considera inclinação média de 15% (fator 1.15)
+            real_area = round(area * 1.15, 2)
+            tipo_telha = specifications.get("tipo", "fibrocimento").lower()
+            
+            if "colonial" in tipo_telha:
+                telhas = int(math.ceil(real_area * 30))
+                materials = [
+                    {"name": "Telha Cerâmica Colonial (Capa e Canal)", "quantity": telhas, "unit": "unidades", "price": 1.45, "total": round(telhas * 1.45, 2)},
+                    {"name": "Cumeeira Cerâmica para Telhado", "quantity": max(5, int(math.ceil(real_area * 0.15))), "unit": "unidades", "price": 4.90, "total": round(max(5, int(math.ceil(real_area * 0.15))) * 4.90, 2)},
+                ]
+            else: # Fibrocimento padrão 2.44 x 1.10m (~2.10m² útil)
+                telhas = max(1, int(math.ceil(real_area / 2.10)))
+                parafusos = telhas * 5
+                materials = [
+                    {"name": "Telha Fibrocimento 2,44m x 1,10m x 6mm (Brasilit/Eternit)", "quantity": telhas, "unit": "telhas", "price": 68.90, "total": round(telhas * 68.90, 2)},
+                    {"name": "Parafuso com Vedação para Telha 110mm", "quantity": parafusos, "unit": "unidades", "price": 1.80, "total": round(parafusos * 1.80, 2)},
+                ]
+            total_cost = sum(item["total"] for item in materials)
+            recommendations = [
+                f"Para {area:.1f}m² em planta (+inclinação de caimento = {real_area}m²), são necessárias {telhas} telhas.",
+                "Utilize sempre os parafusos galvanizados com arruela de vedação de borracha para evitar goteiras."
+            ]
+
+    # 8. Calçada, Garagem e Concreto no Solo
+    elif any(k in pt for k in ["calcada", "garagem", "concreto_solo", "piso_externo"]):
+        area = dimensions.get("area", 0)
+        if area > 0:
+            espessura = float(specifications.get("thickness", 0.07)) # 7cm padrão
+            concreto_m3 = round(area * espessura, 2)
+            cement_bags = max(1, int(math.ceil(concreto_m3 * 7.0)))
+            sand_m3 = round(concreto_m3 * 0.55, 2)
+            gravel_m3 = round(concreto_m3 * 0.80, 2)
+            malha_panels = max(1, int(math.ceil(area / 6.0)))
+            
+            materials = [
+                {"name": "Cimento Todas as Obras 50kg", "quantity": cement_bags, "unit": "sacos", "price": 42.00, "total": round(cement_bags * 42.00, 2)},
+                {"name": "Areia Média Lavada", "quantity": sand_m3, "unit": "m³", "price": 85.00, "total": round(sand_m3 * 85.00, 2)},
+                {"name": "Brita 1 para Concreto", "quantity": gravel_m3, "unit": "m³", "price": 95.00, "total": round(gravel_m3 * 95.00, 2)},
+                {"name": "Malha Pop Q-92 para Calçada (Painel 2x3m)", "quantity": malha_panels, "unit": "painéis", "price": 45.00, "total": round(malha_panels * 45.00, 2)},
+            ]
+            total_cost = sum(item["total"] for item in materials)
+            recommendations = [
+                f"Para {area:.1f}m² de calçada/garagem ({concreto_m3}m³ de concreto com {int(espessura*100)}cm de espessura).",
+                f"Consumo de {cement_bags} sacos de cimento de 50kg, {sand_m3}m³ de areia e {gravel_m3}m³ de brita, reforçado com {malha_panels} malhas pop.",
+                "Faça juntas de dilatação a cada 2,5 metros para evitar trincas por variação térmica."
+            ]
+
+    # 9. Azulejo / Revestimento de Parede
+    elif any(k in pt for k in ["azulejo", "parede_banheiro", "parede_cozinha"]):
+        area = dimensions.get("area", 0)
+        if area > 0:
+            area_sobra = round(area * 1.10, 2)
+            m2_per_box = float(specifications.get("m2_per_box", 2.00))
+            boxes = max(1, int(math.ceil(area_sobra / m2_per_box)))
+            mortar_bags = max(1, int(math.ceil(area / 4.5)))
+            grout_kg = max(1, int(math.ceil(area / 3.5)))
+            
+            materials = [
+                {"name": f"Revestimento / Azulejo de Parede ({boxes} cx = {boxes*m2_per_box:.2f}m²)", "quantity": boxes, "unit": "caixas", "price": round(m2_per_box * 39.90, 2), "total": round(boxes * m2_per_box * 39.90, 2)},
+                {"name": "Argamassa Colante AC-I / AC-II 20kg", "quantity": mortar_bags, "unit": "sacos", "price": 19.90, "total": round(mortar_bags * 19.90, 2)},
+                {"name": "Rejunte Flexível 1kg", "quantity": grout_kg, "unit": "pcts", "price": 12.50, "total": round(grout_kg * 12.50, 2)},
+            ]
+            total_cost = sum(item["total"] for item in materials)
+            recommendations = [
+                f"Para {area:.1f}m² de parede revestida (+10% quebra = {area_sobra}m²), são necessárias {boxes} caixas de azulejo.",
+                f"Consumo de {mortar_bags} sacos de argamassa colante e {grout_kg}kg de rejunte."
+            ]
+
+    # 10. Impermeabilização
+    elif any(k in pt for k in ["impermeabiliza", "neutrol", "vedatop", "baldrame"]):
+        area = dimensions.get("area", 0)
+        length = dimensions.get("length", 0)
+        if area <= 0 and length > 0:
+            area = round(length * 0.25, 2) # 25cm de largura de baldrame
+            
+        if area > 0:
+            # Neutrol / Tinta Asfáltica: 0.5L / m²
+            neutrol_liters = round(area * 0.55, 2)
+            neutrol_gallons = max(1, int(math.ceil(neutrol_liters / 3.6)))
+            vedatop_boxes = max(1, int(math.ceil(area / 7.5)))
+            
+            materials = [
+                {"name": "Tinta Asfáltica Impermeabilizante Neutrol / Vedacit 3,6L", "quantity": neutrol_gallons, "unit": "galões", "price": 69.90, "total": round(neutrol_gallons * 69.90, 2)},
+                {"name": "Impermeabilizante Vedatop Caixa 18kg (3 demãos)", "quantity": vedatop_boxes, "unit": "caixas", "price": 89.90, "total": round(vedatop_boxes * 89.90, 2)},
+            ]
+            total_cost = sum(item["total"] for item in materials)
+            recommendations = [
+                f"Para {area:.1f}m² de área impermeabilizada (alicerce/baldrame ou áreas úmidas).",
+                "Aplique 2 demãos fartas cruzadas de tinta asfáltica no baldrame para impedir a subida de umidade nas paredes."
+            ]
     return {
         "materials": materials,
         "total_cost": total_cost,
