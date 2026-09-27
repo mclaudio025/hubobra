@@ -274,15 +274,18 @@ export class ComponentsService {
     const limit = section.limit || 12;
 
     try {
+      let matchedProducts: any[] = [];
+
       // 1. Seleção Manual
       if (
         section.productSource === "manual" &&
         Array.isArray(section.manualProductIds) &&
         section.manualProductIds.length > 0
       ) {
-        const products = await this.prisma.product.findMany({
+        matchedProducts = await this.prisma.product.findMany({
           where: {
             id: { in: section.manualProductIds },
+            active: true,
           },
           include: {
             images: { select: { url: true, alt: true } },
@@ -290,12 +293,10 @@ export class ComponentsService {
           },
           take: limit,
         });
-
-        if (products.length > 0) return products;
       }
 
       // 2. Por Categoria (incluindo todas as subcategorias filhas)
-      if (section.productSource === "category" && section.categorySlug) {
+      else if (section.productSource === "category" && section.categorySlug) {
         let category = await this.prisma.category.findFirst({
           where: {
             OR: [
@@ -313,9 +314,10 @@ export class ComponentsService {
           });
           const allCategoryIds = [category.id, ...childCategories.map((c) => c.id)];
 
-          const products = await this.prisma.product.findMany({
+          matchedProducts = await this.prisma.product.findMany({
             where: {
               categoryId: { in: allCategoryIds },
+              active: true,
             },
             include: {
               images: { select: { url: true, alt: true } },
@@ -324,16 +326,15 @@ export class ComponentsService {
             take: limit,
             orderBy: { createdAt: "desc" },
           });
-
-          if (products.length > 0) return products;
         }
       }
 
       // 3. Por Regra de Desconto
-      if (section.productSource === "discount") {
-        const products = await this.prisma.product.findMany({
+      else if (section.productSource === "discount") {
+        matchedProducts = await this.prisma.product.findMany({
           where: {
             comparePrice: { gt: 0 },
+            active: true,
           },
           include: {
             images: { select: { url: true, alt: true } },
@@ -342,13 +343,12 @@ export class ComponentsService {
           take: limit,
           orderBy: { updatedAt: "desc" },
         });
-
-        if (products.length > 0) return products;
       }
 
       // 4. Mais Vendidos
-      if (section.productSource === "bestsellers") {
-        const products = await this.prisma.product.findMany({
+      else if (section.productSource === "bestsellers") {
+        matchedProducts = await this.prisma.product.findMany({
+          where: { active: true },
           include: {
             images: { select: { url: true, alt: true } },
             category: { select: { id: true, name: true, slug: true } },
@@ -356,21 +356,53 @@ export class ComponentsService {
           take: limit,
           orderBy: [{ saleCount: "desc" }, { viewCount: "desc" }, { createdAt: "desc" }],
         });
-
-        if (products.length > 0) return products;
       }
 
-      // 5. Destaques / Padrão com Fallback
-      const products = await this.prisma.product.findMany({
-        include: {
-          images: { select: { url: true, alt: true } },
-          category: { select: { id: true, name: true, slug: true } },
-        },
-        take: limit,
-        orderBy: [{ featured: "desc" }, { createdAt: "desc" }],
-      });
+      // 5. Mais Recentes (Newest)
+      else if (section.productSource === "newest") {
+        matchedProducts = await this.prisma.product.findMany({
+          where: { active: true },
+          include: {
+            images: { select: { url: true, alt: true } },
+            category: { select: { id: true, name: true, slug: true } },
+          },
+          take: limit,
+          orderBy: { createdAt: "desc" },
+        });
+      }
 
-      return products;
+      // 6. Destaques (Featured)
+      else {
+        matchedProducts = await this.prisma.product.findMany({
+          where: { active: true },
+          include: {
+            images: { select: { url: true, alt: true } },
+            category: { select: { id: true, name: true, slug: true } },
+          },
+          take: limit,
+          orderBy: [{ featured: "desc" }, { createdAt: "desc" }],
+        });
+      }
+
+      // Se a vitrine tiver menos de 6 produtos, complementa com outros produtos ativos para nunca ficar vazia
+      if (matchedProducts.length < 8) {
+        const existingIds = matchedProducts.map((p) => p.id);
+        const fillers = await this.prisma.product.findMany({
+          where: {
+            id: { notIn: existingIds },
+            active: true,
+          },
+          include: {
+            images: { select: { url: true, alt: true } },
+            category: { select: { id: true, name: true, slug: true } },
+          },
+          take: limit - matchedProducts.length,
+          orderBy: { createdAt: "desc" },
+        });
+        matchedProducts = [...matchedProducts, ...fillers];
+      }
+
+      return matchedProducts;
     } catch (error) {
       this.logger.error(
         `Erro ao resolver produtos para a seção "${section.title}": ${error.message}`
