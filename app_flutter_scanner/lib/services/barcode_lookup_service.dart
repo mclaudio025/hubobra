@@ -70,9 +70,11 @@ class BarcodeLookupService {
       final url = Uri.parse(
         'https://www.carajas.com.br/api/catalog_system/pub/products/search?ft=${Uri.encodeComponent(query)}&_from=0&_to=15',
       );
-      final response = await http.get(url, headers: _headers).timeout(const Duration(seconds: 5));
+      final headers = Map<String, String>.from(_headers)
+        ..['Referer'] = 'https://www.carajas.com.br/';
+      final response = await http.get(url, headers: headers).timeout(const Duration(seconds: 6));
 
-      if (response.statusCode == 200) {
+      if (response.statusCode >= 200 && response.statusCode < 300) {
         final List<dynamic> data = json.decode(response.body);
         final List<AutoEnrichedProductData> list = [];
 
@@ -119,7 +121,7 @@ class BarcodeLookupService {
         return list;
       }
     } catch (e) {
-      print('[Carajás] Erro na busca: $e');
+      // Ignora erro silenciosamente
     }
     return [];
   }
@@ -130,9 +132,11 @@ class BarcodeLookupService {
       final url = Uri.parse(
         'https://www.acalhomecenter.com.br/api/catalog_system/pub/products/search?ft=${Uri.encodeComponent(query)}&_from=0&_to=15',
       );
-      final response = await http.get(url, headers: _headers).timeout(const Duration(seconds: 5));
+      final headers = Map<String, String>.from(_headers)
+        ..['Referer'] = 'https://www.acalhomecenter.com.br/';
+      final response = await http.get(url, headers: headers).timeout(const Duration(seconds: 6));
 
-      if (response.statusCode == 200) {
+      if (response.statusCode >= 200 && response.statusCode < 300) {
         final List<dynamic> data = json.decode(response.body);
         final List<AutoEnrichedProductData> list = [];
 
@@ -179,8 +183,72 @@ class BarcodeLookupService {
         return list;
       }
     } catch (e) {
-      print('[Acal] Erro na busca: $e');
+      // Ignora erro silenciosamente
     }
+    return [];
+  }
+
+  /// Busca produtos diretamente na Normatel Home Center
+  Future<List<AutoEnrichedProductData>> _searchNormatel(String query) async {
+    try {
+      final url = Uri.parse('https://www.normatel.com.br/busca?termo=${Uri.encodeComponent(query)}');
+      final headers = Map<String, String>.from(_headers)
+        ..['Referer'] = 'https://www.normatel.com.br/';
+      final response = await http.get(url, headers: headers).timeout(const Duration(seconds: 6));
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final html = response.body;
+        final imgRegex = RegExp(r'https://normatel\.fbitsstatic\.net/img/p/([a-z0-9-]+)/(\d+)-1\.jpg[^\s"\x27]*', caseSensitive: false);
+        final matches = imgRegex.allMatches(html);
+
+        final List<AutoEnrichedProductData> list = [];
+        final Set<String> seen = {};
+
+        for (final m in matches) {
+          final slug = m.group(1) ?? '';
+          final fullImg = '${m.group(0)?.split('?').first}?w=500&h=500';
+          if (slug.isEmpty || seen.contains(slug)) continue;
+          seen.add(slug);
+
+          final cleanName = cleanProductName(
+            slug.replaceAll(RegExp(r'-\d+$'), '').split('-').map((w) => w.isNotEmpty ? '${w[0].toUpperCase()}${w.substring(1)}' : '').join(' ')
+          );
+
+          final imgPos = m.start;
+          final chunkEnd = (imgPos + 1500) < html.length ? (imgPos + 1500) : html.length;
+          final chunk = html.substring(imgPos, chunkEnd);
+          final priceMatch = RegExp(r'data-price=([\d\.]+)').firstMatch(chunk) ?? RegExp(r'R\$\s*([\d\.,]+)').firstMatch(chunk);
+          double price = 49.9;
+          if (priceMatch != null) {
+            final rawPrice = priceMatch.group(1)!.replaceAll('.', '').replaceAll(',', '.');
+            price = double.tryParse(rawPrice) ?? 49.9;
+          }
+
+          if (cleanName.isNotEmpty) {
+            list.add(AutoEnrichedProductData(
+              name: cleanName,
+              brand: 'Normatel',
+              barcode: '',
+              description: 'Produto $cleanName disponível na Normatel Home Center.',
+              imageUrl: fullImg,
+              price: price,
+              listPrice: price * 1.15,
+              store: 'Normatel',
+              candidateImages: [
+                WebImageItem(
+                  url: fullImg,
+                  title: cleanName,
+                  cleanName: cleanName,
+                  cleanBrand: 'Normatel',
+                ),
+              ],
+            ));
+          }
+          if (list.length >= 15) break;
+        }
+        return list;
+      }
+    } catch (_) {}
     return [];
   }
 
@@ -232,16 +300,17 @@ class BarcodeLookupService {
   }
 
   /// Busca produtos nos Home Centers por nome, termo ou marca
-  Future<List<AutoEnrichedProductData>> searchWebProducts(String query, {int limit = 20}) async {
+  Future<List<AutoEnrichedProductData>> searchWebProducts(String query, {int limit = 30}) async {
     final clean = query.trim();
     if (clean.isEmpty) return [];
 
     final results = await Future.wait([
       _searchCarajas(clean),
       _searchAcal(clean),
+      _searchNormatel(clean),
     ]);
 
-    final all = [...results[0], ...results[1]];
+    final all = [...results[0], ...results[1], ...results[2]];
     
     // Remove duplicidades por nome
     final List<AutoEnrichedProductData> uniqueList = [];

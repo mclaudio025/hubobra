@@ -285,14 +285,20 @@ export default function ExtractorAdminPage() {
     );
   };
 
+  const normalize = (str: string) =>
+    (str || '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+
   const filteredProducts = products.filter((p) => {
     if (selectedStore === 'all') return true;
-    return p.store.toLowerCase().includes(selectedStore.toLowerCase());
+    return normalize(p.store).includes(normalize(selectedStore));
   });
 
-  const carajasCount = products.filter((p) => p.store === 'Carajás').length;
-  const acalCount = products.filter((p) => p.store === 'Acal').length;
-  const normatelCount = products.filter((p) => p.store === 'Normatel').length;
+  const carajasCount = products.filter((p) => normalize(p.store).includes('carajas')).length;
+  const acalCount = products.filter((p) => normalize(p.store).includes('acal')).length;
+  const normatelCount = products.filter((p) => normalize(p.store).includes('normatel')).length;
 
   return (
     <div className="space-y-6 pb-12">
@@ -306,7 +312,7 @@ export default function ExtractorAdminPage() {
             <h1 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2">
               Robô Extrator de Home Centers
               <span className="text-xs uppercase px-2.5 py-0.5 rounded-full bg-emerald-500 text-slate-950 font-black">
-                Inteligência 4-Lojas
+                Inteligência 3-Lojas
               </span>
             </h1>
           </div>
@@ -392,9 +398,9 @@ export default function ExtractorAdminPage() {
               Todas ({products.length})
             </button>
             <button
-              onClick={() => setSelectedStore('carajás')}
+              onClick={() => setSelectedStore('carajas')}
               className={`text-xs font-semibold px-4 py-2 rounded-lg border transition-all ${
-                selectedStore === 'carajás'
+                selectedStore === 'carajas'
                   ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
                   : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
               }`}
