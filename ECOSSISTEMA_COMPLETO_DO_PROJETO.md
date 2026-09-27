@@ -185,14 +185,22 @@ graph TD
 
 ---
 
-### 🤖 3.5. IA Especializada & Calculadora de Obras
-- [x] **Zé da Obra (Chatbot Especialista):** Tira dúvidas sobre materiais, indica marcas adequadas para cada fase da obra (fundação, alvenaria, hidráulica, elétrica, acabamento).
-- [x] **Calculadora de Materiais Integrada:**
-  - Cálculo de cimento, areia e brita para concreto por m³.
-  - Cálculo de tijolos/blocos e argamassa por m² de parede.
-  - Cálculo de pisos, porcelanatos e argamassa colante com margem de quebra/recorte.
-  - Cálculo de tintas (litros e demãos) por metragem de parede.
-- [x] **Workflow n8n Multimodal:** Automação de atendimento que recebe a solicitação do cliente no WhatsApp, consulta os produtos no banco e monta o orçamento em PDF.
+### 🤖 3.5. IA Especializada & Calculadora Completa de Obras (Zé da Obra & Lia)
+- [x] **Zé da Obra (Chatbot Especialista & Engenheiro Prático):** Tira dúvidas técnicas sobre materiais, quantitativos e modos de aplicação para todas as fases da obra (fundação, alvenaria, cobertura, hidráulica, elétrica e acabamento).
+- [x] **Matriz Completa de Cálculos de Engenharia Civil (10 Módulos de Obra):**
+  1. **🧱 Alvenaria & Muros:** Padrão com tijolo 8 furos em pé (25 un/m² com 10% quebra) + massa de assentamento (0,18 saco cimento 50kg/m² + 0,025 m³ areia média/m² + 1L aditivo plastificante). Opção de tijolo deitado (50 un/m²) sob demanda.
+  2. **🧱 Reboco & Emboço:** 0,25 saco cimento 50kg/m² + 0,035 m³ areia fina por face + aditivo plastificante (espessura padrão 1,5 a 2,0cm).
+  3. **🏗️ Contrapiso Interno:** 5cm de espessura (0,35 saco cimento 50kg/m² + 0,04 m³ areia média + 0,04 m³ brita).
+  4. **🔲 Pisos & Porcelanato de Chão:** Área $+ 10\%$ de quebra/recortes. Caixas de $50\times50\text{ cm}$ calculadas com rendimento real de mercado (8 a 10 peças / $2,00\text{ a }2,50\text{ m}^2$ por caixa) + 1 saco argamassa AC-II a cada 4,5 m² + 1kg rejunte a cada 3,5 m² + niveladores de piso.
+  5. **🧱 Azulejos & Revestimento de Parede:** Cozinhas e banheiros com 1 saco de argamassa colante AC-I/AC-II para cada 4,0 a 4,5 m² + 1kg rejunte/3,5 m² + espaçadores cruzeta.
+  6. **🎨 Pintura Completa (Paredes e Tetos):** Rendimento com 2 a 3 demãos (Lata 18L: 100 a 120 m²; Galão 3,6L: 20 a 25 m²; Selador Acrílico 3,6L: 25 a 30 m² para paredes novas; Massa Corrida 18L: 25 a 30 m²).
+  7. **🏠 Telhados & Coberturas:** Área real com inclinação (+15% a +20%). Telhas fibrocimento $2,44\times1,10\text{m}$ ($2,10\text{ m}^2$ úteis + 5 parafusos com vedação por telha); Telha Cerâmica Colonial (30 un/m²); Telha Portuguesa (16 un/m²); Cumeeiras (3 un/m linear).
+  8. **🚶‍♂️ Calçadas, Garagens & Pisos de Concreto no Solo:** Espessura de 7cm lançada sobre o solo (7 sacos cimento/m³ + 0,55 m³ areia/m³ + 0,80 m³ brita/m³ + Malha Pop Q-92 para dilatação + juntas plásticas).
+  9. **🛡️ Impermeabilização Completa:** Tinta Asfáltica / Neutrol para vigas baldrame e alicerces (0,55L/m²); Sika 1 / Vedacit líquido para a argamassa das 3 primeiras fiadas (1L/saco cimento); Vedatop 18kg (6 a 9 m²); Fita Manta Asfáltica com alumínio para calhas e rufos.
+  10. **🏗️ Laje Pré-Fabricada / Treliçada:** 2,3m lineares de vigota por m² + 9,5 lajotas cerâmicas/EPS por m² + 1 painel Malha Pop a cada 6 m² + 0,09 m³ concreto por m² (6,5 sacos cimento 50kg, 0,52 m³ areia e 0,78 m³ brita por m³).
+- [x] **Pipeline Multimodal & Áudios Humanizados (Whisper + ElevenLabs / TTS):** Transcrição de áudios recebidos de clientes e envio de respostas por voz natural combinadas com detalhamento por escrito.
+- [x] **Blindagem Anti-Vazamento de Tags:** Formatador de respostas com expressões regulares que capturam e sanitizam tags como `[FALA:]`, `[FAÇA:]` e `[FOTO:]`, garantindo mensagens limpas e profissionais no WhatsApp.
+- [x] **Fechamento Automático de Pedidos (`<<<PEDIDO: {...} >>>`):** Integração atômica com emissão de recibo digital formal em PDF e chave PIX Copia e Cola no WhatsApp.
 
 ---
 
