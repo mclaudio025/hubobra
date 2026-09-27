@@ -23,6 +23,9 @@ class AutoEnrichedProductData {
   final String? categorySuggestion;
   final String? imageUrl;
   final String barcode;
+  final double? price;
+  final double? listPrice;
+  final String? store;
   final List<WebImageItem> candidateImages;
 
   AutoEnrichedProductData({
@@ -32,6 +35,9 @@ class AutoEnrichedProductData {
     this.categorySuggestion,
     this.imageUrl,
     required this.barcode,
+    this.price,
+    this.listPrice,
+    this.store,
     this.candidateImages = const [],
   });
 }
@@ -40,195 +46,182 @@ class BarcodeLookupService {
   static const String _userAgent =
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
 
-  static final List<String> _knownBrands = [
-    'Mundial Prime',
-    'Tekbond',
-    'ChemiColor',
-    'Chemicolor',
-    'Colorart',
-    'Radcolor',
-    'Baston',
-    'Quartzolit',
-    'Vedacit',
-    'Votoran',
-    'Votorantim',
-    'Coral',
-    'Suvinil',
-    'Sherwin Williams',
-    'Lukscolor',
-    'Tigre',
-    'Amanco',
-    'Fortlev',
-    'Lorenzetti',
-    'Tramontina',
-    'Starrett',
-    'Norton',
-    'Bosch',
-    'Makita',
-    'DeWalt',
-    'Irwin',
-    'Gerdau',
-    'Sil',
-    'Cobrecom',
-    'Fame',
-    'Schneider',
-    'Alumbra',
-    'Pial Legrand',
-    'Legrand',
-    'Docol',
-    'Deca',
-    'Celite',
-    'Incepa',
-    'Portobello',
-    'Eliane',
-    'Stihl',
-    '3M',
-    'WD-40',
-    'Loctite',
-    'Super Bonder',
-    'Sika',
-    'Viapol',
-    'Otto Baumgart',
-    'Brasilit',
-    'Eternit',
-    'Krona',
-    'Plastilit',
-    'Atlas',
-    'Condor',
-    'Pacetta',
-    'Vonder',
-    'Sparta',
-    'MTX',
-  ];
+  static final Map<String, String> _headers = {
+    'User-Agent': _userAgent,
+    'Accept': 'application/json, text/plain, */*',
+    'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7',
+  };
 
-  static final List<String> _irrelevantKeywords = [
-    'locao',
-    'loção',
-    'hidratante',
-    'proctermilk',
-    'cosmetico',
-    'cosmético',
-    'shampoo',
-    'condicionador',
-    'batom',
-    'esmalte',
-    'farmacia',
-    'farmácia',
-    'drogaria',
-    'medicamento',
-    'remedio',
-    'remédio',
-    'fralda',
-    'perfumaria',
-    'suplemento',
-  ];
-
-  /// Limpa título extraído de buscas na web
-  static Map<String, String> cleanTitleAndBrand(String raw) {
-    if (raw.trim().isEmpty) return {'name': '', 'brand': ''};
-
-    String clean = raw
-        .replaceAll('&quot;', '"')
-        .replaceAll('&amp;', '&')
-        .replaceAll('&#39;', "'")
-        .replaceAll('&lt;', '<')
-        .replaceAll('&gt;', '>')
-        .replaceAll('&#x27;', "'")
-        .replaceAll(RegExp(r'-\s*GTIN/EAN/UPC.*$', caseSensitive: false), '')
-        .replaceAll(RegExp(r'\s*-\s*(Mercado Livre|Shopee|Magazine Luiza|Amazon|Carrefour|ConstruFIO|Elgro|Leroy Merlin|C&C|Telhanorte|Loja do Mecânico|Cobasi|Petz|Drogasil|Droga Raia|Pague Menos|VFarma3|Preço Popular).*$', caseSensitive: false), '')
-        .replaceAll(RegExp(r'\s*\|\s*.*$'), '')
-        .replaceAll(RegExp(r'\.\.\.$'), '')
+  /// Limpa menções de concorrentes nos nomes dos produtos
+  static String cleanProductName(String raw) {
+    if (raw.trim().isEmpty) return '';
+    return raw
+        .replaceAll(RegExp(r'\|\s*Normatel', caseSensitive: false), '')
+        .replaceAll(RegExp(r'\|\s*Acal', caseSensitive: false), '')
+        .replaceAll(RegExp(r'\|\s*Carajás', caseSensitive: false), '')
+        .replaceAll(RegExp(r'\|\s*Leroy Merlin', caseSensitive: false), '')
+        .replaceAll(RegExp(r'Exclusivo\s+(Acal|Normatel|Carajás|Leroy\s*Merlin)', caseSensitive: false), '')
+        .replaceAll(RegExp(r'\s+'), ' ')
         .trim();
-
-    String foundBrand = '';
-    for (final b in _knownBrands) {
-      if (RegExp('\\b${RegExp.escape(b)}\\b', caseSensitive: false).hasMatch(clean)) {
-        foundBrand = b;
-        break;
-      }
-    }
-
-    final normalizedName = TextNormalizer.normalizeProductName(clean);
-    final normalizedBrand = foundBrand.isNotEmpty ? TextNormalizer.normalizeBrand(foundBrand) : '';
-
-    return {
-      'name': normalizedName,
-      'brand': normalizedBrand,
-    };
   }
 
-  /// Verifica se um resultado de imagem é relevante ou se é um falso positivo de farmácia/cosméticos
-  static bool isResultRelevant(String title, String url, {bool isNumericQuery = false}) {
-    final lowerTitle = title.toLowerCase();
-    final lowerUrl = url.toLowerCase();
-
-    // Se a busca era por código numérico bruto e retornou cosméticos/farmácia, descarta!
-    if (isNumericQuery) {
-      for (final bad in _irrelevantKeywords) {
-        if (lowerTitle.contains(bad) || lowerUrl.contains(bad)) {
-          return false;
-        }
-      }
-    }
-
-    return true;
-  }
-
-  /// Consulta bases públicas e web para descobrir nome, marca e foto pelo código EAN
-  Future<AutoEnrichedProductData?> lookupBarcode(String barcode) async {
-    final cleanBarcode = barcode.trim();
-    final isNumeric = RegExp(r'^\d+$').hasMatch(cleanBarcode);
-
-    // 1. Tenta consulta no Open Food Facts / Open Products
+  /// Busca produtos diretamente na Carajás Home Center (API VTEX)
+  Future<List<AutoEnrichedProductData>> _searchCarajas(String query) async {
     try {
-      final url = Uri.parse('https://world.openfoodfacts.org/api/v2/product/$cleanBarcode.json');
-      final response = await http.get(url).timeout(const Duration(seconds: 3));
+      final url = Uri.parse(
+        'https://www.carajas.com.br/api/catalog_system/pub/products/search?ft=${Uri.encodeComponent(query)}&_from=0&_to=15',
+      );
+      final response = await http.get(url, headers: _headers).timeout(const Duration(seconds: 5));
 
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        if (data['status'] == 1 && data['product'] != null) {
-          final p = data['product'];
-          final name = p['product_name_pt'] ?? p['product_name'] ?? '';
-          final brand = p['brands'] ?? '';
-          final imageUrl = p['image_front_url'] ?? p['image_url'];
+        final List<dynamic> data = json.decode(response.body);
+        final List<AutoEnrichedProductData> list = [];
 
-          if (name.isNotEmpty) {
-            final images = await searchProductImagesWithDetails('$name $brand'.trim());
-            return AutoEnrichedProductData(
-              name: name,
+        for (final item in data) {
+          final items = item['items'] as List<dynamic>? ?? [];
+          final firstSku = items.isNotEmpty ? items[0] : {};
+          final sellers = firstSku['sellers'] as List<dynamic>? ?? [];
+          final commOffer = sellers.isNotEmpty ? sellers[0]['commertialOffer'] ?? {} : {};
+          final images = firstSku['images'] as List<dynamic>? ?? [];
+          final imgUrl = images.isNotEmpty ? images[0]['imageUrl'] : null;
+
+          final rawName = item['productName'] ?? item['name'] ?? '';
+          final cleanName = cleanProductName(rawName);
+          final price = (commOffer['Price'] as num?)?.toDouble() ?? 0.0;
+          final listPrice = (commOffer['ListPrice'] as num?)?.toDouble() ?? price;
+          final ean = firstSku['ean'] ?? item['productReference'] ?? '';
+          final brand = item['brand'] ?? 'Carajás';
+          final desc = item['description'] ?? '';
+
+          if (cleanName.isNotEmpty) {
+            final imgList = images
+                .map((im) => WebImageItem(
+                      url: im['imageUrl'] ?? '',
+                      title: cleanName,
+                      cleanName: cleanName,
+                      cleanBrand: brand,
+                    ))
+                .where((im) => im.url.isNotEmpty)
+                .toList();
+
+            list.add(AutoEnrichedProductData(
+              name: cleanName,
               brand: brand,
-              description: p['generic_name_pt'] ?? p['generic_name'] ?? name,
-              imageUrl: imageUrl ?? (images.isNotEmpty ? images.first.url : null),
-              candidateImages: images,
-              barcode: cleanBarcode,
-            );
+              barcode: ean,
+              description: desc.isNotEmpty ? desc : 'Produto $cleanName de alta qualidade ($brand).',
+              imageUrl: imgUrl,
+              price: price,
+              listPrice: listPrice,
+              store: 'Carajás',
+              candidateImages: imgList,
+            ));
           }
         }
+        return list;
       }
-    } catch (_) {}
+    } catch (e) {
+      print('[Carajás] Erro na busca: $e');
+    }
+    return [];
+  }
 
-    // 2. Busca na Web pelo próprio EAN com validação de relevância
+  /// Busca produtos diretamente na Acal Home Center (API VTEX)
+  Future<List<AutoEnrichedProductData>> _searchAcal(String query) async {
     try {
-      final webImages = await searchProductImagesWithDetails(cleanBarcode, isNumericBarcodeQuery: isNumeric);
-      
-      // Filtra apenas itens relevantes (sem falsos positivos)
-      final validItems = webImages.where((it) => isResultRelevant(it.title, it.url, isNumericQuery: isNumeric)).toList();
+      final url = Uri.parse(
+        'https://www.acalhomecenter.com.br/api/catalog_system/pub/products/search?ft=${Uri.encodeComponent(query)}&_from=0&_to=15',
+      );
+      final response = await http.get(url, headers: _headers).timeout(const Duration(seconds: 5));
 
-      if (validItems.isNotEmpty) {
-        final bestItem = validItems.first;
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        final List<AutoEnrichedProductData> list = [];
 
-        return AutoEnrichedProductData(
-          name: bestItem.cleanName.isNotEmpty ? bestItem.cleanName : '',
-          brand: bestItem.cleanBrand,
-          description: 'Produto auto-identificado via código $cleanBarcode.',
-          imageUrl: bestItem.url,
-          candidateImages: validItems,
-          barcode: cleanBarcode,
-        );
+        for (final item in data) {
+          final items = item['items'] as List<dynamic>? ?? [];
+          final firstSku = items.isNotEmpty ? items[0] : {};
+          final sellers = firstSku['sellers'] as List<dynamic>? ?? [];
+          final commOffer = sellers.isNotEmpty ? sellers[0]['commertialOffer'] ?? {} : {};
+          final images = firstSku['images'] as List<dynamic>? ?? [];
+          final imgUrl = images.isNotEmpty ? images[0]['imageUrl'] : null;
+
+          final rawName = item['productName'] ?? item['name'] ?? '';
+          final cleanName = cleanProductName(rawName);
+          final price = (commOffer['Price'] as num?)?.toDouble() ?? 0.0;
+          final listPrice = (commOffer['ListPrice'] as num?)?.toDouble() ?? price;
+          final ean = firstSku['ean'] ?? item['productReference'] ?? '';
+          final brand = item['brand'] ?? 'Acal';
+          final desc = item['description'] ?? '';
+
+          if (cleanName.isNotEmpty) {
+            final imgList = images
+                .map((im) => WebImageItem(
+                      url: im['imageUrl'] ?? '',
+                      title: cleanName,
+                      cleanName: cleanName,
+                      cleanBrand: brand,
+                    ))
+                .where((im) => im.url.isNotEmpty)
+                .toList();
+
+            list.add(AutoEnrichedProductData(
+              name: cleanName,
+              brand: brand,
+              barcode: ean,
+              description: desc.isNotEmpty ? desc : 'Produto $cleanName de alta qualidade ($brand).',
+              imageUrl: imgUrl,
+              price: price,
+              listPrice: listPrice,
+              store: 'Acal',
+              candidateImages: imgList,
+            ));
+          }
+        }
+        return list;
       }
-    } catch (_) {}
+    } catch (e) {
+      print('[Acal] Erro na busca: $e');
+    }
+    return [];
+  }
 
-    // 3. Fallback Padrão Limpo (Não insere dados errados de terceiros)
+  /// Consulta por código de barras EAN nos Home Centers
+  Future<AutoEnrichedProductData?> lookupBarcode(String barcode) async {
+    final cleanBarcode = barcode.trim();
+    if (cleanBarcode.isEmpty) return null;
+
+    // Busca simultânea nos grandes Home Centers
+    final results = await Future.wait([
+      _searchCarajas(cleanBarcode),
+      _searchAcal(cleanBarcode),
+    ]);
+
+    final all = [...results[0], ...results[1]];
+
+    // 1. Tenta match exato por código EAN
+    for (final prod in all) {
+      if (prod.barcode == cleanBarcode && prod.name.isNotEmpty) {
+        return prod;
+      }
+    }
+
+    // 2. Se retornou resultado mesmo com EAN diferente, utiliza o primeiro de referência
+    if (all.isNotEmpty) {
+      final first = all.first;
+      return AutoEnrichedProductData(
+        name: first.name,
+        brand: first.brand,
+        description: first.description,
+        imageUrl: first.imageUrl,
+        barcode: cleanBarcode, // Mantém o código lido no scanner
+        price: first.price,
+        listPrice: first.listPrice,
+        store: first.store,
+        candidateImages: first.candidateImages,
+      );
+    }
+
+    // 3. Fallback limpo (sem inventar itens de farmácia/cosméticos)
     return AutoEnrichedProductData(
       name: '',
       brand: '',
@@ -239,119 +232,55 @@ class BarcodeLookupService {
     );
   }
 
-  /// Busca múltiplas fotos e títulos do produto na web por EAN, Nome ou Marca
+  /// Busca produtos nos Home Centers por nome, termo ou marca
+  Future<List<AutoEnrichedProductData>> searchWebProducts(String query, {int limit = 20}) async {
+    final clean = query.trim();
+    if (clean.isEmpty) return [];
+
+    final results = await Future.wait([
+      _searchCarajas(clean),
+      _searchAcal(clean),
+    ]);
+
+    final all = [...results[0], ...results[1]];
+    
+    // Remove duplicidades por nome
+    final List<AutoEnrichedProductData> uniqueList = [];
+    final Set<String> seenNames = {};
+
+    for (final p in all) {
+      final key = p.name.toLowerCase().replaceAll(RegExp(r'\s+'), '');
+      if (!seenNames.contains(key)) {
+        seenNames.add(key);
+        uniqueList.add(p);
+      }
+      if (uniqueList.length >= limit) break;
+    }
+
+    return uniqueList;
+  }
+
+  /// Retorna lista de imagens de referência dos Home Centers
   Future<List<WebImageItem>> searchProductImagesWithDetails(
     String query, {
     int limit = 24,
     bool isNumericBarcodeQuery = false,
   }) async {
-    if (query.trim().isEmpty) return [];
+    final prods = await searchWebProducts(query, limit: limit);
+    final List<WebImageItem> images = [];
 
-    try {
-      final cleanQuery = query.replaceAll(RegExp(r'[*#_\\/]'), ' ').trim();
-      final url = Uri.parse(
-        'https://www.bing.com/images/search?q=${Uri.encodeComponent(cleanQuery)}&form=HDRSC2&first=1',
-      );
-
-      final response = await http.get(
-        url,
-        headers: {
-          'User-Agent': _userAgent,
-          'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7',
-        },
-      ).timeout(const Duration(seconds: 6));
-
-      if (response.statusCode == 200) {
-        final html = response.body;
-        final regex = RegExp(r'murl&quot;:&quot;(https?://[^&"]+)&quot;.*?&quot;t&quot;:&quot;([^&"]+)&quot;');
-        final matches = regex.allMatches(html);
-
-        final List<WebImageItem> results = [];
-        final seenUrls = <String>{};
-
-        for (final match in matches) {
-          final imgUrl = match.group(1);
-          final rawTitle = match.group(2) ?? '';
-
-          if (imgUrl != null && !seenUrls.contains(imgUrl)) {
-            final lower = imgUrl.toLowerCase();
-            if (!lower.contains('.svg') &&
-                !lower.contains('favicon') &&
-                !lower.contains('tracking') &&
-                !lower.contains('pixel')) {
-              
-              if (!isResultRelevant(rawTitle, imgUrl, isNumericQuery: isNumericBarcodeQuery)) {
-                continue;
-              }
-
-              seenUrls.add(imgUrl);
-              final parsed = cleanTitleAndBrand(rawTitle);
-
-              results.add(WebImageItem(
-                url: imgUrl,
-                title: rawTitle,
-                cleanName: parsed['name'] ?? '',
-                cleanBrand: parsed['brand'] ?? '',
-              ));
-            }
-          }
-          if (results.length >= limit) break;
-        }
-
-        return results;
-      }
-    } catch (e) {
-      print('Erro ao buscar imagens na web: $e');
-    }
-
-    return [];
-  }
-
-  /// Busca produtos na internet por nome ou descrição para cadastro automático
-  Future<List<AutoEnrichedProductData>> searchWebProducts(String query, {int limit = 15}) async {
-    final clean = query.trim();
-    if (clean.isEmpty) return [];
-
-    try {
-      final webImages = await searchProductImagesWithDetails(
-        clean,
-        limit: 24,
-        isNumericBarcodeQuery: false,
-      );
-
-      final List<AutoEnrichedProductData> candidates = [];
-      final seenTitles = <String>{};
-
-      for (final item in webImages) {
-        final title = item.cleanName.isNotEmpty ? item.cleanName : item.title;
-        final simpleKey = title.toLowerCase().replaceAll(RegExp(r'\s+'), '');
-
-        if (simpleKey.isEmpty || seenTitles.contains(simpleKey)) continue;
-        seenTitles.add(simpleKey);
-
-        // Tenta detectar EAN de 13 dígitos no título
-        String extractedBarcode = '';
-        final eanMatch = RegExp(r'\b(789\d{10}|\d{13})\b').firstMatch(item.title);
-        if (eanMatch != null) {
-          extractedBarcode = eanMatch.group(1) ?? '';
-        }
-
-        candidates.add(AutoEnrichedProductData(
-          name: title,
-          brand: item.cleanBrand,
-          description: 'Produto localizado na web: $title.',
-          imageUrl: item.url,
-          candidateImages: [item],
-          barcode: extractedBarcode,
+    for (final p in prods) {
+      if (p.imageUrl != null && p.imageUrl!.isNotEmpty) {
+        images.add(WebImageItem(
+          url: p.imageUrl!,
+          title: p.name,
+          cleanName: p.name,
+          cleanBrand: p.brand,
         ));
-
-        if (candidates.length >= limit) break;
       }
-
-      return candidates;
-    } catch (e) {
-      print('Erro ao buscar produtos na web para cadastro: $e');
-      return [];
+      images.addAll(p.candidateImages);
     }
+
+    return images;
   }
 }

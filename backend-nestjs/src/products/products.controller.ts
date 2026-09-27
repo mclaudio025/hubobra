@@ -37,7 +37,7 @@ import { UpdateProductDto } from "./dto/update-product.dto";
 import { BulkCreateProductDto } from "./dto/bulk-create-product.dto";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
-import { Roles } from "../auth/decorators/roles.decorator";
+import { ExtractorService } from "./extractor.service";
 
 @ApiTags("products")
 @Controller("products")
@@ -47,7 +47,24 @@ export class ProductsController {
     private readonly importService: ImportService,
     private readonly imageSearchService: ImageSearchService,
     private readonly specsEnrichmentService: SpecsEnrichmentService,
+    private readonly extractorService: ExtractorService,
   ) {}
+
+  @Get("extractor/search")
+  @ApiOperation({ summary: "Buscar produtos nos Home Centers (Carajás, Acal, Normatel)" })
+  @ApiQuery({ name: "query", required: true, description: "Termo de busca ou código EAN" })
+  async searchExtractor(@Query("query") query: string) {
+    return this.extractorService.searchAllStores(query || "");
+  }
+
+  @Post("extractor/import")
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.MANAGER)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "Importar produtos selecionados do robô extrator para o catálogo" })
+  async importFromExtractor(@Body() body: { items: any[] }) {
+    return this.extractorService.importProducts(body.items || []);
+  }
 
   @Post("normalize-all")
   @ApiOperation({ summary: "Normaliza todos os produtos existentes para o padrão Title Case e Sentence Case" })

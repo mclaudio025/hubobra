@@ -7,12 +7,25 @@ import { CacheModule } from "../cache/cache.module";
 import { UploadModule } from "../upload/upload.module";
 
 import { SpecsEnrichmentService } from "./specs-enrichment.service";
+import { ExtractorService } from "./extractor.service";
 
 @Module({
   imports: [CacheModule, UploadModule],
-  providers: [ProductsService, ImportService, ImageSearchService, SpecsEnrichmentService],
+  providers: [
+    ProductsService,
+    ImportService,
+    ImageSearchService,
+    SpecsEnrichmentService,
+    ExtractorService,
+  ],
   controllers: [ProductsController],
-  exports: [ProductsService, ImportService, ImageSearchService, SpecsEnrichmentService],
+  exports: [
+    ProductsService,
+    ImportService,
+    ImageSearchService,
+    SpecsEnrichmentService,
+    ExtractorService,
+  ],
 })
 export class ProductsModule {}
 

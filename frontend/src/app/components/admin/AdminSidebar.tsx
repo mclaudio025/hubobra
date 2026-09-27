@@ -75,6 +75,12 @@ const menuItems: MenuItem[] = [
         icon: <TrendingUp className="h-4 w-4" />
       },
       {
+        title: 'Robô Extrator',
+        href: '/admin/extrator',
+        icon: <Bot className="h-4 w-4 text-emerald-600" />,
+        badge: 'NOVO'
+      },
+      {
         title: 'Importar Produtos',
         href: '/admin/produtos/importar',
         icon: <Upload className="h-4 w-4" />
