@@ -51,6 +51,14 @@ Você atua com duas personas principais: 🙋‍♀️ LIA (Atendente Comercial 
    - Assim que o Zé conclui o cálculo prático, a Lia assume imediatamente para passar os preços e fechar a entrega.
 
 ══════════════════════════════════════════════════════════════
+🎙️ REGRA CRÍTICA DA TAG DE ÁUDIO ([FALA: ...]):
+══════════════════════════════════════════════════════════════
+- ⚠️ USE SEMPRE E EXCLUSIVAMENTE: [FALA: texto curto aqui]
+- ⚠️ PROIBIDO USAR [FAÇA:], [ÁUDIO:], [VOZ:], [FALAR:] OU QUALQUER OUTRA PALAVRA! A palavra DEVE ser sempre "FALA".
+- O texto do áudio deve ser uma saudação curta e amigável (2 a 3 frases, 10 a 15 segundos).
+- Todo o cálculo completo, listas de materiais e preços devem vir FORA e ABAIXO da tag [FALA: ...].
+
+══════════════════════════════════════════════════════════════
 🚨 REGRAS CRÍTICAS E INVIOLÁVEIS DO ZÉ DA OBRA:
 ══════════════════════════════════════════════════════════════
 1. PISOS & CERÂMICAS: Uma caixa padrão de piso 50x50 cm contém de 8 a 10 peças (2,00 a 2,50 m² por caixa). PROIBIDO afirmar que vêm 4 pisos por caixa! Para 5m² (+10% quebra = 5,5m²), são necessárias apenas 3 caixas de piso, e não 5 caixas!
@@ -184,17 +192,7 @@ PASSO 5: RESUMO DE CONFERÊNCIA & EMISSÃO DO RECIBO
 - Assim que o cliente confirmar os dados e der o "sim" / "pode fechar" / "confirma":
   * A Lia emite OBRIGATORIAMENTE no final a tag especial de pedido com a sintaxe exata:
     <<<PEDIDO: {"customerName":"Nome do Cliente","items":[{"name":"Cimento 50kg","quantity":3,"price":32.00}],"paymentMethod":"CREDIT_CARD","deliveryType":"DELIVERY","street":"Rua Trajano de Medeiros","number":"566","neighborhood":"Messejana","referencePoint":"Próximo ao mercantil","deliveryFee":0} >>>
-  * ⚠️ NUNCA use colchetes [CRIAR_PEDIDO]! Use sempre <<<PEDIDO: {...} >>>.
-
-══════════════════════════════════════════════════════════════
-🎙️ REGRA MULTIMODAL (ÁUDIO HUMANO + TEXTO ESCRITO):
-══════════════════════════════════════════════════════════════
-1. A FALA CURTA DE ÁUDIO (Tag [FALA: ...]):
-   - Coloque OBRIGATORIAMENTE no início da mensagem a tag: [FALA: texto_aqui]
-   - O áudio deve ser curto (2 a 3 frases, 10 a 15s), acolhedor e dinâmico.
-   - Ao confirmar o pedido: "Pedido confirmado com sucesso, [Nome]! Já enviei para a nossa equipe de separação no centro de distribuição da HubObra e emiti o seu recibo oficial completo por escrito aqui embaixo!"
-2. O TEXTO COMPLETO:
-   - Todo o detalhamento formal, itens, valores, fotos e comprovantes são enviados no corpo do texto.`;
+  * ⚠️ NUNCA use colchetes [CRIAR_PEDIDO]! Use sempre <<<PEDIDO: {...} >>>.`;
 
 const AGENT_PROMPT_TEXT = `=Cliente: {{ $json.name }} (Telefone: {{ $json.phone }})
 
@@ -202,9 +200,9 @@ Mensagem / Pedido do Cliente:
 "{{ $json.messageText }}"
 
 ══════════════════════════════════════════════════════════════
-🚨 REGRA CRÍTICA DE CÁLCULO DE PISOS & CERÂMICAS:
-- Uma caixa de piso 50x50 cm contém 8 a 10 peças (2,00 a 2,50 m² por caixa).
-- 4 pisos por caixa está TOTALMENTE ERRADO. Se o cliente falar de 4 pisos por caixa, confirme que 4 pisos é pouco/errado e que o correto são 3 caixas para 5m² (já com 10% de folga = 5,5m²)!
+🎙️ REGRA DA TAG DE ÁUDIO:
+- Use EXATAMENTE a tag: [FALA: texto_aqui] no início da mensagem.
+- NUNCA use [FAÇA:], [ÁUDIO:] ou qualquer outra palavra!
 ══════════════════════════════════════════════════════════════
 
 ══════════════════════════════════════════════════════════════
@@ -231,6 +229,7 @@ async function updateWorkflow() {
   const wf = getRes.data;
   console.log(`✅ Workflow carregado: "${wf.name}" com ${wf.nodes.length} nós.`);
 
+  // 1. Atualizar Agente IA
   const agentNode = wf.nodes.find(n => n.name === '🤖 Agente IA (Lia + Zé da Obra)' || n.id === 'ai-agent-hubobra');
   if (!agentNode) {
     console.error('❌ Nó do agente IA não encontrado!');
@@ -242,7 +241,28 @@ async function updateWorkflow() {
   
   agentNode.parameters.options.systemMessage = COMPLETE_SYSTEM_PROMPT;
   agentNode.parameters.text = AGENT_PROMPT_TEXT;
-  console.log('✅ System Message E Prompt Text do Agente IA atualizados com os 10 Módulos de Engenharia!');
+  console.log('✅ System Message E Prompt Text do Agente IA atualizados com a Regra Estrita da Tag [FALA: ...]!');
+
+  // 2. Atualizar Nó Formatar Resposta WhatsApp para Sanitizar Qualquer Variação de Tag de Áudio ([FAÇA:], [FALA:], [ÁUDIO:], etc)
+  const formatNode = wf.nodes.find(n => n.name.includes('Formatar Resposta'));
+  if (formatNode && formatNode.parameters && formatNode.parameters.jsCode) {
+    let code = formatNode.parameters.jsCode;
+    
+    // Atualiza extração de áudio
+    code = code.replace(
+      /const\s+falaMatch\s*=\s*rawText\.match\(\/\\\[FALA:\\s\*\(\[\\s\\S\]\+\?\)\]\/i\);/g,
+      'const falaMatch = rawText.match(/\\[(?:FALA|FAÇA|FALAS|AUDIO|ÁUDIO|VOZ|VOICE|SPEECH):\\s*([\\s\\S]+?)\\]/i);'
+    );
+    
+    // Atualiza limpeza de resposta escrita
+    code = code.replace(
+      /\.replace\(\/\\\[FALA:\\s\*\[\\s\\S\]\+\?\]\/gi,\s*''\)/g,
+      ".replace(/\\[(?:FALA|FAÇA|FALAS|AUDIO|ÁUDIO|VOZ|VOICE|SPEECH):\\s*[\\s\\S]+?\\]/gi, '').replace(/\\[(?:FOTO|FOTOS|IMAGEM|IMAGE|PHOTO|IMG):\\s*[^\\s\\]]+\\]/gi, '')"
+    );
+
+    formatNode.parameters.jsCode = code;
+    console.log('✅ Nó Formatar Resposta WhatsApp blindado contra vazamentos de tags [FAÇA:], [FALA:], etc!');
+  }
 
   const updatePayload = {
     name: wf.name,
