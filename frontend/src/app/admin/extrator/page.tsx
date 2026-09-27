@@ -298,7 +298,8 @@ export default function ExtractorAdminPage() {
 
   const carajasCount = products.filter((p) => normalize(p.store).includes('carajas')).length;
   const acalCount = products.filter((p) => normalize(p.store).includes('acal')).length;
-  const normatelCount = products.filter((p) => normalize(p.store).includes('normatel')).length;
+  const telhanorteCount = products.filter((p) => normalize(p.store).includes('telhanorte')).length;
+  const obramaxCount = products.filter((p) => normalize(p.store).includes('obramax')).length;
 
   return (
     <div className="space-y-6 pb-12">
@@ -312,12 +313,12 @@ export default function ExtractorAdminPage() {
             <h1 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2">
               Robô Extrator de Home Centers
               <span className="text-xs uppercase px-2.5 py-0.5 rounded-full bg-emerald-500 text-slate-950 font-black">
-                Inteligência 3-Lojas
+                Rede 4 Grandes Redes
               </span>
             </h1>
           </div>
           <p className="text-slate-300 text-sm max-w-2xl">
-            Conectado às APIs oficiais de <strong>Carajás</strong>, <strong>Acal</strong> e <strong>Normatel</strong>. 
+            Conectado às APIs oficiais de <strong>Carajás</strong>, <strong>Acal</strong>, <strong>Telhanorte</strong> e <strong>Obramax</strong>. 
             Importe produtos com fotos HD originais do CDN VTEX, código EAN oficial, marca e preços de referência para seu catálogo em 1 clique.
           </p>
         </div>
@@ -418,14 +419,24 @@ export default function ExtractorAdminPage() {
               🟢 Acal ({acalCount})
             </button>
             <button
-              onClick={() => setSelectedStore('normatel')}
+              onClick={() => setSelectedStore('telhanorte')}
               className={`text-xs font-semibold px-4 py-2 rounded-lg border transition-all ${
-                selectedStore === 'normatel'
-                  ? 'bg-amber-600 text-white border-amber-600 shadow-sm'
+                selectedStore === 'telhanorte'
+                  ? 'bg-red-600 text-white border-red-600 shadow-sm'
                   : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
               }`}
             >
-              🟠 Normatel ({normatelCount})
+              🔴 Telhanorte ({telhanorteCount})
+            </button>
+            <button
+              onClick={() => setSelectedStore('obramax')}
+              className={`text-xs font-semibold px-4 py-2 rounded-lg border transition-all ${
+                selectedStore === 'obramax'
+                  ? 'bg-orange-600 text-white border-orange-600 shadow-sm'
+                  : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+              }`}
+            >
+              🟠 Obramax ({obramaxCount})
             </button>
           </div>
 
@@ -487,7 +498,9 @@ export default function ExtractorAdminPage() {
                         ? 'bg-blue-50 text-blue-700 border-blue-200'
                         : item.store === 'Acal'
                         ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                        : 'bg-amber-50 text-amber-700 border-amber-200'
+                        : item.store === 'Telhanorte'
+                        ? 'bg-red-50 text-red-700 border-red-200'
+                        : 'bg-orange-50 text-orange-700 border-orange-200'
                     }`}
                   >
                     {item.store}
@@ -620,7 +633,7 @@ export default function ExtractorAdminPage() {
               Pronto para Varredura de Catálogo
             </h3>
             <p className="text-xs text-slate-500 max-w-md mx-auto">
-              Digite qualquer termo acima (ou clique nas sugestões rápidas) para pesquisar nas bases da Carajás, Acal e Normatel e popular sua loja com facilidade.
+              Digite qualquer termo acima (ou clique nas sugestões rápidas) para pesquisar nas bases da Carajás, Acal, Telhanorte e Obramax e popular sua loja com facilidade.
             </p>
           </div>
         )

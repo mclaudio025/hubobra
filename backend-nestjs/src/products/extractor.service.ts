@@ -41,10 +41,10 @@ export interface ExtractorImportDto {
 export class ExtractorService {
   private readonly logger = new Logger(ExtractorService.name);
   private readonly userAgent =
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
 
   private readonly axiosClient = axios.create({
-    timeout: 10000,
+    timeout: 9000,
     headers: {
       "User-Agent": this.userAgent,
       Accept: "application/json, text/plain, */*",
@@ -60,11 +60,8 @@ export class ExtractorService {
   private cleanProductName(name: string): string {
     if (!name) return "";
     return name
-      .replace(/\|\s*Normatel/gi, "")
-      .replace(/\|\s*Acal/gi, "")
-      .replace(/\|\s*Carajás/gi, "")
-      .replace(/\|\s*Leroy Merlin/gi, "")
-      .replace(/Exclusivo\s+(Acal|Normatel|Carajás|Leroy\s*Merlin)/gi, "")
+      .replace(/\|\s*(Normatel|Acal|Carajás|Obramax|Telhanorte|Leroy Merlin|C&C)/gi, "")
+      .replace(/Exclusivo\s+(Acal|Normatel|Carajás|Obramax|Telhanorte|Leroy\s*Merlin)/gi, "")
       .replace(/\s+/g, " ")
       .trim();
   }
@@ -74,7 +71,7 @@ export class ExtractorService {
    */
   async searchCarajas(query: string): Promise<ExtractedProduct[]> {
     try {
-      const url = `https://www.carajas.com.br/api/catalog_system/pub/products/search?ft=${encodeURIComponent(query)}&_from=0&_to=20`;
+      const url = `https://www.carajas.com.br/api/catalog_system/pub/products/search?ft=${encodeURIComponent(query)}&_from=0&_to=19`;
       const res = await this.axiosClient.get(url, {
         headers: {
           Referer: "https://www.carajas.com.br/",
@@ -121,7 +118,7 @@ export class ExtractorService {
    */
   async searchAcal(query: string): Promise<ExtractedProduct[]> {
     try {
-      const url = `https://www.acalhomecenter.com.br/api/catalog_system/pub/products/search?ft=${encodeURIComponent(query)}&_from=0&_to=20`;
+      const url = `https://www.acalhomecenter.com.br/api/catalog_system/pub/products/search?ft=${encodeURIComponent(query)}&_from=0&_to=19`;
       const res = await this.axiosClient.get(url, {
         headers: {
           Referer: "https://www.acalhomecenter.com.br/",
@@ -164,82 +161,106 @@ export class ExtractorService {
   }
 
   /**
-   * 3. Conector Normatel (Storefront Search)
+   * 3. Conector Telhanorte (VTEX Catalog System)
    */
-  async searchNormatel(query: string): Promise<ExtractedProduct[]> {
+  async searchTelhanorte(query: string): Promise<ExtractedProduct[]> {
     try {
-      const url = `https://www.normatel.com.br/busca?termo=${encodeURIComponent(query)}`;
+      const url = `https://www.telhanorte.com.br/api/catalog_system/pub/products/search?ft=${encodeURIComponent(query)}&_from=0&_to=19`;
       const res = await this.axiosClient.get(url, {
         headers: {
-          Referer: "https://www.normatel.com.br/",
+          Referer: "https://www.telhanorte.com.br/",
+          Origin: "https://www.telhanorte.com.br",
+          Accept: "application/json",
         },
       });
+      if (!Array.isArray(res.data)) return [];
 
-      const html = typeof res.data === "string" ? res.data : "";
-      if (!html) return [];
+      return res.data
+        .map((item: any) => {
+          const sku = item.items?.[0] || {};
+          const seller = sku.sellers?.[0]?.commertialOffer || {};
+          const image =
+            sku.images?.[0]?.imageUrl ||
+            item.items?.[0]?.images?.[0]?.imageUrl ||
+            "";
 
-      const imgRegex =
-        /https:\/\/normatel\.fbitsstatic\.net\/img\/p\/([a-z0-9-]+)\/(\d+)-1\.jpg[^\s"']*/gi;
-      const products: ExtractedProduct[] = [];
-      const seenSlugs = new Set<string>();
-      let match: RegExpExecArray | null;
-
-      while ((match = imgRegex.exec(html)) !== null) {
-        const slug = match[1];
-        const prodId = match[2];
-        const fullImg = match[0].split("?")[0] + "?w=500&h=500";
-        if (seenSlugs.has(slug)) continue;
-        seenSlugs.add(slug);
-
-        const cleanName = slug
-          .replace(/-\d+$/, "")
-          .split("-")
-          .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-          .join(" ");
-
-        const imgPos = match.index;
-        const chunk = html.slice(imgPos, imgPos + 1500);
-        const priceMatch =
-          chunk.match(/data-price=([\d\.]+)/) ||
-          chunk.match(/R\$\s*([\d\.,]+)/);
-        let price = 0;
-        if (priceMatch) {
-          price = parseFloat(priceMatch[1].replace(".", "").replace(",", "."));
-        }
-
-        products.push({
-          store: "Normatel",
-          storeLogo: "https://www.normatel.com.br/arquivos/logo-normatel.png",
-          productId: `normatel-${prodId || slug}`,
-          name: this.cleanProductName(cleanName),
-          brand: "Normatel",
-          ean: "",
-          price: price > 0 ? price : 49.9,
-          listPrice: price > 0 ? Math.round(price * 1.15 * 100) / 100 : 59.9,
-          available: true,
-          url: `https://www.normatel.com.br/${slug}`,
-          image: fullImg,
-          categories: [],
-          description: `Produto ${cleanName} de alta qualidade disponível na Normatel Home Center.`,
-        });
-
-        if (products.length >= 20) break;
-      }
-
-      return products;
+          return {
+            store: "Telhanorte",
+            storeLogo: "https://telhanorte.vteximg.com.br/arquivos/logo-telhanorte.png",
+            productId: `telhanorte-${item.productId}`,
+            name: this.cleanProductName(item.productName || item.name),
+            brand: item.brand || "Telhanorte",
+            ean: sku.ean || item.productReference || "",
+            price: Number(seller.Price) || Number(seller.ListPrice) || 0,
+            listPrice: Number(seller.ListPrice) || Number(seller.Price) || 0,
+            available: seller.AvailableQuantity > 0,
+            url: item.link || `https://www.telhanorte.com.br/${item.linkText}/p`,
+            image: image,
+            categories: item.categories || [],
+            description: item.description || "",
+          };
+        })
+        .filter((i: ExtractedProduct) => i.price > 0 && i.name.length > 0);
     } catch (err: any) {
-      this.logger.warn(`[Normatel] Falha na busca (${query}): ${err.message}`);
+      this.logger.warn(`[Telhanorte] Falha na busca (${query}): ${err.message}`);
       return [];
     }
   }
 
   /**
-   * Busca Unificada nos Home Centers
+   * 4. Conector Obramax (VTEX Catalog System)
+   */
+  async searchObramax(query: string): Promise<ExtractedProduct[]> {
+    try {
+      const url = `https://www.obramax.com.br/api/catalog_system/pub/products/search?ft=${encodeURIComponent(query)}&_from=0&_to=19`;
+      const res = await this.axiosClient.get(url, {
+        headers: {
+          Referer: "https://www.obramax.com.br/",
+          Origin: "https://www.obramax.com.br",
+          Accept: "application/json",
+        },
+      });
+      if (!Array.isArray(res.data)) return [];
+
+      return res.data
+        .map((item: any) => {
+          const sku = item.items?.[0] || {};
+          const seller = sku.sellers?.[0]?.commertialOffer || {};
+          const image =
+            sku.images?.[0]?.imageUrl ||
+            item.items?.[0]?.images?.[0]?.imageUrl ||
+            "";
+
+          return {
+            store: "Obramax",
+            storeLogo: "https://lojaobramax.vteximg.com.br/arquivos/logo-obramax.png",
+            productId: `obramax-${item.productId}`,
+            name: this.cleanProductName(item.productName || item.name),
+            brand: item.brand || "Obramax",
+            ean: sku.ean || item.productReference || "",
+            price: Number(seller.Price) || Number(seller.ListPrice) || 0,
+            listPrice: Number(seller.ListPrice) || Number(seller.Price) || 0,
+            available: seller.AvailableQuantity > 0,
+            url: item.link || `https://www.obramax.com.br/${item.linkText}/p`,
+            image: image,
+            categories: item.categories || [],
+            description: item.description || "",
+          };
+        })
+        .filter((i: ExtractedProduct) => i.price > 0 && i.name.length > 0);
+    } catch (err: any) {
+      this.logger.warn(`[Obramax] Falha na busca (${query}): ${err.message}`);
+      return [];
+    }
+  }
+
+  /**
+   * Busca Unificada nos 4 Grandes Home Centers
    */
   async searchAllStores(query: string): Promise<{
     query: string;
     total: number;
-    stores: { carajas: number; acal: number; normatel: number };
+    stores: { carajas: number; acal: number; telhanorte: number; obramax: number };
     products: ExtractedProduct[];
   }> {
     const cleanQuery = query.trim();
@@ -247,20 +268,21 @@ export class ExtractorService {
       return {
         query: "",
         total: 0,
-        stores: { carajas: 0, acal: 0, normatel: 0 },
+        stores: { carajas: 0, acal: 0, telhanorte: 0, obramax: 0 },
         products: [],
       };
     }
 
     this.logger.log(`🔍 Buscando nos Home Centers: "${cleanQuery}"`);
 
-    const [carajas, acal, normatel] = await Promise.all([
+    const [carajas, acal, telhanorte, obramax] = await Promise.all([
       this.searchCarajas(cleanQuery),
       this.searchAcal(cleanQuery),
-      this.searchNormatel(cleanQuery),
+      this.searchTelhanorte(cleanQuery),
+      this.searchObramax(cleanQuery),
     ]);
 
-    const all = [...carajas, ...acal, ...normatel];
+    const all = [...carajas, ...acal, ...telhanorte, ...obramax];
 
     // Verificar se já existem no banco para sinalizar na UI
     const eans = all.map((p) => p.ean).filter(Boolean);
@@ -306,7 +328,8 @@ export class ExtractorService {
       stores: {
         carajas: carajas.length,
         acal: acal.length,
-        normatel: normatel.length,
+        telhanorte: telhanorte.length,
+        obramax: obramax.length,
       },
       products: enrichedProducts as any,
     };
@@ -383,10 +406,10 @@ export class ExtractorService {
         if (lowerName.includes("cimento") || lowerName.includes("argamassa")) {
           orConditions.push({ name: { contains: "Cimento", mode: "insensitive" } });
         }
-        if (lowerName.includes("tubo") || lowerName.includes("conexão") || lowerName.includes("tigre") || lowerName.includes("torneira")) {
+        if (lowerName.includes("tubo") || lowerName.includes("conexão") || lowerName.includes("tigre") || lowerName.includes("torneira") || lowerName.includes("caixa")) {
           orConditions.push({ name: { contains: "Hidráulica", mode: "insensitive" } });
         }
-        if (lowerName.includes("fio") || lowerName.includes("cabo") || lowerName.includes("disjuntor") || lowerName.includes("tomada")) {
+        if (lowerName.includes("fio") || lowerName.includes("cabo") || lowerName.includes("disjuntor") || lowerName.includes("tomada") || lowerName.includes("interruptor") || lowerName.includes("luz")) {
           orConditions.push({ name: { contains: "Elétrica", mode: "insensitive" } });
         }
 

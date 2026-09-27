@@ -119,7 +119,7 @@ class _HomeCenterExtractorScreenState extends State<HomeCenterExtractorScreen> {
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
                 ),
                 Text(
-                  'Carajás • Acal • Normatel',
+                  'Carajás • Acal • Telhanorte • Obramax',
                   style: TextStyle(fontSize: 11, color: Colors.white60),
                 ),
               ],
@@ -193,19 +193,26 @@ class _HomeCenterExtractorScreenState extends State<HomeCenterExtractorScreen> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               color: AppTheme.darkSurface.withOpacity(0.5),
-              child: Row(
-                children: [
-                  Text(
-                    '${filtered.length} encontrados',
-                    style: const TextStyle(color: Colors.white60, fontSize: 12, fontWeight: FontWeight.bold),
-                  ),
-                  const Spacer(),
-                  _buildStoreFilterChip('Todas', 'all'),
-                  const SizedBox(width: 6),
-                  _buildStoreFilterChip('Carajás', 'carajás'),
-                  const SizedBox(width: 6),
-                  _buildStoreFilterChip('Acal', 'acal'),
-                ],
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    Text(
+                      '${filtered.length} encontrados',
+                      style: const TextStyle(color: Colors.white60, fontSize: 12, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(width: 12),
+                    _buildStoreFilterChip('Todas', 'all'),
+                    const SizedBox(width: 6),
+                    _buildStoreFilterChip('Carajás', 'carajás'),
+                    const SizedBox(width: 6),
+                    _buildStoreFilterChip('Acal', 'acal'),
+                    const SizedBox(width: 6),
+                    _buildStoreFilterChip('Telhanorte', 'telhanorte'),
+                    const SizedBox(width: 6),
+                    _buildStoreFilterChip('Obramax', 'obramax'),
+                  ],
+                ),
               ),
             ),
 
@@ -296,7 +303,24 @@ class _HomeCenterExtractorScreenState extends State<HomeCenterExtractorScreen> {
   }
 
   Widget _buildProductCard(AutoEnrichedProductData item) {
-    final isCarajas = (item.store ?? '').toLowerCase().contains('carajás');
+    final storeLower = (item.store ?? '').toLowerCase();
+    final isCarajas = storeLower.contains('carajás');
+    final isAcal = storeLower.contains('acal');
+    final isTelha = storeLower.contains('telhanorte');
+    final isObra = storeLower.contains('obramax');
+
+    Color badgeBg = Colors.blue.withOpacity(0.2);
+    Color badgeText = Colors.lightBlueAccent;
+    if (isAcal) {
+      badgeBg = Colors.green.withOpacity(0.2);
+      badgeText = Colors.lightGreenAccent;
+    } else if (isTelha) {
+      badgeBg = Colors.red.withOpacity(0.2);
+      badgeText = Colors.redAccent;
+    } else if (isObra) {
+      badgeBg = Colors.orange.withOpacity(0.2);
+      badgeText = Colors.orangeAccent;
+    }
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -342,7 +366,7 @@ class _HomeCenterExtractorScreenState extends State<HomeCenterExtractorScreen> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
-                          color: isCarajas ? Colors.blue.withOpacity(0.2) : Colors.green.withOpacity(0.2),
+                          color: badgeBg,
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
@@ -350,7 +374,7 @@ class _HomeCenterExtractorScreenState extends State<HomeCenterExtractorScreen> {
                           style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
-                            color: isCarajas ? Colors.lightBlueAccent : Colors.lightGreenAccent,
+                            color: badgeText,
                           ),
                         ),
                       ),
