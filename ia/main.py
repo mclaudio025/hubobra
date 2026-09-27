@@ -445,17 +445,20 @@ def calculate_materials(project_type: str, dimensions: Dict[str, float], specifi
             area = length * height
             
         if area > 0:
-            # Padrão: Tijolo Cerâmico 8 furos 9x19x19 cm (28 un/m² com 10% quebra)
-            bricks = int(math.ceil(area * 28))
-            # Cimento: 0.20 saco de 50kg por m² de parede
-            cement_bags = max(1, int(math.ceil(area * 0.20)))
-            # Areia Média: 0.03 m³ por m²
-            sand_m3 = round(area * 0.03, 2)
-            # Aditivo Plastificante (Vedalit / Sika): 1L a cada 15m²
-            additive_liters = max(1, int(math.ceil(area / 15.0)))
+            # Padrão: Tijolo Cerâmico 8 furos 9x19x19 cm em pé (25 un/m² com 10% de folga/quebra)
+            is_deitado = specifications.get("brick_position") == "deitado" or "deitado" in pt
+            brick_rate = 50 if is_deitado else 25
+            cement_rate = 0.35 if is_deitado else 0.18
+            sand_rate = 0.05 if is_deitado else 0.025
+            
+            bricks = int(math.ceil(area * brick_rate))
+            cement_bags = max(1, int(math.ceil(area * cement_rate)))
+            sand_m3 = round(area * sand_rate, 2)
+            additive_liters = max(1, int(math.ceil(area / 20.0)))
+            pos_label = "deitado (parede de 20cm)" if is_deitado else "em pé / cutelo (padrão 10cm)"
             
             materials = [
-                {"name": "Tijolo Cerâmico 8 Furos (9x19x19cm)", "quantity": bricks, "unit": "unidades", "price": 0.45, "total": round(bricks * 0.45, 2)},
+                {"name": f"Tijolo Cerâmico 8 Furos 9x19x19cm ({pos_label})", "quantity": bricks, "unit": "unidades", "price": 0.45, "total": round(bricks * 0.45, 2)},
                 {"name": "Cimento Todas as Obras 50kg", "quantity": cement_bags, "unit": "sacos", "price": 42.00, "total": round(cement_bags * 42.00, 2)},
                 {"name": "Areia Média Lavada", "quantity": sand_m3, "unit": "m³", "price": 85.00, "total": round(sand_m3 * 85.00, 2)},
                 {"name": "Aditivo Plastificante Vedalit 1L", "quantity": additive_liters, "unit": "litros", "price": 18.90, "total": round(additive_liters * 18.90, 2)},
@@ -463,7 +466,7 @@ def calculate_materials(project_type: str, dimensions: Dict[str, float], specifi
             
             total_cost = sum(item["total"] for item in materials)
             recommendations = [
-                f"Para {area:.1f}m² de parede, são necessários {bricks} tijolos de 8 furos (já com 10% de sobra para recortes).",
+                f"Para {area:.1f}m² de parede com tijolo {pos_label}, são necessários {bricks} tijolos de 8 furos (já com 10% de folga).",
                 f"A massa de assentamento consome {cement_bags} sacos de cimento de 50kg, {sand_m3}m³ de areia média e {additive_liters}L de plastificante.",
                 "Molhe os tijolos antes do assentamento para garantir máxima aderência e evitar trincas.",
                 "Não esqueça de impermeabilizar as 3 primeiras fiadas de tijolos para evitar umidade do solo."
