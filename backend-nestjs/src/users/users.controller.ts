@@ -35,7 +35,7 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Post()
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRole.ADMIN, UserRole.MANAGER)
   @ApiOperation({ summary: "Criar novo usuário" })
   @ApiResponse({ status: 201, description: "Usuário criado com sucesso" })
   @ApiResponse({ status: 403, description: "Acesso negado" })
@@ -78,7 +78,7 @@ export class UsersController {
   }
 
   @Patch(":id")
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRole.ADMIN, UserRole.MANAGER)
   @ApiOperation({ summary: "Atualizar usuário" })
   @ApiResponse({ status: 200, description: "Usuário atualizado com sucesso" })
   @ApiResponse({ status: 404, description: "Usuário não encontrado" })
@@ -87,7 +87,7 @@ export class UsersController {
   }
 
   @Delete(":id")
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRole.ADMIN, UserRole.MANAGER)
   @ApiOperation({ summary: "Desativar usuário" })
   @ApiResponse({ status: 200, description: "Usuário desativado com sucesso" })
   @ApiResponse({ status: 404, description: "Usuário não encontrado" })
@@ -96,7 +96,7 @@ export class UsersController {
   }
 
   @Patch(":id/activate")
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRole.ADMIN, UserRole.MANAGER)
   @ApiOperation({ summary: "Ativar usuário" })
   @ApiResponse({ status: 200, description: "Usuário ativado com sucesso" })
   @ApiResponse({ status: 404, description: "Usuário não encontrado" })

@@ -84,28 +84,54 @@ export default function UsuariosPage() {
     }
   };
 
-  const handleCreateUser = async (userData: Partial<User>) => {
+  const handleCreateUser = async (userData: any) => {
     try {
-      await createUser(userData);
+      const payload: any = {
+        name: userData.name?.trim(),
+        email: userData.email?.trim(),
+        password: userData.password?.trim(),
+        role: userData.role,
+        active: userData.isActive !== undefined ? Boolean(userData.isActive) : true,
+      };
+      if (userData.phone?.trim()) {
+        payload.phone = userData.phone.trim();
+      }
+
+      await createUser(payload);
       await loadUsers();
       await loadStats();
       setShowCreateModal(false);
-    } catch (error) {
+      alert('Usuário cadastrado com sucesso!');
+    } catch (error: any) {
       console.error('Erro ao criar usuário:', error);
-      alert('Erro ao criar usuário');
+      alert(error?.message || 'Erro ao criar usuário. Verifique se o e-mail já não está cadastrado.');
     }
   };
 
-  const handleUpdateUser = async (userId: string, userData: Partial<User>) => {
+  const handleUpdateUser = async (userId: string, userData: any) => {
     try {
-      await updateUser(userId, userData);
+      const payload: any = {
+        name: userData.name?.trim(),
+        email: userData.email?.trim(),
+        role: userData.role,
+        active: userData.isActive !== undefined ? Boolean(userData.isActive) : true,
+      };
+      if (userData.password?.trim()) {
+        payload.password = userData.password.trim();
+      }
+      if (userData.phone?.trim()) {
+        payload.phone = userData.phone.trim();
+      }
+
+      await updateUser(userId, payload);
       await loadUsers();
       await loadStats();
       setShowEditModal(false);
       setSelectedUser(null);
-    } catch (error) {
+      alert('Usuário atualizado com sucesso!');
+    } catch (error: any) {
       console.error('Erro ao atualizar usuário:', error);
-      alert('Erro ao atualizar usuário');
+      alert(error?.message || 'Erro ao atualizar usuário');
     }
   };
 

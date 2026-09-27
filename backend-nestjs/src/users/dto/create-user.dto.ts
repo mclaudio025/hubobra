@@ -5,6 +5,7 @@ import {
   IsString,
   IsEnum,
   IsOptional,
+  IsBoolean,
   MinLength,
 } from "class-validator";
 import { UserRole } from "../../common/enums";
@@ -39,10 +40,29 @@ export class CreateUserDto {
   @ApiProperty({
     description: "Papel do usuário no sistema",
     enum: UserRole,
-    example: UserRole.USER,
+    example: UserRole.EXPEDITION,
     required: false,
   })
   @IsOptional()
-  @IsEnum(UserRole, { message: "Papel deve ser USER, ADMIN ou MANAGER" })
+  @IsEnum(UserRole, { message: "Papel deve ser USER, ADMIN, MANAGER ou EXPEDITION" })
   role?: UserRole;
+
+  @ApiProperty({
+    description: "Status ativo do usuário",
+    example: true,
+    required: false,
+  })
+  @IsOptional()
+  @IsBoolean({ message: "Active deve ser um boolean" })
+  active?: boolean;
+
+  @ApiProperty({
+    description: "Telefone do usuário",
+    example: "(85) 99999-9999",
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  phone?: string;
 }
+

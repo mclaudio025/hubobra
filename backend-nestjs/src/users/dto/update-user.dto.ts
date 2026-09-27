@@ -5,6 +5,7 @@ import {
   IsEnum,
   IsOptional,
   IsBoolean,
+  MinLength,
 } from "class-validator";
 import { UserRole } from "../../common/enums";
 
@@ -28,13 +29,24 @@ export class UpdateUserDto {
   email?: string;
 
   @ApiProperty({
+    description: "Nova senha do usuário",
+    example: "novaSenha123",
+    required: false,
+    minLength: 6,
+  })
+  @IsOptional()
+  @IsString({ message: "Senha deve ser uma string" })
+  @MinLength(6, { message: "Senha deve ter pelo menos 6 caracteres" })
+  password?: string;
+
+  @ApiProperty({
     description: "Papel do usuário no sistema",
     enum: UserRole,
-    example: UserRole.USER,
+    example: UserRole.EXPEDITION,
     required: false,
   })
   @IsOptional()
-  @IsEnum(UserRole, { message: "Papel deve ser USER, ADMIN ou MANAGER" })
+  @IsEnum(UserRole, { message: "Papel deve ser USER, ADMIN, MANAGER ou EXPEDITION" })
   role?: UserRole;
 
   @ApiProperty({
@@ -45,4 +57,14 @@ export class UpdateUserDto {
   @IsOptional()
   @IsBoolean({ message: "Active deve ser um boolean" })
   active?: boolean;
+
+  @ApiProperty({
+    description: "Telefone do usuário",
+    example: "(85) 99999-9999",
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  phone?: string;
 }
+
