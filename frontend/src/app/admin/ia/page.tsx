@@ -229,21 +229,37 @@ export default function IAPage() {
           <div className="bg-white rounded-lg shadow-md p-6">
             <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
               <Zap className="h-5 w-5 text-purple-500 mr-2" />
-              Ações Rápidas - LIA
+              Ações Rápidas - LIA & Zé da Obra
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <Link href="/admin/ia/lia" className="flex items-center p-3 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors">
-                <User className="h-5 w-5 text-purple-500 mr-3" />
-                <span className="text-gray-700">Painel da LIA</span>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <Link href="/admin/ia/treinadores" className="flex items-center p-3 bg-emerald-50 border border-emerald-200 rounded-lg hover:bg-emerald-100 transition-colors">
+                <User className="h-5 w-5 text-emerald-600 mr-3" />
+                <div>
+                  <span className="font-semibold text-gray-900 block text-sm">Treinadores WhatsApp</span>
+                  <span className="text-xs text-gray-500">Autorizar quem pode ensinar a IA</span>
+                </div>
               </Link>
-              <Link href="/admin/ia/lia/configuracoes" className="flex items-center p-3 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors">
-                <Settings className="h-5 w-5 text-purple-500 mr-3" />
-                <span className="text-gray-700">Configurações</span>
+              <Link href="/admin/ia/dicionario" className="flex items-center p-3 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors">
+                <BookOpen className="h-5 w-5 text-blue-600 mr-3" />
+                <div>
+                  <span className="font-semibold text-gray-900 block text-sm">Dicionário de Obra</span>
+                  <span className="text-xs text-gray-500">Gírias e Cearês aprendidos</span>
+                </div>
               </Link>
-              <button className="flex items-center p-3 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors">
-                <BarChart3 className="h-5 w-5 text-purple-500 mr-3" />
-                <span className="text-gray-700">Relatórios</span>
-              </button>
+              <Link href="/admin/ia/lia" className="flex items-center p-3 bg-purple-50 border border-purple-200 rounded-lg hover:bg-purple-100 transition-colors">
+                <Bot className="h-5 w-5 text-purple-600 mr-3" />
+                <div>
+                  <span className="font-semibold text-gray-900 block text-sm">Painel da LIA</span>
+                  <span className="text-xs text-gray-500">Histórico de conversas</span>
+                </div>
+              </Link>
+              <Link href="/admin/ia/configuracoes" className="flex items-center p-3 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors">
+                <Settings className="h-5 w-5 text-gray-600 mr-3" />
+                <div>
+                  <span className="font-semibold text-gray-900 block text-sm">Configurações</span>
+                  <span className="text-xs text-gray-500">Ajustes gerais de prompt e voz</span>
+                </div>
+              </Link>
             </div>
           </div>
         </div>

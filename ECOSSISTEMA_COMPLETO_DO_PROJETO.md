@@ -198,7 +198,10 @@ graph TD
   8. **🚶‍♂️ Calçadas, Garagens & Pisos de Concreto no Solo:** Espessura de 7cm lançada sobre o solo (7 sacos cimento/m³ + 0,55 m³ areia/m³ + 0,80 m³ brita/m³ + Malha Pop Q-92 para dilatação + juntas plásticas).
   9. **🛡️ Impermeabilização Completa:** Tinta Asfáltica / Neutrol para vigas baldrame e alicerces (0,55L/m²); Sika 1 / Vedacit líquido para a argamassa das 3 primeiras fiadas (1L/saco cimento); Vedatop 18kg (6 a 9 m²); Fita Manta Asfáltica com alumínio para calhas e rufos.
   10. **🏗️ Laje Pré-Fabricada / Treliçada:** 2,3m lineares de vigota por m² + 9,5 lajotas cerâmicas/EPS por m² + 1 painel Malha Pop a cada 6 m² + 0,09 m³ concreto por m² (6,5 sacos cimento 50kg, 0,52 m³ areia e 0,78 m³ brita por m³).
-- [x] **Pipeline Multimodal & Áudios Humanizados (Whisper + ElevenLabs / TTS):** Transcrição de áudios recebidos de clientes e envio de respostas por voz natural combinadas com detalhamento por escrito.
+- [x] **Pipeline Multimodal & Áudios Humanizados de Alta Performance (Gemini Studio TTS):** 
+  - Transcrição de áudios e síntese de voz nativa ultra-realista via Google Gemini Flash Studio Voices (`Aoede` para a Lia e `Charon` / `Puck` para o Zé da Obra).
+  - Normalizador fonético em tempo real para unidades da construção civil (*HubObra, R$ reais e centavos, m², m³, kg, sacos, PIX e WhatsApp*).
+  - Custo operacional até 20x menor em comparação a provedores legados com cobrança estritamente pay-as-you-go.
 - [x] **Blindagem Anti-Vazamento de Tags:** Formatador de respostas com expressões regulares que capturam e sanitizam tags como `[FALA:]`, `[FAÇA:]` e `[FOTO:]`, garantindo mensagens limpas e profissionais no WhatsApp.
 - [x] **Fechamento Automático de Pedidos (`<<<PEDIDO: {...} >>>`):** Integração atômica com emissão de recibo digital formal em PDF e chave PIX Copia e Cola no WhatsApp.
 
