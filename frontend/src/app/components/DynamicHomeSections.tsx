@@ -82,11 +82,11 @@ function ThematicProductCarousel({ section }: { section: HomeSection }) {
     containScroll: 'trimSnaps',
     loop: false,
     dragFree: true,
-    slidesToScroll: 1,
+    slidesToScroll: 2,
     breakpoints: {
-      '(min-width: 640px)': { slidesToScroll: 2, dragFree: false },
-      '(min-width: 1024px)': { slidesToScroll: 4, dragFree: false },
-      '(min-width: 1280px)': { slidesToScroll: 5, dragFree: false },
+      '(min-width: 640px)': { slidesToScroll: 3, dragFree: false },
+      '(min-width: 768px)': { slidesToScroll: 4, dragFree: false },
+      '(min-width: 1024px)': { slidesToScroll: 5, dragFree: false },
     },
   });
 
@@ -160,7 +160,7 @@ function ThematicProductCarousel({ section }: { section: HomeSection }) {
             <button
               onClick={scrollPrev}
               disabled={!prevBtnEnabled}
-              className="w-8 h-8 rounded-full border border-gray-300 bg-white text-gray-700 flex items-center justify-center hover:border-[#009de0] hover:text-[#009de0] disabled:opacity-30 disabled:pointer-events-none transition-all shadow-xs"
+              className="w-8 h-8 rounded-full border border-gray-300 bg-white text-gray-700 flex items-center justify-center hover:border-[#009de0] hover:text-[#009de0] disabled:opacity-30 disabled:pointer-events-none transition-all shadow-xs cursor-pointer"
               aria-label="Anterior"
             >
               <ChevronLeft className="w-4 h-4" />
@@ -168,7 +168,7 @@ function ThematicProductCarousel({ section }: { section: HomeSection }) {
             <button
               onClick={scrollNext}
               disabled={!nextBtnEnabled}
-              className="w-8 h-8 rounded-full border border-gray-300 bg-white text-gray-700 flex items-center justify-center hover:border-[#009de0] hover:text-[#009de0] disabled:opacity-30 disabled:pointer-events-none transition-all shadow-xs"
+              className="w-8 h-8 rounded-full border border-gray-300 bg-white text-gray-700 flex items-center justify-center hover:border-[#009de0] hover:text-[#009de0] disabled:opacity-30 disabled:pointer-events-none transition-all shadow-xs cursor-pointer"
               aria-label="Próximo"
             >
               <ChevronRight className="w-4 h-4" />
@@ -177,12 +177,12 @@ function ThematicProductCarousel({ section }: { section: HomeSection }) {
         </div>
 
         {/* Viewport do Carrossel */}
-        <div className="overflow-hidden -mx-2 px-2 sm:mx-0 sm:px-0 select-none" ref={emblaRef} style={{ touchAction: 'pan-y' }}>
-          <div className="flex gap-2.5 sm:gap-4 py-2">
+        <div className="overflow-hidden select-none" ref={emblaRef} style={{ touchAction: 'pan-y' }}>
+          <div className="flex gap-3 sm:gap-4 py-2">
             {products.map((product) => (
               <div
                 key={product.id}
-                className="flex-[0_0_46%] min-[400px]:flex-[0_0_46.5%] sm:flex-[0_0_31%] md:flex-[0_0_23.5%] lg:flex-[0_0_19%]"
+                className="flex-[0_0_calc((100%-12px)/2)] sm:flex-[0_0_calc((100%-32px)/3)] md:flex-[0_0_calc((100%-48px)/4)] lg:flex-[0_0_calc((100%-64px)/5)] min-w-0"
               >
                 <ProductCard
                   id={product.id}
