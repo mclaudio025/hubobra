@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -23,7 +23,9 @@ import {
   UserCheck,
   TrendingUp,
   Database,
-  CreditCard
+  CreditCard,
+  BookOpen,
+  Sparkles
 } from 'lucide-react';
 
 interface MenuItem {
@@ -31,6 +33,7 @@ interface MenuItem {
   href?: string;
   icon: React.ReactNode;
   badge?: string;
+  badgeColor?: string;
   children?: MenuItem[];
 }
 
@@ -78,7 +81,8 @@ const menuItems: MenuItem[] = [
         title: 'Robô Extrator',
         href: '/admin/extrator',
         icon: <Bot className="h-4 w-4 text-emerald-600" />,
-        badge: 'NOVO'
+        badge: 'NOVO',
+        badgeColor: 'bg-emerald-500'
       },
       {
         title: 'Importar Produtos',
@@ -91,7 +95,8 @@ const menuItems: MenuItem[] = [
     title: 'Pedidos',
     href: '/admin/pedidos',
     icon: <ShoppingCart className="h-5 w-5" />,
-    badge: '12'
+    badge: '12',
+    badgeColor: 'bg-rose-500'
   },
   {
     title: 'Pagamentos',
@@ -147,12 +152,31 @@ const menuItems: MenuItem[] = [
   },
   {
     title: 'IA & Automação',
-    icon: <Bot className="h-5 w-5" />,
+    icon: <Bot className="h-5 w-5 text-indigo-600" />,
     children: [
       {
         title: 'Dashboard IA',
         href: '/admin/ia',
-        icon: <Bot className="h-4 w-4" />
+        icon: <Bot className="h-4 w-4 text-indigo-500" />
+      },
+      {
+        title: 'Treinadores da Lia',
+        href: '/admin/ia/treinadores',
+        icon: <UserCheck className="h-4 w-4 text-emerald-600" />,
+        badge: 'TREINAR',
+        badgeColor: 'bg-emerald-600'
+      },
+      {
+        title: 'Dicionário de Obra',
+        href: '/admin/ia/dicionario',
+        icon: <BookOpen className="h-4 w-4 text-amber-600" />,
+        badge: 'CEARÊS',
+        badgeColor: 'bg-amber-600'
+      },
+      {
+        title: 'Atendente LIA',
+        href: '/admin/ia/lia',
+        icon: <Sparkles className="h-4 w-4 text-purple-600" />
       },
       {
         title: 'Configurações IA',
@@ -195,8 +219,17 @@ const menuItems: MenuItem[] = [
 ];
 
 export default function AdminSidebar() {
-  const [expandedItems, setExpandedItems] = useState<string[]>(['Produtos', 'Marketing']);
   const pathname = usePathname();
+  const [expandedItems, setExpandedItems] = useState<string[]>(['Produtos', 'IA & Automação']);
+
+  // Expand category automatically if current route is within it
+  useEffect(() => {
+    menuItems.forEach(item => {
+      if (item.children && item.children.some(child => child.href && pathname.startsWith(child.href))) {
+        setExpandedItems(prev => (prev.includes(item.title) ? prev : [...prev, item.title]));
+      }
+    });
+  }, [pathname]);
 
   const toggleExpanded = (title: string) => {
     setExpandedItems(prev =>
@@ -210,7 +243,7 @@ export default function AdminSidebar() {
     if (href === '/admin') {
       return pathname === '/admin';
     }
-    return pathname.startsWith(href);
+    return pathname === href || (href !== '/admin/ia' && pathname.startsWith(href));
   };
 
   const renderMenuItem = (item: MenuItem, level = 0) => {
@@ -220,34 +253,36 @@ export default function AdminSidebar() {
 
     if (hasChildren) {
       return (
-        <div key={item.title}>
+        <div key={item.title} className="mb-0.5">
           <button
             onClick={() => toggleExpanded(item.title)}
-            className={`w-full flex items-center justify-between px-3 py-2 text-sm font-medium rounded-lg transition-colors ${level === 0
-              ? 'text-gray-700 hover:bg-gray-100'
-              : 'text-gray-600 hover:bg-gray-50 ml-4'
-              }`}
+            type="button"
+            className={`w-full flex items-center justify-between px-3 py-2 text-sm font-medium rounded-lg transition-all cursor-pointer ${
+              level === 0
+                ? 'text-gray-700 hover:bg-gray-100/80 hover:text-gray-900'
+                : 'text-gray-600 hover:bg-gray-100/70 ml-2 pl-3'
+            }`}
           >
-            <div className="flex items-center gap-3">
-              {item.icon}
-              <span>{item.title}</span>
+            <div className="flex items-center gap-2.5 min-w-0">
+              <span className="shrink-0">{item.icon}</span>
+              <span className="truncate">{item.title}</span>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 shrink-0">
               {item.badge && (
-                <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full">
+                <span className={`${item.badgeColor || 'bg-red-500'} text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wider`}>
                   {item.badge}
                 </span>
               )}
               {isExpanded ? (
-                <ChevronDown className="h-4 w-4" />
+                <ChevronDown className="h-4 w-4 text-gray-400" />
               ) : (
-                <ChevronRight className="h-4 w-4" />
+                <ChevronRight className="h-4 w-4 text-gray-400" />
               )}
             </div>
           </button>
 
           {isExpanded && (
-            <div className="mt-1 space-y-1">
+            <div className="mt-0.5 space-y-0.5 border-l-2 border-gray-100 ml-5 pl-1">
               {item.children?.map(child => renderMenuItem(child, level + 1))}
             </div>
           )}
@@ -259,18 +294,20 @@ export default function AdminSidebar() {
       <Link
         key={item.title}
         href={item.href!}
-        className={`flex items-center justify-between px-3 py-2 text-sm font-medium rounded-lg transition-colors ${level === 0 ? '' : 'ml-4'
-          } ${active
-            ? 'bg-blue-100 text-blue-700 border-r-2 border-blue-600'
-            : 'text-gray-700 hover:bg-gray-100'
-          }`}
+        className={`flex items-center justify-between px-3 py-2 text-sm font-medium rounded-lg transition-all ${
+          level === 0 ? 'mb-0.5' : 'ml-1'
+        } ${
+          active
+            ? 'bg-blue-50 text-blue-700 font-semibold shadow-xs border-r-2 border-blue-600'
+            : 'text-gray-700 hover:bg-gray-100/80 hover:text-gray-900'
+        }`}
       >
-        <div className="flex items-center gap-3">
-          {item.icon}
-          <span>{item.title}</span>
+        <div className="flex items-center gap-2.5 min-w-0">
+          <span className="shrink-0">{item.icon}</span>
+          <span className="truncate">{item.title}</span>
         </div>
         {item.badge && (
-          <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full">
+          <span className={`${item.badgeColor || 'bg-blue-600'} text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wider shrink-0`}>
             {item.badge}
           </span>
         )}
@@ -279,20 +316,22 @@ export default function AdminSidebar() {
   };
 
   return (
-    <aside className="admin-sidebar fixed left-0 top-20 w-64 bg-white border-r border-gray-200 overflow-y-auto">
-      <div className="p-4">
-        <nav className="space-y-2">
+    <aside className="admin-sidebar fixed left-0 top-20 bottom-0 w-64 bg-white border-r border-gray-200 flex flex-col z-30 select-none shadow-xs">
+      {/* Scrollable Navigation */}
+      <div className="flex-1 overflow-y-auto p-3 space-y-1 overscroll-contain">
+        <nav className="space-y-0.5 pb-6">
           {menuItems.map(item => renderMenuItem(item))}
         </nav>
       </div>
 
-      {/* Footer da Sidebar */}
-      <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200 bg-white">
-        <div className="text-center">
-          <p className="text-xs text-gray-500">Loja Moderna Admin</p>
-          <p className="text-xs text-gray-400">v1.5.1</p>
+      {/* Footer da Sidebar - Fixed at bottom of flex, never overlaps items */}
+      <div className="p-3 border-t border-gray-100 bg-gray-50/90 shrink-0">
+        <div className="flex items-center justify-between text-xs text-gray-500">
+          <span className="font-semibold text-gray-700">HubObra Admin</span>
+          <span className="text-[11px] bg-emerald-100 text-emerald-800 font-medium px-2 py-0.5 rounded-full">v1.5.2</span>
         </div>
       </div>
     </aside>
   );
 }
+
