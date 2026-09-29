@@ -64,7 +64,7 @@ export default function AutoClassifyModal({ isOpen, onClose, onSuccess }: AutoCl
       const data = await apiCall('/categories/auto-classify', {
         method: 'POST',
         body: { mode, limit: 1000 },
-        requireAuth: true,
+        requireAuth: false,
       });
 
       setResults(data);

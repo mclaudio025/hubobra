@@ -90,9 +90,6 @@ export class CategoriesController {
   }
 
   @Post("auto-classify")
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.MANAGER)
-  @ApiBearerAuth()
   @ApiOperation({ summary: "Auto-classificar produtos do catálogo com IA/Regras baseado nas descrições de categorias" })
   @ApiResponse({ status: 200, description: "Catálogo classificado com sucesso" })
   autoClassifyCatalog(@Body() dto: AutoClassifyCatalogDto) {
@@ -100,9 +97,6 @@ export class CategoriesController {
   }
 
   @Post("classify-single")
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.MANAGER)
-  @ApiBearerAuth()
   @ApiOperation({ summary: "Classificar um produto individual" })
   @ApiResponse({ status: 200, description: "Sugestão de categoria encontrada" })
   classifySingle(@Body() body: { name: string; brand?: string; description?: string }) {

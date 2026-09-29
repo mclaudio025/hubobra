@@ -5,12 +5,18 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json().catch(() => ({}));
     
+    const authHeader = request.headers.get('authorization') || request.headers.get('Authorization');
+    
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    if (authHeader) {
+      headers['Authorization'] = authHeader;
+    }
+
     const response = await fetchBackend('/categories/auto-classify', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': request.headers.get('Authorization') || '',
-      },
+      headers,
       body: JSON.stringify(body),
     });
 
