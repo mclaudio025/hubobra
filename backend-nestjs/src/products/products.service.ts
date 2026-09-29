@@ -11,6 +11,7 @@ import { CacheProducts, CacheEvict } from "../cache/cache.decorator";
 import { CreateProductDto } from "./dto/create-product.dto";
 import { UpdateProductDto } from "./dto/update-product.dto";
 import { BulkCreateProductDto } from "./dto/bulk-create-product.dto";
+import { BulkUpdateCategoryDto } from "./dto/bulk-update-category.dto";
 import {
   normalizeProductName,
   normalizeDescription,
@@ -317,6 +318,41 @@ export class ProductsService {
     return this.prisma.product.delete({
       where: { id },
     });
+  }
+
+  @CacheEvict("products:*")
+  async bulkUpdateCategory(bulkUpdateCategoryDto: BulkUpdateCategoryDto) {
+    const { productIds, categoryId } = bulkUpdateCategoryDto;
+
+    if (!productIds || productIds.length === 0) {
+      throw new BadRequestException("Nenhum produto selecionado.");
+    }
+
+    const category = await this.prisma.category.findUnique({
+      where: { id: categoryId },
+    });
+    if (!category) {
+      throw new BadRequestException("Categoria selecionada não foi encontrada.");
+    }
+
+    const result = await this.prisma.product.updateMany({
+      where: {
+        id: { in: productIds },
+      },
+      data: {
+        categoryId,
+      },
+    });
+
+    return {
+      success: true,
+      count: result.count,
+      category: {
+        id: category.id,
+        name: category.name,
+      },
+      message: `${result.count} produto(s) atualizado(s) com sucesso para "${category.name}".`,
+    };
   }
 
   async bulkCreate(bulkCreateDto: BulkCreateProductDto) {

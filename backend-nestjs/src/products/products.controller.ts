@@ -35,6 +35,7 @@ import { SpecsEnrichmentService } from "./specs-enrichment.service";
 import { CreateProductDto } from "./dto/create-product.dto";
 import { UpdateProductDto } from "./dto/update-product.dto";
 import { BulkCreateProductDto } from "./dto/bulk-create-product.dto";
+import { BulkUpdateCategoryDto } from "./dto/bulk-update-category.dto";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
 import { Roles } from "../auth/decorators/roles.decorator";
@@ -273,6 +274,17 @@ export class ProductsController {
   @ApiResponse({ status: 404, description: "Produto não encontrado" })
   findBySku(@Param("sku") sku: string) {
     return this.productsService.findBySku(sku);
+  }
+
+  @Patch("bulk-category")
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.MANAGER)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "Atualizar categoria de múltiplos produtos em massa" })
+  @ApiResponse({ status: 200, description: "Categorias dos produtos atualizadas com sucesso" })
+  @ApiResponse({ status: 400, description: "Dados inválidos" })
+  bulkUpdateCategory(@Body() bulkUpdateCategoryDto: BulkUpdateCategoryDto) {
+    return this.productsService.bulkUpdateCategory(bulkUpdateCategoryDto);
   }
 
   @Patch(":id")

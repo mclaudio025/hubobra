@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { 
   Plus, 
@@ -14,17 +14,29 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
-  ChevronsRight
+  ChevronsRight,
+  Check,
+  Loader2,
+  Tag,
+  CheckSquare,
+  Square,
+  MinusSquare,
+  X,
+  ArrowRight,
+  Layers,
+  RefreshCw
 } from 'lucide-react';
 import AdminBreadcrumb from '../../components/admin/AdminBreadcrumb';
 import { useApi, useProducts } from '../../hooks/useApi';
 import { getImageUrl } from '../../utils/imageUrl';
+import { useToast } from '../../components/ui/Toaster';
 
 interface Product {
   id: string;
   name: string;
   price: number;
   category: any;
+  categoryId?: string;
   brand: string;
   stock: number;
   sku: string;
@@ -45,6 +57,7 @@ const getProductImage = (images: any): string => {
 
 export default function AdminProdutos() {
   const { apiCall } = useApi();
+  const { addToast } = useToast();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -56,17 +69,37 @@ export default function AdminProdutos() {
   const [categories, setCategories] = useState<any[]>([]);
   const itemsPerPage = 10;
 
+  // Estados de edição inline e em massa
+  const [updatingProductId, setUpdatingProductId] = useState<string | null>(null);
+  const [updatedProductIds, setUpdatedProductIds] = useState<Set<string>>(new Set());
+  const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
+  const [bulkCategoryId, setBulkCategoryId] = useState('');
+  const [isBulkUpdating, setIsBulkUpdating] = useState(false);
+
+  const masterCheckboxRef = useRef<HTMLInputElement>(null);
+
   useEffect(() => {
     fetchCategories();
   }, []);
 
   useEffect(() => {
     setCurrentPage(1);
+    setSelectedProductIds([]);
   }, [searchTerm, categoryFilter, statusFilter]);
 
   useEffect(() => {
     fetchProducts();
   }, [currentPage, searchTerm, categoryFilter, statusFilter]);
+
+  // Atualizar estado indeterminate do checkbox master
+  const isAllSelected = products.length > 0 && products.every(p => selectedProductIds.includes(p.id));
+  const isSomeSelected = products.some(p => selectedProductIds.includes(p.id));
+
+  useEffect(() => {
+    if (masterCheckboxRef.current) {
+      masterCheckboxRef.current.indeterminate = isSomeSelected && !isAllSelected;
+    }
+  }, [isSomeSelected, isAllSelected]);
 
   const fetchCategories = async () => {
     try {
@@ -108,6 +141,146 @@ export default function AdminProdutos() {
     }
   };
 
+  // Alteração inline de categoria com auto-save
+  const handleInlineCategoryChange = async (productId: string, newCategoryId: string) => {
+    if (!newCategoryId) return;
+
+    const currentProduct = products.find(p => p.id === productId);
+    const currentCatId = currentProduct?.categoryId || 
+      (typeof currentProduct?.category === 'object' ? currentProduct?.category?.id : '');
+
+    if (currentCatId === newCategoryId) return;
+
+    const selectedCategory = categories.find(c => c.id === newCategoryId);
+    if (!selectedCategory) return;
+
+    setUpdatingProductId(productId);
+
+    try {
+      await apiCall(`/products/${productId}`, {
+        method: 'PATCH',
+        body: { categoryId: newCategoryId },
+        requireAuth: true
+      });
+
+      // Atualizar no estado local sem remover o item da visualização (Opção B - retenção visual para auditoria contínua)
+      setProducts(prev => prev.map(p => {
+        if (p.id === productId) {
+          return {
+            ...p,
+            categoryId: selectedCategory.id,
+            category: { id: selectedCategory.id, name: selectedCategory.name }
+          };
+        }
+        return p;
+      }));
+
+      setUpdatedProductIds(prev => new Set(prev).add(productId));
+
+      addToast({
+        type: 'success',
+        title: 'Categoria atualizada!',
+        message: `"${(currentProduct?.name || 'Produto').substring(0, 32)}..." alterado para "${selectedCategory.name}".`
+      });
+    } catch (error: any) {
+      console.error('Erro ao atualizar categoria:', error);
+      addToast({
+        type: 'error',
+        title: 'Erro ao atualizar categoria',
+        message: error?.message || 'Não foi possível salvar a nova categoria.'
+      });
+    } finally {
+      setUpdatingProductId(null);
+    }
+  };
+
+  // Seleção e Ação em Massa
+  const toggleSelectAll = () => {
+    if (isAllSelected) {
+      // Desmarcar todos os produtos da página atual
+      const currentPageIds = new Set(products.map(p => p.id));
+      setSelectedProductIds(prev => prev.filter(id => !currentPageIds.has(id)));
+    } else {
+      // Marcar todos os produtos da página atual
+      const newIds = Array.from(new Set([...selectedProductIds, ...products.map(p => p.id)]));
+      setSelectedProductIds(newIds);
+    }
+  };
+
+  const toggleSelectProduct = (id: string) => {
+    setSelectedProductIds(prev => 
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    );
+  };
+
+  const handleBulkCategoryUpdate = async () => {
+    if (!bulkCategoryId) {
+      addToast({
+        type: 'warning',
+        title: 'Selecione uma categoria',
+        message: 'Por favor, escolha uma categoria de destino no menu suspenso.'
+      });
+      return;
+    }
+
+    const targetCategory = categories.find(c => c.id === bulkCategoryId);
+    if (!targetCategory) return;
+
+    const count = selectedProductIds.length;
+    if (!confirm(`Deseja alterar a categoria de ${count} produto(s) selecionado(s) para "${targetCategory.name}"?`)) {
+      return;
+    }
+
+    try {
+      setIsBulkUpdating(true);
+
+      await apiCall('/products/bulk-category', {
+        method: 'PATCH',
+        body: {
+          productIds: selectedProductIds,
+          categoryId: bulkCategoryId
+        },
+        requireAuth: true
+      });
+
+      // Atualizar localmente
+      setProducts(prev => prev.map(p => {
+        if (selectedProductIds.includes(p.id)) {
+          return {
+            ...p,
+            categoryId: targetCategory.id,
+            category: { id: targetCategory.id, name: targetCategory.name }
+          };
+        }
+        return p;
+      }));
+
+      setUpdatedProductIds(prev => {
+        const next = new Set(prev);
+        selectedProductIds.forEach(id => next.add(id));
+        return next;
+      });
+
+      addToast({
+        type: 'success',
+        title: 'Atualização em massa concluída!',
+        message: `${count} produto(s) movido(s) para "${targetCategory.name}".`
+      });
+
+      setSelectedProductIds([]);
+      setBulkCategoryId('');
+    } catch (error: any) {
+      console.error('Erro na atualização em massa:', error);
+      addToast({
+        type: 'error',
+        title: 'Erro na atualização em massa',
+        message: error?.message || 'Falha ao atualizar categorias dos produtos selecionados.'
+      });
+    } finally {
+      setIsBulkUpdating(false);
+    }
+  };
+
   const handleDelete = async (id: string) => {
     if (confirm('Tem certeza que deseja excluir este produto?')) {
       try {
@@ -117,11 +290,19 @@ export default function AdminProdutos() {
         });
         
         setProducts(products.filter(product => product.id !== id));
-        alert('Produto excluído com sucesso!');
+        setSelectedProductIds(prev => prev.filter(x => x !== id));
+        addToast({
+          type: 'success',
+          title: 'Produto excluído',
+          message: 'Produto removido com sucesso do catálogo.'
+        });
       } catch (error: any) {
         console.error('Erro ao excluir produto:', error);
-        const errorMessage = error.message || 'Erro ao excluir produto';
-        alert(errorMessage);
+        addToast({
+          type: 'error',
+          title: 'Erro ao excluir produto',
+          message: error.message || 'Erro ao excluir produto'
+        });
       }
     }
   };
@@ -142,15 +323,21 @@ export default function AdminProdutos() {
           ? { ...p, active: !p.active }
           : p
       ));
+
+      addToast({
+        type: 'info',
+        title: 'Status alterado',
+        message: `Produto ${!product.active ? 'ativado' : 'desativado'} com sucesso.`
+      });
     } catch (error) {
       console.error('Erro ao alterar status:', error);
-      alert('Erro ao alterar status do produto');
+      addToast({
+        type: 'error',
+        title: 'Erro ao alterar status',
+        message: 'Não foi possível alterar o status do produto.'
+      });
     }
   };
-
-  const filteredProducts = products;
-
-
 
   const { bulkFetchMissingImages } = useProducts();
   const [isBulkFetching, setIsBulkFetching] = useState(false);
@@ -188,15 +375,15 @@ export default function AdminProdutos() {
   };
 
   return (
-    <div>
+    <div className="relative pb-24">
       <AdminBreadcrumb />
       
       <div>
         {/* Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Gestão de Produtos</h1>
-            <p className="text-xs text-gray-500 mt-1">Gerencie catálogo, preços, estoque e fotos</p>
+            <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Gestão de Produtos</h1>
+            <p className="text-xs text-gray-500 mt-1">Gerencie catálogo, preços, estoque, categorias rápidas e fotos</p>
           </div>
           <div className="flex flex-wrap gap-3">
             <button
@@ -227,7 +414,7 @@ export default function AdminProdutos() {
         </div>
 
         {bulkFetchMessage && (
-          <div className={`mb-6 p-4 rounded-xl text-sm flex items-center justify-between ${
+          <div className={`mb-6 p-4 rounded-xl text-sm flex items-center justify-between shadow-sm ${
             bulkFetchMessage.type === 'success' 
               ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
               : bulkFetchMessage.type === 'error'
@@ -242,10 +429,10 @@ export default function AdminProdutos() {
         )}
 
         {/* Filtros */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200/80 p-5 mb-6">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Buscar</label>
+              <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1.5">Buscar</label>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                 <input
@@ -253,17 +440,17 @@ export default function AdminProdutos() {
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   placeholder="Nome ou SKU..."
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full pl-9 pr-4 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Categoria</label>
+              <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1.5">Filtrar por Categoria</label>
               <select
                 value={categoryFilter}
                 onChange={(e) => setCategoryFilter(e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full p-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition font-medium"
               >
                 <option value="">Todas as categorias</option>
                 {categories.map(cat => (
@@ -273,13 +460,13 @@ export default function AdminProdutos() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+              <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1.5">Status</label>
               <select
                 value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                onChange={(e) => setStatusFilter(e.target.value as any)}
+                className="w-full p-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition font-medium"
               >
-                <option value="">Todos</option>
+                <option value="all">Todos os Status</option>
                 <option value="active">Ativos</option>
                 <option value="inactive">Inativos</option>
               </select>
@@ -290,11 +477,12 @@ export default function AdminProdutos() {
                 onClick={() => {
                   setSearchTerm('');
                   setCategoryFilter('');
-                  setStatusFilter('');
+                  setStatusFilter('all');
                   setCurrentPage(1);
                 }}
-                className="w-full bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700 transition"
+                className="w-full flex items-center justify-center gap-2 bg-gray-100 text-gray-700 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-gray-200 transition border border-gray-300"
               >
+                <RefreshCw className="h-3.5 w-3.5" />
                 Limpar Filtros
               </button>
             </div>
@@ -302,120 +490,227 @@ export default function AdminProdutos() {
         </div>
 
         {/* Lista de Produtos */}
-        <div className="bg-white rounded-lg shadow-md overflow-hidden">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200/80 overflow-hidden">
           {loading ? (
-            <div className="p-8 text-center">
+            <div className="p-12 text-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-              <p className="mt-2 text-gray-600">Carregando produtos...</p>
+              <p className="mt-3 text-sm font-medium text-gray-600">Carregando catálogo de produtos...</p>
             </div>
-          ) : filteredProducts.length === 0 ? (
-            <div className="p-8 text-center">
-              <p className="text-gray-600">Nenhum produto encontrado</p>
+          ) : products.length === 0 ? (
+            <div className="p-12 text-center">
+              <div className="h-12 w-12 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3 text-gray-400">
+                <Search className="h-6 w-6" />
+              </div>
+              <p className="text-base font-semibold text-gray-900">Nenhum produto encontrado</p>
+              <p className="text-xs text-gray-500 mt-1">Tente ajustar os filtros de busca ou cadastrar um novo produto.</p>
             </div>
           ) : (
             <>
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
+                  <thead className="bg-slate-50/80">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-4 py-3.5 text-center w-10">
+                        <input
+                          type="checkbox"
+                          ref={masterCheckboxRef}
+                          checked={isAllSelected}
+                          onChange={toggleSelectAll}
+                          className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                          title={isAllSelected ? "Desmarcar todos" : "Selecionar todos da página"}
+                        />
+                      </th>
+                      <th className="px-4 py-3.5 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                         Produto
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Categoria
+                      <th className="px-4 py-3.5 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider min-w-[220px]">
+                        <div className="flex items-center gap-1.5">
+                          <Tag className="h-3.5 w-3.5 text-blue-600" />
+                          <span>Categoria (Edição Direta)</span>
+                        </div>
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-4 py-3.5 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                         Preço
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-4 py-3.5 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                         Estoque
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-4 py-3.5 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                         Status
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-4 py-3.5 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
                         Ações
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {filteredProducts.map((product) => (
-                      <tr key={product.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <div className="flex-shrink-0 h-12 w-12 bg-gray-50 rounded-lg p-1 border border-gray-100 flex items-center justify-center">
-                              <img
-                                className="h-10 w-10 rounded object-contain"
-                                src={getProductImage(product.images)}
-                                alt={product.name}
-                                onError={(e) => {
-                                  (e.target as HTMLImageElement).src = '/placeholder-product.svg';
-                                }}
-                              />
-                            </div>
-                            <div className="ml-4">
-                              <div className="text-sm font-medium text-gray-900">
-                                {product.name}
+                  <tbody className="bg-white divide-y divide-gray-100">
+                    {products.map((product) => {
+                      const isSelected = selectedProductIds.includes(product.id);
+                      const isUpdatingThis = updatingProductId === product.id;
+                      const isRecentlyUpdated = updatedProductIds.has(product.id);
+
+                      // Obter o ID atual da categoria do produto
+                      const currentProductCategoryId = 
+                        product.categoryId || 
+                        (typeof product.category === 'object' ? product.category?.id : '') || 
+                        '';
+
+                      // Verificar se a categoria difere do filtro ativo (indicador da Opção B)
+                      const isDifferentFromFilter = categoryFilter && currentProductCategoryId && currentProductCategoryId !== categoryFilter;
+
+                      return (
+                        <tr 
+                          key={product.id} 
+                          className={`transition-colors duration-150 ${
+                            isSelected 
+                              ? 'bg-blue-50/60' 
+                              : isRecentlyUpdated 
+                              ? 'bg-emerald-50/40 hover:bg-emerald-50/60' 
+                              : 'hover:bg-gray-50/80'
+                          }`}
+                        >
+                          {/* Checkbox de Seleção */}
+                          <td className="px-4 py-4 text-center whitespace-nowrap">
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={() => toggleSelectProduct(product.id)}
+                              className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                            />
+                          </td>
+
+                          {/* Foto e Nome do Produto */}
+                          <td className="px-4 py-4">
+                            <div className="flex items-center gap-3">
+                              <div className="flex-shrink-0 h-12 w-12 bg-gray-50 rounded-lg p-1 border border-gray-200/80 flex items-center justify-center overflow-hidden">
+                                <img
+                                  className="h-10 w-10 rounded object-contain"
+                                  src={getProductImage(product.images)}
+                                  alt={product.name}
+                                  onError={(e) => {
+                                    (e.target as HTMLImageElement).src = '/placeholder-product.svg';
+                                  }}
+                                />
                               </div>
-                              <div className="text-sm text-gray-500">
-                                SKU: {product.sku}
+                              <div className="min-w-0 max-w-sm sm:max-w-md">
+                                <div className="text-sm font-semibold text-gray-900 leading-snug line-clamp-2" title={product.name}>
+                                  {product.name}
+                                </div>
+                                <div className="text-xs text-gray-500 mt-0.5 flex items-center gap-2">
+                                  <span className="font-mono">SKU: {product.sku || 'N/A'}</span>
+                                  {isDifferentFromFilter && (
+                                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-100 text-amber-800 border border-amber-200">
+                                      Categoria Alterada
+                                    </span>
+                                  )}
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {typeof product.category === 'object' ? product.category?.name || 'Sem categoria' : product.category}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          R$ {product.price.toFixed(2)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                            product.stock > 10 
-                              ? 'bg-green-100 text-green-800' 
-                              : product.stock > 0 
-                                ? 'bg-yellow-100 text-yellow-800'
-                                : 'bg-red-100 text-red-800'
-                          }`}>
-                            {product.stock} unidades
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <button
-                            onClick={() => toggleStatus(product.id)}
-                            className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                              product.active
-                                ? 'bg-green-100 text-green-800'
-                                : 'bg-red-100 text-red-800'
-                            }`}
-                          >
-                            {product.active ? 'Ativo' : 'Inativo'}
-                          </button>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          <div className="flex gap-2">
-                            <Link
-                              href={`/admin/produtos/${product.id}`}
-                              className="text-blue-600 hover:text-blue-900"
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Link>
-                            <Link
-                              href={`/admin/produtos/${product.id}/editar`}
-                              className="text-indigo-600 hover:text-indigo-900"
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Link>
+                          </td>
+
+                          {/* Dropdown Inline de Categoria */}
+                          <td className="px-4 py-4 whitespace-nowrap">
+                            <div className="flex flex-col gap-1 max-w-[240px]">
+                              <div className="relative flex items-center">
+                                <select
+                                  value={currentProductCategoryId}
+                                  onChange={(e) => handleInlineCategoryChange(product.id, e.target.value)}
+                                  disabled={isUpdatingThis || isBulkUpdating}
+                                  className={`w-full py-1.5 pl-2.5 pr-7 text-xs font-medium rounded-lg border transition-all cursor-pointer ${
+                                    isRecentlyUpdated
+                                      ? 'border-emerald-400 bg-emerald-50/50 text-emerald-900 focus:ring-emerald-500'
+                                      : 'border-gray-300 bg-white text-gray-800 hover:border-blue-400 focus:ring-blue-500 focus:border-blue-500'
+                                  } disabled:opacity-60 disabled:cursor-not-allowed`}
+                                >
+                                  <option value="" disabled>Selecione a categoria...</option>
+                                  {categories.map((cat) => (
+                                    <option key={cat.id} value={cat.id}>
+                                      {cat.name}
+                                    </option>
+                                  ))}
+                                </select>
+
+                                {/* Indicador de salvando ou salvo */}
+                                <div className="absolute right-2.5 pointer-events-none flex items-center">
+                                  {isUpdatingThis ? (
+                                    <Loader2 className="h-3.5 w-3.5 animate-spin text-blue-600" />
+                                  ) : isRecentlyUpdated ? (
+                                    <Check className="h-3.5 w-3.5 text-emerald-600 stroke-[3]" />
+                                  ) : null}
+                                </div>
+                              </div>
+
+                              {isRecentlyUpdated && (
+                                <span className="text-[10px] font-semibold text-emerald-600 flex items-center gap-1">
+                                  <Check className="h-2.5 w-2.5 stroke-[3]" /> Salvo automaticamente
+                                </span>
+                              )}
+                            </div>
+                          </td>
+
+                          {/* Preço */}
+                          <td className="px-4 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
+                            R$ {Number(product.price || 0).toFixed(2)}
+                          </td>
+
+                          {/* Estoque */}
+                          <td className="px-4 py-4 whitespace-nowrap text-sm">
+                            <span className={`inline-flex px-2 py-0.5 text-xs font-semibold rounded-full ${
+                              product.stock > 10 
+                                ? 'bg-emerald-100 text-emerald-800' 
+                                : product.stock > 0 
+                                  ? 'bg-amber-100 text-amber-800' 
+                                  : 'bg-red-100 text-red-800'
+                            }`}>
+                              {product.stock} un.
+                            </span>
+                          </td>
+
+                          {/* Status */}
+                          <td className="px-4 py-4 whitespace-nowrap">
                             <button
-                              onClick={() => handleDelete(product.id)}
-                              className="text-red-600 hover:text-red-900"
+                              type="button"
+                              onClick={() => toggleStatus(product.id)}
+                              className={`inline-flex items-center px-2 py-0.5 text-xs font-semibold rounded-full transition ${
+                                product.active
+                                  ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200'
+                                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                              }`}
                             >
-                              <Trash2 className="h-4 w-4" />
+                              {product.active ? 'Ativo' : 'Inativo'}
                             </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
+                          </td>
+
+                          {/* Ações */}
+                          <td className="px-4 py-4 whitespace-nowrap text-center text-sm font-medium">
+                            <div className="flex items-center justify-center gap-1.5">
+                              <Link
+                                href={`/admin/produtos/${product.id}`}
+                                className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-md transition"
+                                title="Visualizar Detalhes"
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Link>
+                              <Link
+                                href={`/admin/produtos/${product.id}/editar`}
+                                className="p-1.5 text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition"
+                                title="Edição Completa"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Link>
+                              <button
+                                type="button"
+                                onClick={() => handleDelete(product.id)}
+                                className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-md transition"
+                                title="Excluir Produto"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -527,6 +822,70 @@ export default function AdminProdutos() {
           )}
         </div>
       </div>
+
+      {/* BARRA FLUTUANTE DE AÇÃO EM MASSA */}
+      {selectedProductIds.length > 0 && (
+        <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-40 w-full max-w-2xl px-4 animate-in fade-in slide-in-from-bottom-5 duration-200">
+          <div className="bg-slate-900/95 backdrop-blur-md text-white border border-slate-700 rounded-2xl p-4 shadow-2xl flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5">
+              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white shadow-sm">
+                {selectedProductIds.length}
+              </span>
+              <div>
+                <p className="text-xs font-semibold text-slate-200">
+                  {selectedProductIds.length} {selectedProductIds.length === 1 ? 'produto selecionado' : 'produtos selecionados'}
+                </p>
+                <p className="text-[11px] text-slate-400">Altere a categoria de todos em lote</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <select
+                value={bulkCategoryId}
+                onChange={(e) => setBulkCategoryId(e.target.value)}
+                disabled={isBulkUpdating}
+                className="bg-slate-800 text-slate-100 text-xs rounded-xl border border-slate-600 px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none flex-1 sm:w-48 font-medium"
+              >
+                <option value="">Nova Categoria...</option>
+                {categories.map((cat) => (
+                  <option key={cat.id} value={cat.id}>
+                    {cat.name}
+                  </option>
+                ))}
+              </select>
+
+              <button
+                type="button"
+                onClick={handleBulkCategoryUpdate}
+                disabled={!bulkCategoryId || isBulkUpdating}
+                className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-3.5 py-2 rounded-xl transition shadow-md shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+              >
+                {isBulkUpdating ? (
+                  <>
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    <span>Aplicando...</span>
+                  </>
+                ) : (
+                  <>
+                    <ArrowRight className="h-3.5 w-3.5" />
+                    <span>Aplicar</span>
+                  </>
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setSelectedProductIds([])}
+                disabled={isBulkUpdating}
+                className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl transition"
+                title="Desmarcar todos"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
