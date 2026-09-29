@@ -337,8 +337,8 @@ export class CategoriesService {
     // Normalizar parentId se fornecido
     let targetParentId = category.parentId;
     if (updateCategoryDto.parentId !== undefined) {
-      targetParentId = updateCategoryDto.parentId && updateCategoryDto.parentId.trim() !== "" 
-        ? updateCategoryDto.parentId 
+      targetParentId = updateCategoryDto.parentId && typeof updateCategoryDto.parentId === "string" && updateCategoryDto.parentId.trim() !== "" 
+        ? updateCategoryDto.parentId.trim() 
         : null;
     }
 
@@ -347,7 +347,7 @@ export class CategoriesService {
       throw new BadRequestException("Uma categoria não pode ser pai de si mesma");
     }
 
-    // Verificar se categoria pai existe (se fornecida)
+    // Verificar se categoria pai existe (se fornecida e alterada)
     if (targetParentId && targetParentId !== category.parentId) {
       const parentCategory = await this.prisma.category.findUnique({
         where: { id: targetParentId },
@@ -358,10 +358,12 @@ export class CategoriesService {
       }
     }
 
-    const targetName = name || category.name;
+    const targetName = (name && name.trim()) || category.name;
+    const nameChanged = Boolean(name && targetName !== category.name);
+    const parentChanged = Boolean(targetParentId !== category.parentId);
 
-    // Verificar se já existe outra categoria com mesmo nome e mesmo pai
-    if ((name && name !== category.name) || (targetParentId !== category.parentId)) {
+    // Verificar se já existe outra categoria com mesmo nome e mesmo pai apenas se houve alteração
+    if (nameChanged || parentChanged) {
       const existingCategory = await this.prisma.category.findFirst({
         where: {
           name: targetName,
@@ -377,14 +379,19 @@ export class CategoriesService {
 
     // Gerar novo slug se nome ou parentId mudaram
     let slug: string | undefined;
-    if (name || targetParentId !== category.parentId) {
+    if (nameChanged || parentChanged) {
       slug = await this.generateUniqueSlug(targetName, targetParentId, id);
     }
 
     return this.prisma.category.update({
       where: { id },
       data: {
-        ...updateCategoryDto,
+        name: targetName,
+        description: updateCategoryDto.description !== undefined ? (updateCategoryDto.description ? updateCategoryDto.description.trim() : null) : category.description,
+        image: updateCategoryDto.image !== undefined ? (updateCategoryDto.image ? updateCategoryDto.image : null) : category.image,
+        icon: updateCategoryDto.icon !== undefined ? (updateCategoryDto.icon ? updateCategoryDto.icon.trim() : null) : category.icon,
+        order: updateCategoryDto.order !== undefined ? Number(updateCategoryDto.order) : category.order,
+        active: updateCategoryDto.active !== undefined ? Boolean(updateCategoryDto.active) : category.active,
         parentId: targetParentId,
         ...(slug && { slug }),
       },

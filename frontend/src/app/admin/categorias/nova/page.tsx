@@ -78,8 +78,8 @@ export default function NovaCategoriaPage() {
       newErrors.name = 'Nome deve ter no máximo 100 caracteres';
     }
 
-    if (formData.description && formData.description.length > 500) {
-      newErrors.description = 'Descrição deve ter no máximo 500 caracteres';
+    if (formData.description && formData.description.length > 2000) {
+      newErrors.description = 'Descrição deve ter no máximo 2000 caracteres';
     }
 
     if (formData.icon && formData.icon.length > 100) {
@@ -104,12 +104,14 @@ export default function NovaCategoriaPage() {
     try {
       setLoading(true);
 
-      const submitData = {
-        ...formData,
-        parentId: formData.parentId || undefined,
-        description: formData.description || undefined,
+      const submitData: any = {
+        name: formData.name.trim(),
+        description: formData.description ? formData.description.trim() : undefined,
+        parentId: formData.parentId ? formData.parentId : undefined,
         image: formData.image || undefined,
-        icon: formData.icon || undefined
+        icon: formData.icon ? formData.icon.trim() : undefined,
+        order: Number(formData.order) || 0,
+        active: Boolean(formData.active)
       };
 
       await categoriesApi.createCategory(submitData);

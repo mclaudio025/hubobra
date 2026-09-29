@@ -60,10 +60,11 @@ export class CreateCategoryDto {
     description: "ID da categoria pai (para subcategorias)",
     example: "uuid-da-categoria-pai",
     required: false,
+    nullable: true,
   })
   @IsOptional()
-  @IsUUID("4", { message: "Parent ID deve ser um UUID válido" })
-  parentId?: string;
+  @IsString({ message: "Parent ID deve ser uma string" })
+  parentId?: string | null;
 
   @ApiProperty({
     description: "Se a categoria está ativa",
