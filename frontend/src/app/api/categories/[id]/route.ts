@@ -31,6 +31,39 @@ export async function GET(
   }
 }
 
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const body = await request.json();
+    
+    const response = await fetchBackend(`/categories/${id}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': request.headers.get('Authorization') || '',
+      },
+      body: JSON.stringify(body),
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: 'Erro ao atualizar categoria' }));
+      return NextResponse.json({ error: error.message }, { status: response.status });
+    }
+
+    const data = await response.json();
+    return NextResponse.json(data);
+  } catch (error) {
+    console.error('Erro ao atualizar categoria:', error);
+    return NextResponse.json(
+      { error: 'Erro interno do servidor' },
+      { status: 500 }
+    );
+  }
+}
+
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
