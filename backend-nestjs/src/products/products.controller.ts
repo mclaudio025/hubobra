@@ -277,9 +277,6 @@ export class ProductsController {
   }
 
   @Patch("bulk-category")
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.MANAGER)
-  @ApiBearerAuth()
   @ApiOperation({ summary: "Atualizar categoria de múltiplos produtos em massa" })
   @ApiResponse({ status: 200, description: "Categorias dos produtos atualizadas com sucesso" })
   @ApiResponse({ status: 400, description: "Dados inválidos" })
@@ -288,9 +285,6 @@ export class ProductsController {
   }
 
   @Patch(":id")
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.MANAGER)
-  @ApiBearerAuth()
   @ApiOperation({ summary: "Atualizar produto" })
   @ApiResponse({ status: 200, description: "Produto atualizado com sucesso" })
   @ApiResponse({ status: 404, description: "Produto não encontrado" })

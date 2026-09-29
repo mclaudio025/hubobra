@@ -559,6 +559,40 @@ DIRETRIZES TÉCNICAS ESTRITAS:
         }
       }
 
+      // --- SUPORTES & FERRAGENS ---
+      if (cat.normName.includes("suporte") || cat.normName.includes("dobradica")) {
+        if (
+          rawText.includes("suporte") ||
+          rawText.includes("tv") ||
+          rawText.includes("televisao") ||
+          rawText.includes("lcd") ||
+          rawText.includes("led") ||
+          rawText.includes("mao francesa") ||
+          rawText.includes("prateleira") ||
+          rawText.includes("dobradica")
+        ) {
+          score += 150;
+        }
+      }
+
+      // --- ABRASIVOS E CONSUMÍVEIS DE CORTE ---
+      if (cat.normName.includes("abrasivo") || (cat.normName.includes("consumiveis") && cat.normName.includes("corte")) || cat.normName.includes("demolicao")) {
+        if (
+          rawText.includes("disco de corte") ||
+          rawText.includes("diamantado") ||
+          rawText.includes("disco flap") ||
+          rawText.includes("disco desbaste") ||
+          rawText.includes("turbo porcelanato") ||
+          rawText.includes("porcelanato") ||
+          rawText.includes("cortag") ||
+          rawText.includes("rebolo") ||
+          rawText.includes("lamina serra") ||
+          rawText.includes("fresa")
+        ) {
+          score += 150;
+        }
+      }
+
       if (score > highestScore && score >= 20) {
         highestScore = score;
         bestCategory = cat;

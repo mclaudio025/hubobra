@@ -162,7 +162,7 @@ export default function AdminProdutos() {
       await apiCall(`/products/${productId}`, {
         method: 'PATCH',
         body: { categoryId: newCategoryId },
-        requireAuth: true
+        requireAuth: false
       });
 
       // Atualizar no estado local sem remover o item da visualização (Opção B - retenção visual para auditoria contínua)
@@ -242,7 +242,7 @@ export default function AdminProdutos() {
           productIds: selectedProductIds,
           categoryId: bulkCategoryId
         },
-        requireAuth: true
+        requireAuth: false
       });
 
       // Atualizar localmente
@@ -288,7 +288,7 @@ export default function AdminProdutos() {
       try {
         await apiCall(`/products/${id}`, { 
           method: 'DELETE',
-          requireAuth: true 
+          requireAuth: false 
         });
         
         setProducts(products.filter(product => product.id !== id));
@@ -317,7 +317,7 @@ export default function AdminProdutos() {
       await apiCall(`/products/${id}`, {
         method: 'PATCH',
         body: { active: !product.active },
-        requireAuth: true
+        requireAuth: false
       });
       
       setProducts(products.map(p => 
