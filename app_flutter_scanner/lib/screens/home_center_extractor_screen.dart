@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../services/barcode_lookup_service.dart';
-import '../services/supabase_service.dart';
 import '../config/theme.dart';
 import 'auto_create_screen.dart';
 
@@ -16,7 +15,6 @@ class HomeCenterExtractorScreen extends StatefulWidget {
 
 class _HomeCenterExtractorScreenState extends State<HomeCenterExtractorScreen> {
   final BarcodeLookupService _lookupService = BarcodeLookupService();
-  final SupabaseService _supabaseService = SupabaseService();
   final TextEditingController _searchController = TextEditingController();
 
   List<AutoEnrichedProductData> _products = [];
@@ -307,7 +305,6 @@ class _HomeCenterExtractorScreenState extends State<HomeCenterExtractorScreen> {
   Widget _buildProductCard(AutoEnrichedProductData item) {
     final storeLower = (item.store ?? '').toLowerCase();
     final isJC = storeLower.contains('jc');
-    final isCarajas = storeLower.contains('carajás');
     final isAcal = storeLower.contains('acal');
     final isTelha = storeLower.contains('telhanorte');
     final isObra = storeLower.contains('obramax');
