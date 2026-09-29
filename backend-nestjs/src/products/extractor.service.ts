@@ -55,13 +55,39 @@ export class ExtractorService {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
+   * Decodifica entidades HTML básicas
+   */
+  private decodeHtml(str: string): string {
+    if (!str) return "";
+    return str
+      .replace(/&quot;/g, '"')
+      .replace(/&amp;/g, "&")
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">")
+      .replace(/&#39;/g, "'")
+      .replace(/&ccedil;/gi, "ç")
+      .replace(/&atilde;/gi, "ã")
+      .replace(/&otilde;/gi, "õ")
+      .replace(/&eacute;/gi, "é")
+      .replace(/&aacute;/gi, "á")
+      .replace(/&iacute;/gi, "í")
+      .replace(/&oacute;/gi, "ó")
+      .replace(/&uacute;/gi, "ú")
+      .replace(/&acirc;/gi, "â")
+      .replace(/&ecirc;/gi, "ê")
+      .replace(/&ocirc;/gi, "ô")
+      .replace(/&mdash;/g, "—")
+      .replace(/&ndash;/g, "–");
+  }
+
+  /**
    * Remove menções proprietárias de concorrentes no título
    */
   private cleanProductName(name: string): string {
     if (!name) return "";
     return name
-      .replace(/\|\s*(Normatel|Acal|Carajás|Obramax|Telhanorte|Leroy Merlin|C&C)/gi, "")
-      .replace(/Exclusivo\s+(Acal|Normatel|Carajás|Obramax|Telhanorte|Leroy\s*Merlin)/gi, "")
+      .replace(/\|\s*(Normatel|Acal|Carajás|Obramax|Telhanorte|Leroy Merlin|C&C|JC Materiais)/gi, "")
+      .replace(/Exclusivo\s+(Acal|Normatel|Carajás|Obramax|Telhanorte|Leroy\s*Merlin|JC\s*Materiais)/gi, "")
       .replace(/\s+/g, " ")
       .trim();
   }
@@ -331,12 +357,84 @@ export class ExtractorService {
   }
 
   /**
-   * Busca Unificada nos 4 Grandes Home Centers
+   * 5. Conector JC Materiais de Construção (Nuvemshop)
+   */
+  async searchJCMateriais(query: string): Promise<ExtractedProduct[]> {
+    try {
+      const url = `https://www.jcmateriais.com.br/search/?q=${encodeURIComponent(query)}`;
+      const res = await this.axiosClient.get(url, {
+        headers: {
+          Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        },
+      });
+
+      const html = typeof res.data === "string" ? res.data : "";
+      if (!html) return [];
+
+      const products: ExtractedProduct[] = [];
+      const jsonLdRegex =
+        /<script\s+type=["']application\/ld\+json["']\s+data-component=['"]structured-data\.item['"]>([\s\S]*?)<\/script>/gi;
+      let match: RegExpExecArray | null;
+
+      while ((match = jsonLdRegex.exec(html)) !== null) {
+        try {
+          const item = JSON.parse(match[1].trim());
+          if (item["@type"] === "Product") {
+            const offer = item.offers || {};
+            const brand =
+              typeof item.brand === "object"
+                ? item.brand.name
+                : item.brand || "JC Materiais";
+            const price = parseFloat(offer.price) || 0;
+            const urlProduct =
+              offer.url || item.mainEntityOfPage?.["@id"] || "";
+            let image = Array.isArray(item.image)
+              ? item.image[0]
+              : item.image || "";
+            if (image && image.startsWith("//")) image = "https:" + image;
+
+            const name = this.cleanProductName(this.decodeHtml(item.name || ""));
+            const description = this.decodeHtml(item.description || "");
+
+            if (price > 0 && name.length > 0) {
+              products.push({
+                store: "JC Materiais",
+                storeLogo: "https://www.jcmateriais.com.br/favicon.ico",
+                productId: `jc-${item.sku || Math.random().toString(36).slice(2, 8)}`,
+                name: name,
+                brand: brand,
+                ean: item.sku || "",
+                price: price,
+                listPrice: price,
+                available: offer.availability
+                  ? offer.availability.includes("InStock")
+                  : true,
+                url: urlProduct,
+                image: image,
+                categories: [],
+                description: description,
+              });
+            }
+          }
+        } catch (e) {
+          // ignore parsing error
+        }
+      }
+
+      return products;
+    } catch (err: any) {
+      this.logger.warn(`[JC Materiais] Falha na busca (${query}): ${err.message}`);
+      return [];
+    }
+  }
+
+  /**
+   * Busca Unificada nos Grandes Home Centers
    */
   async searchAllStores(query: string): Promise<{
     query: string;
     total: number;
-    stores: { carajas: number; acal: number; telhanorte: number; obramax: number };
+    stores: { jc: number; carajas: number; acal: number; telhanorte: number; obramax: number };
     products: ExtractedProduct[];
   }> {
     const cleanQuery = query.trim();
@@ -344,21 +442,22 @@ export class ExtractorService {
       return {
         query: "",
         total: 0,
-        stores: { carajas: 0, acal: 0, telhanorte: 0, obramax: 0 },
+        stores: { jc: 0, carajas: 0, acal: 0, telhanorte: 0, obramax: 0 },
         products: [],
       };
     }
 
     this.logger.log(`🔍 Buscando nos Home Centers: "${cleanQuery}"`);
 
-    const [carajas, acal, telhanorte, obramax] = await Promise.all([
+    const [jc, carajas, acal, telhanorte, obramax] = await Promise.all([
+      this.searchJCMateriais(cleanQuery),
       this.searchCarajas(cleanQuery),
       this.searchAcal(cleanQuery),
       this.searchTelhanorte(cleanQuery),
       this.searchObramax(cleanQuery),
     ]);
 
-    const all = [...carajas, ...acal, ...telhanorte, ...obramax];
+    const all = [...jc, ...carajas, ...acal, ...telhanorte, ...obramax];
 
     // Verificar se já existem no banco para sinalizar na UI
     const eans = all.map((p) => p.ean).filter(Boolean);
@@ -402,6 +501,7 @@ export class ExtractorService {
       query: cleanQuery,
       total: enrichedProducts.length,
       stores: {
+        jc: jc.length,
         carajas: carajas.length,
         acal: acal.length,
         telhanorte: telhanorte.length,

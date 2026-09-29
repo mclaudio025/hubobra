@@ -296,6 +296,7 @@ export default function ExtractorAdminPage() {
     return normalize(p.store).includes(normalize(selectedStore));
   });
 
+  const jcCount = products.filter((p) => normalize(p.store).includes('jc')).length;
   const carajasCount = products.filter((p) => normalize(p.store).includes('carajas')).length;
   const acalCount = products.filter((p) => normalize(p.store).includes('acal')).length;
   const telhanorteCount = products.filter((p) => normalize(p.store).includes('telhanorte')).length;
@@ -313,13 +314,13 @@ export default function ExtractorAdminPage() {
             <h1 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2">
               Robô Extrator de Home Centers
               <span className="text-xs uppercase px-2.5 py-0.5 rounded-full bg-emerald-500 text-slate-950 font-black">
-                Rede 4 Grandes Redes
+                5 Grandes Lojas
               </span>
             </h1>
           </div>
           <p className="text-slate-300 text-sm max-w-2xl">
-            Conectado às APIs oficiais de <strong>Carajás</strong>, <strong>Acal</strong>, <strong>Telhanorte</strong> e <strong>Obramax</strong>. 
-            Importe produtos com fotos HD originais do CDN VTEX, código EAN oficial, marca e preços de referência para seu catálogo em 1 clique.
+            Conectado às APIs e catálogos de <strong>JC Materiais</strong>, <strong>Carajás</strong>, <strong>Acal</strong>, <strong>Telhanorte</strong> e <strong>Obramax</strong>. 
+            Importe produtos com fotos HD originais, código EAN oficial, marca e preços de referência para seu catálogo em 1 clique.
           </p>
         </div>
       </div>
@@ -397,6 +398,16 @@ export default function ExtractorAdminPage() {
               }`}
             >
               Todas ({products.length})
+            </button>
+            <button
+              onClick={() => setSelectedStore('jc')}
+              className={`text-xs font-semibold px-4 py-2 rounded-lg border transition-all ${
+                selectedStore === 'jc'
+                  ? 'bg-amber-600 text-white border-amber-600 shadow-sm'
+                  : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+              }`}
+            >
+              🟡 JC Materiais ({jcCount})
             </button>
             <button
               onClick={() => setSelectedStore('carajas')}
@@ -494,7 +505,9 @@ export default function ExtractorAdminPage() {
                   <Badge
                     variant="outline"
                     className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${
-                      item.store === 'Carajás'
+                      item.store === 'JC Materiais' || item.store.includes('JC')
+                        ? 'bg-amber-50 text-amber-800 border-amber-300'
+                        : item.store === 'Carajás'
                         ? 'bg-blue-50 text-blue-700 border-blue-200'
                         : item.store === 'Acal'
                         ? 'bg-emerald-50 text-emerald-700 border-emerald-200'

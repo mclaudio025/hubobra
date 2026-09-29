@@ -1,6 +1,7 @@
 /**
  * 🏗️ HubObra Multi-Store Extractor & Price Intelligence
- * Conectores para os 4 Maiores Home Centers Regionais e Nacionais:
+ * Conectores para os Maiores Home Centers Regionais e Nacionais:
+ * - JC Materiais de Construção
  * - Normatel Home Center
  * - Acal Home Center
  * - Carajás Home Center
@@ -8,6 +9,7 @@
  */
 
 const axios = require('axios');
+const { searchJCMateriais } = require('./search-jc-materiais');
 
 const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
 
@@ -190,27 +192,30 @@ function cleanProductName(name) {
     .replace(/\|\s*Acal/gi, '')
     .replace(/\|\s*Carajás/gi, '')
     .replace(/\|\s*Leroy Merlin/gi, '')
-    .replace(/Exclusivo\s+(Acal|Normatel|Carajás|Leroy\s*Merlin)/gi, '')
+    .replace(/\|\s*JC Materiais/gi, '')
+    .replace(/Exclusivo\s+(Acal|Normatel|Carajás|Leroy\s*Merlin|JC\s*Materiais)/gi, '')
     .replace(/\s+/g, ' ')
     .trim();
 }
 
 /**
- * Busca unificada nos 4 Home Centers
+ * Busca unificada nos 5 Home Centers (Normatel, Carajás, Acal, Leroy Merlin e JC Materiais)
  */
 async function searchAllStores(query) {
-  console.log(`\n🔍 Pesquisando "${query}" nas 4 grandes redes (Normatel, Carajás, Acal, Leroy Merlin)...`);
+  console.log(`\n🔍 Pesquisando "${query}" nos 5 grandes centros (JC Materiais, Normatel, Carajás, Acal, Leroy Merlin)...`);
   
-  const [normatel, carajas, acal, leroy] = await Promise.all([
+  const [jc, normatel, carajas, acal, leroy] = await Promise.all([
+    searchJCMateriais(query),
     searchNormatel(query),
     searchCarajas(query),
     searchAcal(query),
     searchLeroy(query),
   ]);
 
-  const all = [...normatel, ...carajas, ...acal, ...leroy];
+  const all = [...jc, ...normatel, ...carajas, ...acal, ...leroy];
 
   console.log(`\n✅ Resultados Encontrados: ${all.length} produtos`);
+  console.log(`- JC Materiais: ${jc.length}`);
   console.log(`- Normatel: ${normatel.length}`);
   console.log(`- Carajás: ${carajas.length}`);
   console.log(`- Acal: ${acal.length}`);
@@ -220,6 +225,7 @@ async function searchAllStores(query) {
     query,
     total: all.length,
     stores: {
+      jc,
       normatel,
       carajas,
       acal,
@@ -230,6 +236,7 @@ async function searchAllStores(query) {
 }
 
 module.exports = {
+  searchJCMateriais,
   searchNormatel,
   searchCarajas,
   searchAcal,
