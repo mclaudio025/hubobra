@@ -119,7 +119,7 @@ class _HomeCenterExtractorScreenState extends State<HomeCenterExtractorScreen> {
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
                 ),
                 Text(
-                  'Carajás • Acal • Telhanorte • Obramax',
+                  'JC Materiais • Carajás • Acal • Telhanorte • Obramax',
                   style: TextStyle(fontSize: 11, color: Colors.white60),
                 ),
               ],
@@ -203,6 +203,8 @@ class _HomeCenterExtractorScreenState extends State<HomeCenterExtractorScreen> {
                     ),
                     const SizedBox(width: 12),
                     _buildStoreFilterChip('Todas', 'all'),
+                    const SizedBox(width: 6),
+                    _buildStoreFilterChip('JC Materiais', 'jc'),
                     const SizedBox(width: 6),
                     _buildStoreFilterChip('Carajás', 'carajás'),
                     const SizedBox(width: 6),
@@ -304,6 +306,7 @@ class _HomeCenterExtractorScreenState extends State<HomeCenterExtractorScreen> {
 
   Widget _buildProductCard(AutoEnrichedProductData item) {
     final storeLower = (item.store ?? '').toLowerCase();
+    final isJC = storeLower.contains('jc');
     final isCarajas = storeLower.contains('carajás');
     final isAcal = storeLower.contains('acal');
     final isTelha = storeLower.contains('telhanorte');
@@ -311,7 +314,10 @@ class _HomeCenterExtractorScreenState extends State<HomeCenterExtractorScreen> {
 
     Color badgeBg = Colors.blue.withOpacity(0.2);
     Color badgeText = Colors.lightBlueAccent;
-    if (isAcal) {
+    if (isJC) {
+      badgeBg = Colors.amber.withOpacity(0.2);
+      badgeText = Colors.amberAccent;
+    } else if (isAcal) {
       badgeBg = Colors.green.withOpacity(0.2);
       badgeText = Colors.lightGreenAccent;
     } else if (isTelha) {

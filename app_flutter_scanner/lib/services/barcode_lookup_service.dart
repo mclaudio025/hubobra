@@ -51,6 +51,30 @@ class BarcodeLookupService {
     'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7',
   };
 
+  /// Decodifica entidades HTML básicas
+  static String _decodeHtml(String str) {
+    if (str.isEmpty) return '';
+    return str
+        .replaceAll('&quot;', '"')
+        .replaceAll('&amp;', '&')
+        .replaceAll('&lt;', '<')
+        .replaceAll('&gt;', '>')
+        .replaceAll('&#39;', "'")
+        .replaceAll(RegExp(r'&ccedil;', caseSensitive: false), 'ç')
+        .replaceAll(RegExp(r'&atilde;', caseSensitive: false), 'ã')
+        .replaceAll(RegExp(r'&otilde;', caseSensitive: false), 'õ')
+        .replaceAll(RegExp(r'&eacute;', caseSensitive: false), 'é')
+        .replaceAll(RegExp(r'&aacute;', caseSensitive: false), 'á')
+        .replaceAll(RegExp(r'&iacute;', caseSensitive: false), 'í')
+        .replaceAll(RegExp(r'&oacute;', caseSensitive: false), 'ó')
+        .replaceAll(RegExp(r'&uacute;', caseSensitive: false), 'ú')
+        .replaceAll(RegExp(r'&acirc;', caseSensitive: false), 'â')
+        .replaceAll(RegExp(r'&ecirc;', caseSensitive: false), 'ê')
+        .replaceAll(RegExp(r'&ocirc;', caseSensitive: false), 'ô')
+        .replaceAll('&mdash;', '—')
+        .replaceAll('&ndash;', '–');
+  }
+
   /// Limpa menções de concorrentes nos nomes dos produtos
   static String cleanProductName(String raw) {
     if (raw.trim().isEmpty) return '';
@@ -59,9 +83,106 @@ class BarcodeLookupService {
         .replaceAll(RegExp(r'\|\s*Acal', caseSensitive: false), '')
         .replaceAll(RegExp(r'\|\s*Carajás', caseSensitive: false), '')
         .replaceAll(RegExp(r'\|\s*Leroy Merlin', caseSensitive: false), '')
-        .replaceAll(RegExp(r'Exclusivo\s+(Acal|Normatel|Carajás|Leroy\s*Merlin)', caseSensitive: false), '')
+        .replaceAll(RegExp(r'\|\s*JC Materiais', caseSensitive: false), '')
+        .replaceAll(RegExp(r'Exclusivo\s+(Acal|Normatel|Carajás|Leroy\s*Merlin|JC\s*Materiais)', caseSensitive: false), '')
         .replaceAll(RegExp(r'\s+'), ' ')
         .trim();
+  }
+
+  /// Busca produtos diretamente na JC Materiais de Construção (Nuvemshop)
+  Future<List<AutoEnrichedProductData>> _searchJCMateriais(String query) async {
+    try {
+      final url = Uri.parse(
+        'https://www.jcmateriais.com.br/search/?q=${Uri.encodeComponent(query)}',
+      );
+      final headers = Map<String, String>.from(_headers)
+        ..['Accept'] = 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8';
+      
+      final response = await http.get(url, headers: headers).timeout(const Duration(seconds: 6));
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final html = response.body;
+        final List<AutoEnrichedProductData> list = [];
+        
+        final jsonLdRegex = RegExp(
+          r"""<script\s+type=["']application\/ld\+json["']\s+data-component=['"]structured-data\.item['"]>([\s\S]*?)<\/script>""",
+          caseSensitive: false,
+        );
+
+        final matches = jsonLdRegex.allMatches(html);
+        for (final match in matches) {
+          try {
+            final jsonText = match.group(1)?.trim();
+            if (jsonText == null || jsonText.isEmpty) continue;
+            
+            final Map<String, dynamic> item = json.decode(jsonText);
+            if (item['@type'] == 'Product') {
+              final offer = item['offers'] is Map<String, dynamic> ? item['offers'] as Map<String, dynamic> : {};
+              
+              String brand = 'JC Materiais';
+              if (item['brand'] is Map<String, dynamic>) {
+                brand = item['brand']['name'] ?? 'JC Materiais';
+              } else if (item['brand'] is String) {
+                brand = item['brand'];
+              }
+
+              final rawPrice = offer['price'];
+              double price = 0.0;
+              if (rawPrice is num) {
+                price = rawPrice.toDouble();
+              } else if (rawPrice is String) {
+                price = double.tryParse(rawPrice) ?? 0.0;
+              }
+
+              final rawName = item['name'] ?? '';
+              final cleanName = cleanProductName(_decodeHtml(rawName));
+              final desc = _decodeHtml(item['description'] ?? '');
+
+              String? imgUrl;
+              if (item['image'] is List && (item['image'] as List).isNotEmpty) {
+                imgUrl = (item['image'] as List).first.toString();
+              } else if (item['image'] is String) {
+                imgUrl = item['image'];
+              }
+
+              if (imgUrl != null && imgUrl.startsWith('//')) {
+                imgUrl = 'https:$imgUrl';
+              }
+
+              final sku = item['sku']?.toString() ?? '';
+
+              if (cleanName.isNotEmpty && price > 0) {
+                final imgList = imgUrl != null && imgUrl.isNotEmpty
+                    ? [
+                        WebImageItem(
+                          url: imgUrl,
+                          title: cleanName,
+                          cleanName: cleanName,
+                          cleanBrand: brand,
+                        )
+                      ]
+                    : <WebImageItem>[];
+
+                list.add(AutoEnrichedProductData(
+                  name: cleanName,
+                  brand: brand,
+                  barcode: sku,
+                  description: desc.isNotEmpty ? desc : 'Produto $cleanName de alta qualidade ($brand).',
+                  imageUrl: imgUrl,
+                  price: price,
+                  listPrice: price,
+                  store: 'JC Materiais',
+                  candidateImages: imgList,
+                ));
+              }
+            }
+          } catch (_) {}
+        }
+
+        return list;
+      }
+    } catch (_) {}
+    return [];
   }
 
   /// Busca produtos diretamente na Carajás Home Center (API VTEX)
@@ -215,15 +336,16 @@ class BarcodeLookupService {
     final cleanBarcode = barcode.trim();
     if (cleanBarcode.isEmpty) return null;
 
-    // Busca simultânea nos grandes Home Centers
+    // Busca simultânea nos grandes Home Centers e JC Materiais
     final results = await Future.wait([
+      _searchJCMateriais(cleanBarcode),
       _searchCarajas(cleanBarcode),
       _searchAcal(cleanBarcode),
       _searchTelhanorte(cleanBarcode),
       _searchObramax(cleanBarcode),
     ]);
 
-    final all = [...results[0], ...results[1], ...results[2], ...results[3]];
+    final all = [...results[0], ...results[1], ...results[2], ...results[3], ...results[4]];
 
     // 1. Tenta match exato por código EAN
     for (final prod in all) {
@@ -265,13 +387,14 @@ class BarcodeLookupService {
     if (clean.isEmpty) return [];
 
     final results = await Future.wait([
+      _searchJCMateriais(clean),
       _searchCarajas(clean),
       _searchAcal(clean),
       _searchTelhanorte(clean),
       _searchObramax(clean),
     ]);
 
-    final all = [...results[0], ...results[1], ...results[2], ...results[3]];
+    final all = [...results[0], ...results[1], ...results[2], ...results[3], ...results[4]];
     
     // Remove duplicidades por nome
     final List<AutoEnrichedProductData> uniqueList = [];
