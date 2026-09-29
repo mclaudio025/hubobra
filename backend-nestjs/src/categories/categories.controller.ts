@@ -21,8 +21,10 @@ import {
 import { UserRole } from "../common/enums";
 
 import { CategoriesService } from "./categories.service";
+import { CategoryClassifierService } from "./category-classifier.service";
 import { CreateCategoryDto } from "./dto/create-category.dto";
 import { UpdateCategoryDto } from "./dto/update-category.dto";
+import { AutoClassifyCatalogDto } from "./dto/auto-classify-category.dto";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
 import { Roles } from "../auth/decorators/roles.decorator";
@@ -30,7 +32,10 @@ import { Roles } from "../auth/decorators/roles.decorator";
 @ApiTags("categories")
 @Controller("categories")
 export class CategoriesController {
-  constructor(private readonly categoriesService: CategoriesService) {}
+  constructor(
+    private readonly categoriesService: CategoriesService,
+    private readonly categoryClassifierService: CategoryClassifierService,
+  ) {}
 
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -82,6 +87,26 @@ export class CategoriesController {
   @ApiResponse({ status: 200, description: "Estatísticas das categorias" })
   getStats() {
     return this.categoriesService.getCategoryStats();
+  }
+
+  @Post("auto-classify")
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.MANAGER)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "Auto-classificar produtos do catálogo com IA/Regras baseado nas descrições de categorias" })
+  @ApiResponse({ status: 200, description: "Catálogo classificado com sucesso" })
+  autoClassifyCatalog(@Body() dto: AutoClassifyCatalogDto) {
+    return this.categoryClassifierService.autoClassifyCatalog(dto || {});
+  }
+
+  @Post("classify-single")
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.MANAGER)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "Classificar um produto individual" })
+  @ApiResponse({ status: 200, description: "Sugestão de categoria encontrada" })
+  classifySingle(@Body() body: { name: string; brand?: string; description?: string }) {
+    return this.categoryClassifierService.classifySingleProduct(body);
   }
 
   @Get(":id")

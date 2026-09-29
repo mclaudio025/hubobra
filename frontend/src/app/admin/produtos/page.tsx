@@ -30,6 +30,7 @@ import AdminBreadcrumb from '../../components/admin/AdminBreadcrumb';
 import { useApi, useProducts } from '../../hooks/useApi';
 import { getImageUrl } from '../../utils/imageUrl';
 import { useToast } from '../../components/ui/Toaster';
+import AutoClassifyModal from './components/AutoClassifyModal';
 
 interface Product {
   id: string;
@@ -75,6 +76,7 @@ export default function AdminProdutos() {
   const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
   const [bulkCategoryId, setBulkCategoryId] = useState('');
   const [isBulkUpdating, setIsBulkUpdating] = useState(false);
+  const [isAutoClassifyOpen, setIsAutoClassifyOpen] = useState(false);
 
   const masterCheckboxRef = useRef<HTMLInputElement>(null);
 
@@ -386,6 +388,15 @@ export default function AdminProdutos() {
             <p className="text-xs text-gray-500 mt-1">Gerencie catálogo, preços, estoque, categorias rápidas e fotos</p>
           </div>
           <div className="flex flex-wrap gap-3">
+            <button
+              type="button"
+              onClick={() => setIsAutoClassifyOpen(true)}
+              className="flex items-center gap-2 bg-gradient-to-r from-violet-600 via-indigo-600 to-blue-600 hover:from-violet-700 hover:via-indigo-700 hover:to-blue-700 text-white px-4 py-2 rounded-xl text-sm font-semibold shadow-md shadow-indigo-500/25 transition-all hover:scale-[1.02] active:scale-[0.98]"
+              title="Organiza automaticamente produtos em suas respectivas categorias com base nas descrições"
+            >
+              <Sparkles className="h-4 w-4 text-amber-300" />
+              Auto-Classificar com IA
+            </button>
             <button
               type="button"
               onClick={handleBulkFetchImages}
@@ -886,6 +897,16 @@ export default function AdminProdutos() {
           </div>
         </div>
       )}
+
+      {/* Modal de Auto-Classificação Inteligente com IA / Regras */}
+      <AutoClassifyModal
+        isOpen={isAutoClassifyOpen}
+        onClose={() => setIsAutoClassifyOpen(false)}
+        onSuccess={() => {
+          fetchProducts();
+          fetchCategories();
+        }}
+      />
     </div>
   );
 }
