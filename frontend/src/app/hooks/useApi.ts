@@ -39,13 +39,19 @@ export function useApi() {
       },
     };
 
+    const activeToken =
+      token ||
+      (typeof window !== 'undefined'
+        ? localStorage.getItem('token') || localStorage.getItem('access_token')
+        : null);
+
     // Adicionar token de autenticação se necessário
-    if (requireAuth && token) {
+    if (requireAuth && activeToken) {
       config.headers = {
         ...config.headers,
-        Authorization: `Bearer ${token}`,
+        Authorization: `Bearer ${activeToken}`,
       };
-    } else if (requireAuth && !token) {
+    } else if (requireAuth && !activeToken) {
       throw new Error('Token de autenticação não encontrado. Faça login novamente.');
     }
 

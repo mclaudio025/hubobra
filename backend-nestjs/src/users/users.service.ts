@@ -35,9 +35,11 @@ export class UsersService {
   async findAll(page = 1, limit = 20, search?: string, role?: UserRole) {
     const skip = (page - 1) * limit;
 
-    const where = {
       ...(search && {
-        OR: [{ name: { contains: search } }, { email: { contains: search } }],
+        OR: [
+          { name: { contains: search, mode: 'insensitive' as any } },
+          { email: { contains: search, mode: 'insensitive' as any } },
+        ],
       }),
       ...(role && { role }),
     };

@@ -269,19 +269,38 @@ export default function UsuariosPage() {
         </div>
       </div>
 
-      {/* Alerta de Erro */}
+      {/* Alerta de Erro / Autenticação */}
       {errorMsg && (
-        <div className="p-4 bg-red-50 border border-red-200 rounded-xl flex items-center justify-between text-red-700">
+        <div className="p-4 bg-red-50 border border-red-200 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-red-700 shadow-sm">
           <div className="flex items-center gap-3">
-            <AlertCircle className="w-5 h-5 flex-shrink-0" />
-            <span className="text-sm font-medium">{errorMsg}</span>
+            <AlertCircle className="w-5 h-5 flex-shrink-0 text-red-600" />
+            <div>
+              <p className="text-sm font-bold text-red-800">
+                {errorMsg.toLowerCase().includes('unauthorized') || errorMsg.toLowerCase().includes('token')
+                  ? 'Sessão Expirada ou Não Autorizada'
+                  : 'Falha ao carregar usuários'}
+              </p>
+              <p className="text-xs text-red-600">
+                {errorMsg.toLowerCase().includes('unauthorized') || errorMsg.toLowerCase().includes('token')
+                  ? 'Faça login novamente com sua conta de Administrador para renovar o acesso.'
+                  : errorMsg}
+              </p>
+            </div>
           </div>
-          <button
-            onClick={loadUsers}
-            className="text-xs font-bold bg-red-600 text-white px-3 py-1.5 rounded-lg hover:bg-red-700 transition"
-          >
-            Tentar novamente
-          </button>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <button
+              onClick={loadUsers}
+              className="text-xs font-semibold bg-white border border-red-300 text-red-700 px-3 py-1.5 rounded-lg hover:bg-red-50 transition cursor-pointer"
+            >
+              Tentar novamente
+            </button>
+            <a
+              href="/login?redirect=/admin/usuarios"
+              className="text-xs font-bold bg-red-600 text-white px-3.5 py-1.5 rounded-lg hover:bg-red-700 transition cursor-pointer shadow-sm"
+            >
+              Fazer Login Novamente
+            </a>
+          </div>
         </div>
       )}
 
