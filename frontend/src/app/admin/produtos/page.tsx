@@ -24,7 +24,9 @@ import {
   X,
   ArrowRight,
   Layers,
-  RefreshCw
+  RefreshCw,
+  Lock,
+  Unlock
 } from 'lucide-react';
 import AdminBreadcrumb from '../../components/admin/AdminBreadcrumb';
 import { useApi, useProducts } from '../../hooks/useApi';
@@ -38,6 +40,7 @@ interface Product {
   price: number;
   category: any;
   categoryId?: string;
+  isCategoryLocked?: boolean;
   brand: string;
   stock: number;
   sku: string;
@@ -161,7 +164,7 @@ export default function AdminProdutos() {
     try {
       await apiCall(`/products/${productId}`, {
         method: 'PATCH',
-        body: { categoryId: newCategoryId },
+        body: { categoryId: newCategoryId, isCategoryLocked: true },
         requireAuth: false
       });
 
@@ -171,7 +174,8 @@ export default function AdminProdutos() {
           return {
             ...p,
             categoryId: selectedCategory.id,
-            category: { id: selectedCategory.id, name: selectedCategory.name }
+            category: { id: selectedCategory.id, name: selectedCategory.name },
+            isCategoryLocked: true
           };
         }
         return p;
@@ -181,8 +185,8 @@ export default function AdminProdutos() {
 
       addToast({
         type: 'success',
-        title: 'Categoria atualizada!',
-        message: `"${(currentProduct?.name || 'Produto').substring(0, 32)}..." alterado para "${selectedCategory.name}".`
+        title: 'Categoria atualizada e travada!',
+        message: `"${(currentProduct?.name || 'Produto').substring(0, 32)}..." alterado para "${selectedCategory.name}" e fixado com sucesso.`
       });
     } catch (error: any) {
       console.error('Erro ao atualizar categoria:', error);
@@ -193,6 +197,38 @@ export default function AdminProdutos() {
       });
     } finally {
       setUpdatingProductId(null);
+    }
+  };
+
+  const handleToggleCategoryLock = async (productId: string, currentLocked: boolean) => {
+    try {
+      const newLocked = !currentLocked;
+      await apiCall(`/products/${productId}`, {
+        method: 'PATCH',
+        body: { isCategoryLocked: newLocked },
+        requireAuth: false
+      });
+
+      setProducts(prev => prev.map(p => {
+        if (p.id === productId) {
+          return { ...p, isCategoryLocked: newLocked };
+        }
+        return p;
+      }));
+
+      addToast({
+        type: newLocked ? 'success' : 'info',
+        title: newLocked ? 'Categoria Fixada (Travada)' : 'Categoria Destravada',
+        message: newLocked
+          ? 'O robô automático não irá mais alterar a categoria deste produto.'
+          : 'O produto está livre para ser classificado novamente pelo robô.'
+      });
+    } catch (err: any) {
+      addToast({
+        type: 'error',
+        title: 'Erro ao alterar trava',
+        message: err?.message || 'Falha ao alterar estado do cadeado da categoria.'
+      });
     }
   };
 
@@ -251,7 +287,8 @@ export default function AdminProdutos() {
           return {
             ...p,
             categoryId: targetCategory.id,
-            category: { id: targetCategory.id, name: targetCategory.name }
+            category: { id: targetCategory.id, name: targetCategory.name },
+            isCategoryLocked: true
           };
         }
         return p;
@@ -266,7 +303,7 @@ export default function AdminProdutos() {
       addToast({
         type: 'success',
         title: 'Atualização em massa concluída!',
-        message: `${count} produto(s) movido(s) para "${targetCategory.name}".`
+        message: `${count} produto(s) movido(s) para "${targetCategory.name}" e travados contra reclassificação.`
       });
 
       setSelectedProductIds([]);
@@ -619,41 +656,65 @@ export default function AdminProdutos() {
                             </div>
                           </td>
 
-                          {/* Dropdown Inline de Categoria */}
+                          {/* Dropdown Inline de Categoria + Trava de Cadeado */}
                           <td className="px-4 py-4 whitespace-nowrap">
-                            <div className="flex flex-col gap-1 max-w-[240px]">
-                              <div className="relative flex items-center">
-                                <select
-                                  value={currentProductCategoryId}
-                                  onChange={(e) => handleInlineCategoryChange(product.id, e.target.value)}
-                                  disabled={isUpdatingThis || isBulkUpdating}
-                                  className={`w-full py-1.5 pl-2.5 pr-7 text-xs font-medium rounded-lg border transition-all cursor-pointer ${
-                                    isRecentlyUpdated
-                                      ? 'border-emerald-400 bg-emerald-50/50 text-emerald-900 focus:ring-emerald-500'
-                                      : 'border-gray-300 bg-white text-gray-800 hover:border-blue-400 focus:ring-blue-500 focus:border-blue-500'
-                                  } disabled:opacity-60 disabled:cursor-not-allowed`}
-                                >
-                                  <option value="" disabled>Selecione a categoria...</option>
-                                  {categories.map((cat) => (
-                                    <option key={cat.id} value={cat.id}>
-                                      {cat.name}
-                                    </option>
-                                  ))}
-                                </select>
+                            <div className="flex flex-col gap-1 max-w-[260px]">
+                              <div className="flex items-center gap-1.5">
+                                <div className="relative flex-1 flex items-center">
+                                  <select
+                                    value={currentProductCategoryId}
+                                    onChange={(e) => handleInlineCategoryChange(product.id, e.target.value)}
+                                    disabled={isUpdatingThis || isBulkUpdating}
+                                    className={`w-full py-1.5 pl-2.5 pr-7 text-xs font-medium rounded-lg border transition-all cursor-pointer ${
+                                      isRecentlyUpdated
+                                        ? 'border-emerald-400 bg-emerald-50/50 text-emerald-900 focus:ring-emerald-500'
+                                        : 'border-gray-300 bg-white text-gray-800 hover:border-blue-400 focus:ring-blue-500 focus:border-blue-500'
+                                    } disabled:opacity-60 disabled:cursor-not-allowed`}
+                                  >
+                                    <option value="" disabled>Selecione a categoria...</option>
+                                    {categories.map((cat) => (
+                                      <option key={cat.id} value={cat.id}>
+                                        {cat.name}
+                                      </option>
+                                    ))}
+                                  </select>
 
-                                {/* Indicador de salvando ou salvo */}
-                                <div className="absolute right-2.5 pointer-events-none flex items-center">
-                                  {isUpdatingThis ? (
-                                    <Loader2 className="h-3.5 w-3.5 animate-spin text-blue-600" />
-                                  ) : isRecentlyUpdated ? (
-                                    <Check className="h-3.5 w-3.5 text-emerald-600 stroke-[3]" />
-                                  ) : null}
+                                  {/* Indicador de salvando ou salvo */}
+                                  <div className="absolute right-2.5 pointer-events-none flex items-center">
+                                    {isUpdatingThis ? (
+                                      <Loader2 className="h-3.5 w-3.5 animate-spin text-blue-600" />
+                                    ) : isRecentlyUpdated ? (
+                                      <Check className="h-3.5 w-3.5 text-emerald-600 stroke-[3]" />
+                                    ) : null}
+                                  </div>
                                 </div>
+
+                                {/* Botão de Cadeado / Trava */}
+                                <button
+                                  type="button"
+                                  onClick={() => handleToggleCategoryLock(product.id, !!product.isCategoryLocked)}
+                                  className={`p-1.5 rounded-lg border transition-all cursor-pointer ${
+                                    product.isCategoryLocked
+                                      ? 'bg-amber-50 border-amber-300 text-amber-700 hover:bg-amber-100'
+                                      : 'bg-gray-50 border-gray-200 text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+                                  }`}
+                                  title={
+                                    product.isCategoryLocked
+                                      ? 'Categoria Fixada (O robô não altera este produto). Clique para destravar.'
+                                      : 'Categoria Livre (Pode ser alterada pelo robô). Clique para fixar.'
+                                  }
+                                >
+                                  {product.isCategoryLocked ? (
+                                    <Lock className="w-3.5 h-3.5" />
+                                  ) : (
+                                    <Unlock className="w-3.5 h-3.5" />
+                                  )}
+                                </button>
                               </div>
 
                               {isRecentlyUpdated && (
                                 <span className="text-[10px] font-semibold text-emerald-600 flex items-center gap-1">
-                                  <Check className="h-2.5 w-2.5 stroke-[3]" /> Salvo automaticamente
+                                  <Check className="h-2.5 w-2.5 stroke-[3]" /> Salvo e fixado com sucesso
                                 </span>
                               )}
                             </div>

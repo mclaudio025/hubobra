@@ -267,6 +267,13 @@ export class ProductsService {
 
     if (categoryId) {
       updateData.categoryId = categoryId;
+      if (productData.isCategoryLocked === undefined) {
+        updateData.isCategoryLocked = true;
+      }
+    }
+
+    if (productData.isCategoryLocked !== undefined) {
+      updateData.isCategoryLocked = productData.isCategoryLocked;
     }
 
     if (images) {
@@ -341,6 +348,7 @@ export class ProductsService {
       },
       data: {
         categoryId,
+        isCategoryLocked: true,
       },
     });
 

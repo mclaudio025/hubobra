@@ -198,11 +198,13 @@ PRODUTOS A SEREM CLASSIFICADOS:
 ${productList}
 
 DIRETRIZES TÉCNICAS ESTRITAS:
-1. "União Soldável", "Luva Soldável", "Joelho 90 PVC", "Adaptador Soldável", "Tê Soldável", "Bucha de Redução" (tubulações marrons / água fria) PERTENCEM A "Tubos e Conexões de Água (PVC)".
-2. "Tubo Esgoto", "Joelho Esgoto", "Pvce", "Série Normal", "Caixa de Gordura", "Caixa Sifonada", "Ralo" PERTENCEM A "Tubos e Conexões de Esgoto e Águas Pluviais".
-3. "Veda Rosca", "Cola PVC", "Adesivo Plástico", "Lubrificante" PERTENCEM A "Consumíveis e Vedação". NÃO coloque conexões ou tubos em Consumíveis!
-4. "Lixas", "Discos de Lixa", "Rolos", "Trinchas", "Pincéis" PERTENCEM A "Ferramentas de Aplicação (Acessórios de Pintura)".
-5. Retorne a resposta ESTRITAMENTE em formato JSON válido como um array de objetos:
+1. "Lixas" (lixa ferro, lixa madeira, lixa d'água, lixa massa, folha de lixa), "Discos de Corte", "Discos Flap", "Rebolos", "Discos Diamantados" PERTENCEM ESTRITAMENTE A "Abrasivos e Corte" (em Ferramentas). NUNCA COLOQUE LIXAS EM PINTURA!
+2. "Rolos de Lã/Espuma", "Trinchas", "Pincéis", "Bandejas de Pintura", "Fitas Crepe" PERTENCEM A "Acessórios de Pintura".
+3. "Suportes de TV", "Suportes Articulados", "Suportes de Micro-ondas", "Mão Francesa" PERTENCEM A "Suportes e Fixação de Aparelhos" (em Utilidades). NUNCA COLOQUE SUPORTES DE TV EM CONEXÕES HIDRÁULICAS!
+4. "Tubos de Esgoto", "Tubos Soldáveis Água Fria", "Joelhos PVC", "Cotovelos", "Luvas PVC", "Tês PVC", "Adaptadores Soldáveis", "Buchas de Redução PVC" PERTENCEM A "Tubos e Conexões PVC".
+5. "Fechaduras", "Cadeados", "Dobradiças", "Parafusos", "Pregos", "Buchas de Nylon" PERTENCEM ÀS RESPECTIVAS SUBCATEGORIAS DE "Portas, Janelas e Ferragens".
+6. "Rejuntes", "Niveladores", "Espaçadores", "Cunhas" PERTENCEM A "Rejuntes e Niveladores" (em Pisos).
+7. Retorne a resposta ESTRITAMENTE em formato JSON válido como um array de objetos:
 [
   {
     "productId": "ID_DO_PRODUTO",
@@ -267,6 +269,20 @@ DIRETRIZES TÉCNICAS ESTRITAS:
     );
 
     // Flags contextuais do produto
+    const isLixaOrAbrasivo =
+      rawText.includes("lixa") ||
+      rawText.includes("disco de corte") ||
+      rawText.includes("disco flap") ||
+      rawText.includes("disco desbaste") ||
+      rawText.includes("diamantado") ||
+      rawText.includes("rebolo") ||
+      rawText.includes("esmeril") ||
+      rawText.includes("abrasiv");
+
+    const isSuporteTvOuAparelho =
+      (rawText.includes("suporte") && (rawText.includes("tv") || rawText.includes("televis") || rawText.includes("monitor") || rawText.includes("lcd") || rawText.includes("led") || rawText.includes("articulado") || rawText.includes("inclinavel") || rawText.includes("fixo") || rawText.includes("microondas"))) ||
+      rawText.includes("mao francesa");
+
     const isEsgotoProduct =
       rawText.includes("esgoto") ||
       rawText.includes("pvce") ||
@@ -284,22 +300,25 @@ DIRETRIZES TÉCNICAS ESTRITAS:
       rawText.includes("teflon") ||
       rawText.includes("solucao limpadora");
 
-    const isAguaFriaProduct =
+    const isPvcConexao =
       (rawText.includes("soldavel") ||
-        rawText.includes("agua fria") ||
-        rawText.includes("marrom") ||
-        rawText.includes("roscavel") ||
         rawText.includes("joelho") ||
         rawText.includes("cotovelo") ||
         rawText.includes("uniao") ||
+        rawText.includes("luva pvc") ||
+        rawText.includes("luva soldavel") ||
         rawText.includes("te ") ||
         rawText.includes("tes ") ||
+        rawText.includes("te soldavel") ||
         rawText.includes("bucha de reducao") ||
         rawText.includes("adaptador curto") ||
+        rawText.includes("adaptador soldavel") ||
         rawText.includes("curva 90") ||
-        rawText.includes("curva 45")) &&
-      !isEsgotoProduct &&
-      !isConsumivel;
+        rawText.includes("curva 45") ||
+        rawText.includes("tubo") ||
+        rawText.includes("cano pvc")) &&
+      !isSuporteTvOuAparelho &&
+      !isLixaOrAbrasivo;
 
     let bestCategory: CategoryKnowledge | null = null;
     let highestScore = 0;
@@ -307,7 +326,7 @@ DIRETRIZES TÉCNICAS ESTRITAS:
 
     for (const cat of knowledgeBase) {
       // Prioridade forte para subcategorias folhas
-      let score = cat.isLeaf ? 15 : 0;
+      let score = cat.isLeaf ? 20 : 0;
       const matchedPhrases: string[] = [];
       const matchedTerms: string[] = [];
 
@@ -329,266 +348,150 @@ DIRETRIZES TÉCNICAS ESTRITAS:
 
       // 3. Regras de Domínio Especializadas e Anti-Falsos Positivos
 
-      // --- HIDRÁULICA ---
-      if (cat.normName.includes("esgoto") || cat.normName.includes("pluvia")) {
-        if (isEsgotoProduct && !isConsumivel) score += 100;
-        if (!isEsgotoProduct) score -= 80;
+      // --- ABRASIVOS E CORTE (FERRAMENTAS) ---
+      if (cat.normName.includes("abrasivos e corte") || cat.slug === "abrasivos-e-corte") {
+        if (isLixaOrAbrasivo) score += 250;
+        else score -= 100;
       }
 
-      if (cat.normName.includes("tubos e conexoes de agua") || cat.normName.includes("agua fria")) {
-        if (isAguaFriaProduct && !rawText.includes("quente") && !rawText.includes("ppr") && !rawText.includes("cpvc")) {
-          score += 100;
+      // --- SUPORTES E FIXAÇÃO (UTILIDADES) ---
+      if (cat.normName.includes("suportes e fixacao") || cat.slug === "suportes-e-fixacao-aparelhos") {
+        if (isSuporteTvOuAparelho) score += 250;
+        else score -= 100;
+      }
+
+      // --- ACESSÓRIOS DE PINTURA ---
+      if (cat.normName.includes("acessorios de pintura") || cat.slug === "acessorios-de-pintura") {
+        if (isLixaOrAbrasivo) {
+          score -= 300; // NUNCA colocar lixas aqui!
         }
-        if (isEsgotoProduct || isConsumivel) score -= 100;
-      }
-
-      if (cat.normName.includes("consumiveis e vedacao")) {
-        if (isConsumivel) score += 120;
         if (
-          rawText.includes("tubo") ||
-          rawText.includes("joelho") ||
-          rawText.includes("cotovelo") ||
-          rawText.includes("uniao") ||
-          rawText.includes("curva") ||
-          rawText.includes("cabo")
-        ) {
-          if (!isConsumivel) score -= 150;
-        }
-      }
-
-      if (cat.normName.includes("agua quente") || cat.normName.includes("ppr") || cat.normName.includes("cpvc")) {
-        if (
-          rawText.includes("quente") ||
-          rawText.includes("ppr") ||
-          rawText.includes("cpvc") ||
-          rawText.includes("termofusao") ||
-          rawText.includes("aquatherm")
-        ) {
-          score += 120;
-        } else {
-          score -= 60;
-        }
-      }
-
-      if (cat.normName.includes("registros e valvulas")) {
-        if (rawText.includes("registro") || rawText.includes("valvula")) score += 100;
-      }
-
-      if (cat.normName.includes("caixas d agua") || cat.normName.includes("reservatorio")) {
-        if (rawText.includes("caixa d agua") || rawText.includes("caixa dagua") || rawText.includes("reservatorio") || rawText.includes("boia")) {
-          score += 100;
-        }
-      }
-
-      if (cat.normName.includes("mecanismos e reparos")) {
-        if (
-          rawText.includes("sifao") ||
-          rawText.includes("engate flexivel") ||
-          rawText.includes("ligacao flexivel") ||
-          rawText.includes("mecanismo descarga") ||
-          rawText.includes("salva registro")
-        ) {
-          score += 100;
-        }
-      }
-
-      // --- ELÉTRICA ---
-      if (cat.normName.includes("fios e cabos")) {
-        if (
-          rawText.includes("cabo flexivel") ||
-          rawText.includes("cabo pp") ||
-          rawText.includes("fio paralelo") ||
-          (rawText.includes("cabo") && (rawText.includes("mm") || rawText.includes("azul") || rawText.includes("preto") || rawText.includes("verde") || rawText.includes("vermelho")))
-        ) {
-          score += 100;
-        }
-      }
-
-      if (cat.normName.includes("quadros de distribuicao e disjuntores")) {
-        if (
-          rawText.includes("disjuntor") ||
-          rawText.includes("quadro de distribuicao") ||
-          rawText.includes("dr") ||
-          rawText.includes("dps") ||
-          rawText.includes("barramento")
-        ) {
-          score += 100;
-        }
-      }
-
-      if (cat.normName.includes("eletrodutos e conduites")) {
-        if (rawText.includes("conduite") || rawText.includes("corrugado") || rawText.includes("eletroduto")) {
-          score += 100;
-        }
-      }
-
-      if (cat.normName.includes("caixas de luz")) {
-        if (rawText.includes("4x2") || rawText.includes("4x4") || rawText.includes("caixa octogonal") || (rawText.includes("caixa") && rawText.includes("luz"))) {
-          score += 100;
-        }
-      }
-
-      if (cat.normName.includes("conexoes emendas e isolacao")) {
-        if (
-          rawText.includes("fita isolante") ||
-          rawText.includes("conector wago") ||
-          rawText.includes("conector torcao") ||
-          rawText.includes("conector porcelana")
-        ) {
-          score += 100;
-        }
-      }
-
-      // --- PINTURA ---
-      if (cat.normName.includes("ferramentas de aplicacao") || cat.normName.includes("acessorios de pintura")) {
-        if (
-          rawText.includes("lixa") ||
-          rawText.includes("disco de lixa") ||
           rawText.includes("rolo") ||
           rawText.includes("trincha") ||
           rawText.includes("pincel") ||
-          rawText.includes("bandeja")
-        ) {
-          score += 100;
-        }
-      }
-
-      if (cat.normName.includes("tintas em spray")) {
-        if (rawText.includes("spray") || rawText.includes("aerossol")) score += 120;
-      }
-
-      if (cat.normName.includes("tintas imobiliarias")) {
-        if (
-          (rawText.includes("tinta acrilica") ||
-            rawText.includes("tinta latex") ||
-            rawText.includes("tinta pva") ||
-            rawText.includes("rende muito") ||
-            rawText.includes("lavavel")) &&
-          !rawText.includes("spray")
-        ) {
-          score += 100;
-        }
-      }
-
-      if (cat.normName.includes("tintas para madeiras e metais")) {
-        if (rawText.includes("esmalte sintetico") || rawText.includes("verniz") || rawText.includes("stain")) score += 100;
-      }
-
-      if (cat.normName.includes("preparacao de superficie")) {
-        if (
-          rawText.includes("massa corrida") ||
-          rawText.includes("massa acrilica") ||
-          rawText.includes("selador") ||
-          rawText.includes("fundo preparador")
-        ) {
-          score += 100;
-        }
-      }
-
-      if (cat.normName.includes("protecao e organizacao da pintura")) {
-        if (rawText.includes("fita crepe") || rawText.includes("lona plastica") || rawText.includes("salva piso")) score += 100;
-      }
-
-      // --- BÁSICO ---
-      if (cat.normName.includes("cimentos cales e gesso")) {
-        if (rawText.includes("cimento") || rawText.includes("cal ") || rawText.includes("gesso")) score += 100;
-        else score -= 80;
-      }
-
-      if (cat.normName.includes("argamassas e rejuntes")) {
-        if (
-          rawText.includes("argamassa") ||
-          rawText.includes("ac-i") ||
-          rawText.includes("ac-ii") ||
-          rawText.includes("ac-iii") ||
-          rawText.includes("ac1") ||
-          rawText.includes("ac2") ||
-          rawText.includes("ac3") ||
-          rawText.includes("rejunte")
-        ) {
-          score += 100;
-        }
-      }
-
-      if (cat.normName.includes("tijolos blocos e canaletas")) {
-        if (rawText.includes("tijolo") || rawText.includes("bloco") || rawText.includes("canaleta") || rawText.includes("cobogo")) {
-          score += 100;
-        }
-      }
-
-      if (cat.normName.includes("telhas e coberturas")) {
-        if (rawText.includes("telha") || rawText.includes("cumeeira") || rawText.includes("fibrocimento")) score += 100;
-      }
-
-      if (cat.normName.includes("impermeabilizantes")) {
-        if (
-          rawText.includes("impermeabilizante") ||
-          rawText.includes("vedacit") ||
-          rawText.includes("manta asfaltica") ||
-          rawText.includes("manta liquida")
-        ) {
-          score += 100;
-        }
-      }
-
-      // --- FIXAÇÃO E ELEMENTOS DE MONTAGEM ---
-      if (cat.normName.includes("parafusos")) {
-        if (rawText.includes("parafuso") || rawText.includes("chipboard") || rawText.includes("autobrocante")) score += 100;
-      }
-
-      if (cat.normName.includes("pregos")) {
-        if (rawText.includes("prego")) score += 100;
-      }
-
-      if (cat.normName.includes("bucha")) {
-        if (
-          rawText.includes("bucha de nylon") ||
-          rawText.includes("bucha nylon") ||
-          rawText.includes("bucha fixacao") ||
-          (rawText.includes("bucha") && !rawText.includes("reducao"))
-        ) {
-          score += 100;
-        }
-      }
-
-      if (cat.normName.includes("seguranca e acessos")) {
-        if (rawText.includes("fechadura") || rawText.includes("cadeado") || rawText.includes("trinco") || rawText.includes("ferrolho")) {
-          score += 100;
-        } else {
-          score -= 80;
-        }
-      }
-
-      // --- SUPORTES & FERRAGENS ---
-      if (cat.normName.includes("suporte") || cat.normName.includes("dobradica")) {
-        if (
-          rawText.includes("suporte") ||
-          rawText.includes("tv") ||
-          rawText.includes("televisao") ||
-          rawText.includes("lcd") ||
-          rawText.includes("led") ||
-          rawText.includes("mao francesa") ||
-          rawText.includes("prateleira") ||
-          rawText.includes("dobradica")
+          rawText.includes("bandeja") ||
+          rawText.includes("extensor")
         ) {
           score += 150;
         }
       }
 
-      // --- ABRASIVOS E CONSUMÍVEIS DE CORTE ---
-      if (cat.normName.includes("abrasivo") || (cat.normName.includes("consumiveis") && cat.normName.includes("corte")) || cat.normName.includes("demolicao")) {
+      // --- TUBOS E CONEXÕES PVC (HIDRÁULICA) ---
+      if (cat.normName.includes("tubos e conexoes pvc") || cat.slug === "tubos-e-conexoes-pvc") {
+        if (isSuporteTvOuAparelho || isLixaOrAbrasivo) {
+          score -= 300; // NUNCA colocar suporte ou lixa aqui!
+        }
+        if (isPvcConexao || isEsgotoProduct) {
+          score += 180;
+        }
+      }
+
+      // --- TINTAS IMOBILIÁRIAS ---
+      if (cat.normName.includes("tintas imobiliarias") || cat.slug === "tintas-imobiliarias") {
         if (
-          rawText.includes("disco de corte") ||
-          rawText.includes("diamantado") ||
-          rawText.includes("disco flap") ||
-          rawText.includes("disco desbaste") ||
-          rawText.includes("turbo porcelanato") ||
-          rawText.includes("porcelanato") ||
-          rawText.includes("cortag") ||
-          rawText.includes("rebolo") ||
-          rawText.includes("lamina serra") ||
-          rawText.includes("fresa")
+          (rawText.includes("tinta acrilica") ||
+            rawText.includes("tinta latex") ||
+            rawText.includes("tinta pva") ||
+            rawText.includes("tinta piso") ||
+            rawText.includes("tinta emborrachada") ||
+            rawText.includes("rende muito") ||
+            rawText.includes("lavavel")) &&
+          !rawText.includes("spray")
         ) {
+          score += 150;
+        }
+      }
+
+      // --- ESMALTES E VERNIZES ---
+      if (cat.normName.includes("esmaltes e vernizes") || cat.slug === "esmaltes-e-vernizes") {
+        if (rawText.includes("esmalte sintetico") || rawText.includes("verniz") || rawText.includes("stain")) {
+          score += 150;
+        }
+      }
+
+      // --- MASSAS, SELADORES E SOLVENTES ---
+      if (cat.normName.includes("massas seladores e solventes") || cat.slug === "massas-seladores-e-solventes") {
+        if (
+          rawText.includes("massa corrida") ||
+          rawText.includes("massa acrilica") ||
+          rawText.includes("selador") ||
+          rawText.includes("fundo preparador") ||
+          rawText.includes("aguarras") ||
+          rawText.includes("thinner")
+        ) {
+          score += 150;
+        }
+      }
+
+      // --- CIMENTOS E ARGAMASSAS ---
+      if (cat.normName.includes("cimentos e argamassas") || cat.slug === "cimentos-e-argamassas") {
+        if (
+          rawText.includes("cimento") ||
+          rawText.includes("argamassa") ||
+          rawText.includes("ac-i") ||
+          rawText.includes("ac-ii") ||
+          rawText.includes("ac-iii") ||
+          rawText.includes("graute") ||
+          rawText.includes("cal hidratada")
+        ) {
+          score += 150;
+        }
+      }
+
+      // --- REJUNTES E NIVELADORES ---
+      if (cat.normName.includes("rejuntes e niveladores") || cat.slug === "rejuntes-e-niveladores") {
+        if (
+          rawText.includes("rejunte") ||
+          rawText.includes("espacador") ||
+          rawText.includes("cunha") ||
+          rawText.includes("nivelador")
+        ) {
+          score += 150;
+        }
+      }
+
+      // --- FECHADURAS E CADEADOS ---
+      if (cat.normName.includes("fechaduras e cadeados") || cat.slug === "fechaduras-e-cadeados") {
+        if (rawText.includes("fechadura") || rawText.includes("cadeado") || rawText.includes("cilindro")) {
+          score += 150;
+        }
+      }
+
+      // --- PARAFUSOS, PREGOS E BUCHAS ---
+      if (cat.normName.includes("parafusos pregos e buchas") || cat.slug === "parafusos-pregos-e-buchas") {
+        if (
+          rawText.includes("parafuso") ||
+          rawText.includes("prego") ||
+          rawText.includes("bucha de nylon") ||
+          rawText.includes("bucha nylon") ||
+          (rawText.includes("bucha") && !rawText.includes("reducao"))
+        ) {
+          score += 150;
+        }
+      }
+
+      // --- CABOS E FIOS ELÉTRICOS ---
+      if (cat.normName.includes("cabos e fios") || cat.slug === "cabos-e-fios-eletricos") {
+        if (
+          rawText.includes("cabo flexivel") ||
+          rawText.includes("fio flexivel") ||
+          rawText.includes("fio paralelo") ||
+          (rawText.includes("cabo") && (rawText.includes("mm") || rawText.includes("coaxial") || rawText.includes("rede")))
+        ) {
+          score += 150;
+        }
+      }
+
+      // --- DISJUNTORES E QUADROS ---
+      if (cat.normName.includes("disjuntores e quadros") || cat.slug === "disjuntores-e-quadros") {
+        if (rawText.includes("disjuntor") || rawText.includes("quadro de distribuicao") || rawText.includes("dps") || rawText.includes(" dr ")) {
+          score += 150;
+        }
+      }
+
+      // --- LÂMPADAS LED ---
+      if (cat.normName.includes("lampadas led") || cat.slug === "lampadas-led") {
+        if (rawText.includes("lampada") || rawText.includes("bulbo led") || rawText.includes("tubular led")) {
           score += 150;
         }
       }
@@ -665,8 +568,10 @@ DIRETRIZES TÉCNICAS ESTRITAS:
       throw new Error("Nenhuma categoria ativa cadastrada no sistema.");
     }
 
-    // Buscar produtos a classificar
-    const where: any = {};
+    // Buscar produtos a classificar (NUNCA alterar produtos travados pelo usuário)
+    const where: any = {
+      isCategoryLocked: false,
+    };
     if (mode === "unclassified_only") {
       where.OR = [{ categoryId: null }, { categoryId: "" }];
     }

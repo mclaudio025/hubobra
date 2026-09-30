@@ -327,6 +327,15 @@ export class CreateProductDto {
   featured?: boolean;
 
   @ApiProperty({
+    description: "Se a categoria foi fixada/travada manualmente contra reclassificação automática",
+    example: false,
+    required: false,
+  })
+  @IsOptional()
+  @IsBoolean({ message: "isCategoryLocked deve ser um boolean" })
+  isCategoryLocked?: boolean;
+
+  @ApiProperty({
     description: "Imagens do produto",
     type: [ProductImageDto],
     required: false,

@@ -112,6 +112,7 @@ model Product {
   featured         Boolean                  @default(false)
   hasVariations    Boolean                  @default(false)
   isVariation      Boolean                  @default(false)
+  isCategoryLocked Boolean                  @default(false)
   unit             String?                  @default("UN") // UN, M2, KG, M, SACO, CX, MILHEIRO, LITRO
   unitMultiplier   Float?                   @default(1)
   rating           Float?                   @default(0)
@@ -140,6 +141,7 @@ model Product {
   category         Category                 @relation(fields: [categoryId], references: [id])
 
   @@index([categoryId])
+  @@index([isCategoryLocked])
   @@index([active])
   @@index([featured])
   @@index([price])
