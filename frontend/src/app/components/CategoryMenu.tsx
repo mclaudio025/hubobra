@@ -21,31 +21,66 @@ interface Category {
 // Categorias padrão como fallback
 const DEFAULT_CATEGORIES: Category[] = [
   {
-    id: 'default-1',
-    name: 'Materiais de Construção',
-    slug: 'materiais-construcao',
-    description: 'Materiais básicos para construção',
+    id: 'db3d2816-192c-4021-ad4d-8a74c871ba49',
+    name: 'Construção e Alvenaria',
+    slug: 'construcao-e-alvenaria',
+    description: 'Materiais brutos de fundação, elevação, vedação e cobertura para obras.',
     _count: { products: 0 }
   },
   {
-    id: 'default-2',
-    name: 'Ferramentas',
-    slug: 'ferramentas',
-    description: 'Ferramentas para construção e reforma',
+    id: 'afdf6873-1064-49bc-a3c3-add98d9ddf1b',
+    name: 'Hidráulica e Encanamento',
+    slug: 'hidraulica-e-encanamento',
+    description: 'Tubulações, registros, conexões e reservatórios para instalações prediais de água e esgoto.',
     _count: { products: 0 }
   },
   {
-    id: 'default-3',
-    name: 'Elétrica',
-    slug: 'eletrica',
-    description: 'Materiais elétricos',
+    id: '3d18ccd4-f3fe-4123-bf23-3f1a0dd3e96f',
+    name: 'Elétrica e Energia',
+    slug: 'eletrica-e-energia',
+    description: 'Condutores, proteção elétrica, acionamentos e cabeamento para instalações elétricas.',
     _count: { products: 0 }
   },
   {
-    id: 'default-4',
-    name: 'Hidráulica',
-    slug: 'hidraulica',
-    description: 'Materiais hidráulicos',
+    id: '196962dd-cecb-48ee-a653-8b8d92cc8771',
+    name: 'Tintas e Pintura',
+    slug: 'tintas-e-pintura',
+    description: 'Tintas imobiliárias, esmaltes, vernizes e ferramentas de aplicação de pintura.',
+    _count: { products: 0 }
+  },
+  {
+    id: 'b8418491-f74e-4ca0-a678-add8fc3d4039',
+    name: 'Ferramentas, Máquinas e Abrasivos',
+    slug: 'ferramentas-maquinas-e-abrasivos',
+    description: 'Equipamentos profissionais, manuais, corte, desbaste, lixamento e proteção.',
+    _count: { products: 0 }
+  },
+  {
+    id: '107aad0a-b7d5-412c-8a2b-27f406475e75',
+    name: 'Pisos, Revestimentos e Acabamentos',
+    slug: 'pisos-revestimentos-e-acabamentos',
+    description: 'Pisos cerâmicos, porcelanatos, revestimentos de parede, rejuntes e rodapés.',
+    _count: { products: 0 }
+  },
+  {
+    id: '14ad9d59-0f62-45d2-b9f3-b76c466ecce0',
+    name: 'Portas, Janelas e Ferragens',
+    slug: 'portas-janelas-e-ferragens',
+    description: 'Esquadrias, fechaduras residenciais, cadeados, dobradiças e fixadores mecânicos.',
+    _count: { products: 0 }
+  },
+  {
+    id: 'c2f76e94-68f9-40da-a3e0-c199a414c54c',
+    name: 'Iluminação e Lustres',
+    slug: 'iluminacao-e-lustres',
+    description: 'Soluções de iluminação técnica e decorativa para ambientes internos e externos.',
+    _count: { products: 0 }
+  },
+  {
+    id: '57560430-078f-4b84-950f-2481eb16f973',
+    name: 'Utilidades, Casa e Jardim',
+    slug: 'utilidades-casa-e-jardim',
+    description: 'Suportes de TV e eletrodomésticos, mangueiras, escadas, organização e limpeza pós-obra.',
     _count: { products: 0 }
   }
 ];
