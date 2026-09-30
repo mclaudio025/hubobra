@@ -6,19 +6,18 @@ import {
   UserPlus, 
   Search, 
   Filter, 
-  MoreVertical,
-  Edit,
-  Trash2,
-  Shield,
-  ShieldCheck,
-  Mail,
-  Phone,
-  Calendar,
-  Eye,
-  EyeOff,
-  RefreshCw,
+  Edit, 
+  Trash2, 
+  Shield, 
+  ShieldCheck, 
+  Mail, 
+  Phone, 
+  Calendar, 
+  Eye, 
+  EyeOff, 
+  RefreshCw, 
   Truck,
-  Lock
+  AlertCircle
 } from 'lucide-react';
 import { useUsers } from '../../hooks/useApi';
 
@@ -47,6 +46,7 @@ export default function UsuariosPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [stats, setStats] = useState<UserStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -65,11 +65,41 @@ export default function UsuariosPage() {
 
   const loadUsers = async () => {
     setLoading(true);
+    setErrorMsg(null);
     try {
       const response = await getUsers();
-      setUsers(response.users || []);
-    } catch (error) {
+      const rawList = Array.isArray(response)
+        ? response
+        : (response?.users || response?.data || []);
+      
+      const normalizedUsers: User[] = rawList.map((u: any) => ({
+        id: u.id,
+        name: u.name || u.email?.split('@')[0] || 'Usuário',
+        email: u.email || '',
+        phone: u.phone || '',
+        role: ((u.role || 'USER').toUpperCase()) as any,
+        isActive: u.isActive !== undefined ? Boolean(u.isActive) : (u.active !== undefined ? Boolean(u.active) : true),
+        createdAt: u.createdAt || new Date().toISOString(),
+        lastLogin: u.lastLogin || u.updatedAt,
+        avatar: u.avatar,
+      }));
+
+      setUsers(normalizedUsers);
+
+      // Atualizar stats de fallback caso a API de stats demore
+      if (!stats && normalizedUsers.length > 0) {
+        setStats({
+          total: normalizedUsers.length,
+          active: normalizedUsers.filter(u => u.isActive).length,
+          inactive: normalizedUsers.filter(u => !u.isActive).length,
+          admins: normalizedUsers.filter(u => u.role === 'ADMIN').length,
+          managers: normalizedUsers.filter(u => u.role === 'MANAGER').length,
+          users: normalizedUsers.filter(u => u.role === 'USER' || u.role === 'EXPEDITION').length,
+        });
+      }
+    } catch (error: any) {
       console.error('Erro ao carregar usuários:', error);
+      setErrorMsg(error?.message || 'Erro ao carregar usuários. Verifique se está autenticado como Administrador.');
     } finally {
       setLoading(false);
     }
@@ -78,7 +108,9 @@ export default function UsuariosPage() {
   const loadStats = async () => {
     try {
       const response = await getUserStats();
-      setStats(response);
+      if (response && typeof response.total === 'number') {
+        setStats(response);
+      }
     } catch (error) {
       console.error('Erro ao carregar estatísticas:', error);
     }
@@ -164,8 +196,11 @@ export default function UsuariosPage() {
   };
 
   const filteredUsers = users.filter(user => {
-    const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.email.toLowerCase().includes(searchTerm.toLowerCase());
+    const term = searchTerm.toLowerCase().trim();
+    const matchesSearch = !term || 
+                         (user.name && user.name.toLowerCase().includes(term)) ||
+                         (user.email && user.email.toLowerCase().includes(term)) ||
+                         (user.phone && user.phone.includes(term));
     const matchesRole = roleFilter === 'all' || user.role === roleFilter;
     const matchesStatus = statusFilter === 'all' || 
                          (statusFilter === 'active' && user.isActive) ||
@@ -179,7 +214,7 @@ export default function UsuariosPage() {
     currentPage * itemsPerPage
   );
 
-  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
+  const totalPages = Math.max(1, Math.ceil(filteredUsers.length / itemsPerPage));
 
   const getRoleColor = (role: string) => {
     const colors = {
@@ -204,17 +239,6 @@ export default function UsuariosPage() {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="flex items-center space-x-2">
-          <RefreshCw className="h-6 w-6 animate-spin" />
-          <span>Carregando usuários...</span>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
@@ -225,21 +249,41 @@ export default function UsuariosPage() {
         </div>
         <div className="flex space-x-3">
           <button
-            onClick={loadUsers}
-            className="flex items-center space-x-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition"
+            onClick={() => {
+              loadUsers();
+              loadStats();
+            }}
+            disabled={loading}
+            className="flex items-center space-x-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition disabled:opacity-50 cursor-pointer"
           >
-            <RefreshCw className="h-4 w-4" />
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
             <span>Atualizar</span>
           </button>
           <button
             onClick={() => setShowCreateModal(true)}
-            className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+            className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition cursor-pointer shadow-sm"
           >
             <UserPlus className="h-4 w-4" />
             <span>Novo Usuário</span>
           </button>
         </div>
       </div>
+
+      {/* Alerta de Erro */}
+      {errorMsg && (
+        <div className="p-4 bg-red-50 border border-red-200 rounded-xl flex items-center justify-between text-red-700">
+          <div className="flex items-center gap-3">
+            <AlertCircle className="w-5 h-5 flex-shrink-0" />
+            <span className="text-sm font-medium">{errorMsg}</span>
+          </div>
+          <button
+            onClick={loadUsers}
+            className="text-xs font-bold bg-red-600 text-white px-3 py-1.5 rounded-lg hover:bg-red-700 transition"
+          >
+            Tentar novamente
+          </button>
+        </div>
+      )}
 
       {/* Estatísticas */}
       {stats && (
@@ -309,10 +353,10 @@ export default function UsuariosPage() {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <input
                 type="text"
-                placeholder="Buscar por nome ou email..."
+                placeholder="Buscar por nome, email ou telefone..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-sm"
               />
             </div>
           </div>
@@ -322,7 +366,7 @@ export default function UsuariosPage() {
               <select
                 value={roleFilter}
                 onChange={(e) => setRoleFilter(e.target.value)}
-                className="border border-gray-300 rounded px-3 py-2 text-sm"
+                className="border border-gray-300 rounded px-3 py-2 text-sm bg-white"
               >
                 <option value="all">Todas as funções</option>
                 <option value="ADMIN">Admin</option>
@@ -334,7 +378,7 @@ export default function UsuariosPage() {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="border border-gray-300 rounded px-3 py-2 text-sm"
+              className="border border-gray-300 rounded px-3 py-2 text-sm bg-white"
             >
               <option value="all">Todos os status</option>
               <option value="active">Ativo</option>
@@ -345,7 +389,7 @@ export default function UsuariosPage() {
       </div>
 
       {/* Tabela de Usuários */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
@@ -374,96 +418,115 @@ export default function UsuariosPage() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {paginatedUsers.map((user) => (
-                <tr key={user.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <div className="flex-shrink-0 h-10 w-10">
-                        <div className="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center">
-                          <span className="text-sm font-medium text-gray-700">
-                            {user.name.charAt(0).toUpperCase()}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="ml-4">
-                        <div className="text-sm font-medium text-gray-900">{user.name}</div>
-                        <div className="text-sm text-gray-500">ID: {user.id.slice(-8)}</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900 flex items-center">
-                      <Mail className="h-4 w-4 mr-1 text-gray-400" />
-                      {user.email}
-                    </div>
-                    {user.phone && (
-                      <div className="text-sm text-gray-500 flex items-center mt-1">
-                        <Phone className="h-4 w-4 mr-1 text-gray-400" />
-                        {user.phone}
-                      </div>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getRoleColor(user.role)}`}>
-                      {getRoleIcon(user.role)}
-                      <span className="ml-1">{user.role}</span>
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                      user.isActive 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-red-100 text-red-800'
-                    }`}>
-                      {user.isActive ? 'Ativo' : 'Inativo'}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    <div className="flex items-center">
-                      <Calendar className="h-4 w-4 mr-1 text-gray-400" />
-                      {new Date(user.createdAt).toLocaleDateString('pt-BR')}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {user.lastLogin 
-                      ? new Date(user.lastLogin).toLocaleDateString('pt-BR')
-                      : 'Nunca'
-                    }
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <div className="flex items-center justify-end space-x-2">
-                      <button
-                        onClick={() => {
-                          setSelectedUser(user);
-                          setShowEditModal(true);
-                        }}
-                        className="text-blue-600 hover:text-blue-900 p-1 rounded"
-                        title="Editar"
-                      >
-                        <Edit className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => handleToggleUserStatus(user.id, user.isActive)}
-                        className={`p-1 rounded ${
-                          user.isActive 
-                            ? 'text-red-600 hover:text-red-900' 
-                            : 'text-green-600 hover:text-green-900'
-                        }`}
-                        title={user.isActive ? 'Desativar' : 'Ativar'}
-                      >
-                        {user.isActive ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </button>
-                      <button
-                        onClick={() => handleDeleteUser(user.id)}
-                        className="text-red-600 hover:text-red-900 p-1 rounded"
-                        title="Excluir"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
+              {loading ? (
+                <tr>
+                  <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
+                    <div className="flex items-center justify-center space-x-2">
+                      <RefreshCw className="h-5 w-5 animate-spin text-blue-600" />
+                      <span>Carregando usuários...</span>
                     </div>
                   </td>
                 </tr>
-              ))}
+              ) : paginatedUsers.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
+                    <Users className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                    <p className="text-sm font-medium">Nenhum usuário encontrado.</p>
+                    <p className="text-xs text-gray-400 mt-1">Tente ajustar os filtros de busca ou cadastre um novo usuário.</p>
+                  </td>
+                </tr>
+              ) : (
+                paginatedUsers.map((user) => (
+                  <tr key={user.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <div className="flex-shrink-0 h-10 w-10">
+                          <div className="h-10 w-10 rounded-full bg-blue-100 border border-blue-200 flex items-center justify-center">
+                            <span className="text-sm font-bold text-blue-700">
+                              {(user.name || user.email || 'U').charAt(0).toUpperCase()}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="ml-4">
+                          <div className="text-sm font-bold text-gray-900">{user.name}</div>
+                          <div className="text-xs text-gray-500">ID: {user.id.slice(-8)}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900 flex items-center">
+                        <Mail className="h-4 w-4 mr-1.5 text-gray-400" />
+                        {user.email}
+                      </div>
+                      {user.phone && (
+                        <div className="text-xs text-gray-500 flex items-center mt-1">
+                          <Phone className="h-3.5 w-3.5 mr-1.5 text-gray-400" />
+                          {user.phone}
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${getRoleColor(user.role)}`}>
+                        {getRoleIcon(user.role)}
+                        <span className="ml-1">{user.role}</span>
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex px-2 py-1 text-xs font-bold rounded-full ${
+                        user.isActive 
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-red-100 text-red-800'
+                      }`}>
+                        {user.isActive ? 'Ativo' : 'Inativo'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <div className="flex items-center">
+                        <Calendar className="h-4 w-4 mr-1 text-gray-400" />
+                        {new Date(user.createdAt).toLocaleDateString('pt-BR')}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {user.lastLogin 
+                        ? new Date(user.lastLogin).toLocaleDateString('pt-BR')
+                        : 'Nunca'
+                      }
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <div className="flex items-center justify-end space-x-2">
+                        <button
+                          onClick={() => {
+                            setSelectedUser(user);
+                            setShowEditModal(true);
+                          }}
+                          className="text-blue-600 hover:text-blue-900 p-1.5 rounded hover:bg-blue-50 transition cursor-pointer"
+                          title="Editar"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => handleToggleUserStatus(user.id, user.isActive)}
+                          className={`p-1.5 rounded transition cursor-pointer ${
+                            user.isActive 
+                              ? 'text-amber-600 hover:text-amber-900 hover:bg-amber-50' 
+                              : 'text-green-600 hover:text-green-900 hover:bg-green-50'
+                          }`}
+                          title={user.isActive ? 'Desativar' : 'Ativar'}
+                        >
+                          {user.isActive ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </button>
+                        <button
+                          onClick={() => handleDeleteUser(user.id)}
+                          className="text-red-600 hover:text-red-900 p-1.5 rounded hover:bg-red-50 transition cursor-pointer"
+                          title="Excluir"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
@@ -502,7 +565,7 @@ export default function UsuariosPage() {
                   <button
                     onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                     disabled={currentPage === 1}
-                    className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
+                    className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 cursor-pointer"
                   >
                     Anterior
                   </button>
@@ -510,7 +573,7 @@ export default function UsuariosPage() {
                     <button
                       key={page}
                       onClick={() => setCurrentPage(page)}
-                      className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
+                      className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium cursor-pointer ${
                         page === currentPage
                           ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
                           : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
@@ -522,7 +585,7 @@ export default function UsuariosPage() {
                   <button
                     onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
                     disabled={currentPage === totalPages}
-                    className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
+                    className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 cursor-pointer"
                   >
                     Próximo
                   </button>
@@ -583,7 +646,7 @@ function UserModal({ isOpen, onClose, onSubmit, user, title }: UserModalProps) {
     e.preventDefault();
     const dataToSend: any = { ...formData };
     if (!dataToSend.password && user) {
-      delete dataToSend.password; // Não sobrescreve se estiver editando e deixou em branco
+      delete dataToSend.password;
     }
     onSubmit(dataToSend);
   };
@@ -638,7 +701,7 @@ function UserModal({ isOpen, onClose, onSubmit, user, title }: UserModalProps) {
             </div>
             {!user && (
               <p className="text-[11px] text-gray-500 mt-1">
-                Esta senha será usada pelo operador para entrar no app de expedição.
+                Esta senha será usada pelo operador para entrar no app de expedição ou painel.
               </p>
             )}
           </div>
