@@ -31,6 +31,7 @@ model Store {
   categories    Category[]
   products      Product[]
   orders        Order[]
+  quotes        Quote[]
   banners       Banner[]
   settings      Setting[]
   conversations Conversation[]
@@ -56,6 +57,7 @@ model User {
   cart          CartItem[]
   conversations Conversation[]
   orders        Order[]
+  quotes        Quote[]
   priceHistory  PriceHistory[]
   reviews       ProductReview[]
   securityLogs  SecurityLog[]
@@ -128,6 +130,7 @@ model Product {
 
   cartItems        CartItem[]
   orderItems       OrderItem[]
+  quoteItems       QuoteItem[]
   priceHistory     PriceHistory[]
   attributes       ProductAttribute[]
   images           ProductImage[]
@@ -218,6 +221,7 @@ model Order {
   user            User             @relation(fields: [userId], references: [id])
   payment         Payment?
   shippingAddress ShippingAddress?
+  quote           Quote?
 
   @@index([storeId])
   @@map("orders")
@@ -517,3 +521,132 @@ model PriceHistory {
   @@index([createdAt])
   @@map("price_history")
 }
+
+model Quote {
+  id               String      @id @default(uuid())
+  quoteNumber      String      @unique // Ex: ORC-2026-0001
+  status           String      @default("OPEN") // OPEN, CONVERTED, EXPIRED, CANCELLED
+  customerName     String
+  customerPhone    String
+  customerEmail    String?
+  subtotal         Float
+  discount         Float       @default(0)
+  shipping         Float       @default(0)
+  total            Float
+  validUntil       DateTime    // 7 dias de validade
+  pdfUrl           String?
+  notes            String?
+  
+  userId           String?
+  user             User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+  
+  storeId          String?
+  store            Store?      @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  
+  convertedOrderId String?     @unique
+  convertedOrder   Order?      @relation(fields: [convertedOrderId], references: [id], onDelete: SetNull)
+  
+  items            QuoteItem[]
+  
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  @@index([customerPhone])
+  @@index([status])
+  @@index([userId])
+  @@index([storeId])
+  @@index([validUntil])
+  @@map("quotes")
+}
+
+model QuoteItem {
+  id          String   @id @default(uuid())
+  quoteId     String
+  productId   String?
+  name        String
+  brand       String?
+  unit        String   @default("UN") // UN, SC, M, M2, CX, PCT
+  quantity    Int      @default(1)
+  unitPrice   Float
+  total       Float
+  
+  quote       Quote    @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  product     Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  @@index([quoteId])
+  @@index([productId])
+  @@map("quote_items")
+}
+
+model AiConstructionTerm {
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  slangTerm        String   @unique @map("slang_term") @db.VarChar(255)
+  officialTerm     String   @map("official_term") @db.VarChar(255)
+  category         String   @db.VarChar(100)
+  explanation      String?  @db.Text
+  targetSku        String?  @map("target_sku") @db.VarChar(100)
+  usageCount       Int?     @default(0) @map("usage_count")
+  confidenceWeight Float?   @default(1.0) @map("confidence_weight")
+  createdAt        DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime? @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("ai_construction_terms")
+}
+
+model AiRegionalExpression {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  expression    String   @unique @db.VarChar(255)
+  usageContext  String   @map("usage_context") @db.VarChar(100)
+  toneImpact    String   @map("tone_impact") @db.Text
+  examplePhrase String   @map("example_phrase") @db.Text
+  isActive      Boolean? @default(true) @map("is_active")
+  createdAt     DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime? @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("ai_regional_expressions")
+}
+
+model AiSalesLearning {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  topic       String   @db.VarChar(255)
+  ruleContent String   @map("rule_content") @db.Text
+  source      String?  @default("balcao_expert") @db.VarChar(100)
+  isActive    Boolean? @default(true) @map("is_active")
+  createdAt   DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime? @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("ai_sales_learnings")
+}
+
+model AiTrainer {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  phone     String   @unique @db.VarChar(30)
+  name      String   @db.VarChar(255)
+  role      String   @default("trainer") @db.VarChar(50)
+  isActive  Boolean? @default(true) @map("is_active")
+  notes     String?  @db.Text
+  createdAt DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime? @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("ai_trainers")
+}
+
+model CustomerAiProfile {
+  phone                    String   @id @db.VarChar(30)
+  name                     String?  @db.VarChar(255)
+  clientType               String?  @default("proprietario") @map("client_type") @db.VarChar(50)
+  deliveryNeighborhood     String?  @map("delivery_neighborhood") @db.VarChar(255)
+  preferredPayment         String?  @default("PIX") @map("preferred_payment") @db.VarChar(50)
+  currentConstructionStage String?  @default("alvenaria") @map("current_construction_stage") @db.VarChar(100)
+  lastPurchasedProducts    Json?    @default("[]") @map("last_purchased_products")
+  aiNotes                  String?  @default("") @map("ai_notes") @db.Text
+  totalOrders              Int?     @default(0) @map("total_orders")
+  totalSpent               Decimal? @default(0.00) @map("total_spent") @db.Decimal(12, 2)
+  lastInteractionAt        DateTime? @default(now()) @map("last_interaction_at") @db.Timestamptz(6)
+  createdAt                DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                DateTime? @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("customer_ai_profiles")
+}
+
+

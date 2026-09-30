@@ -232,6 +232,15 @@ export default function MobileMenu() {
                       <PackageCheck className="h-4 w-4 text-orange-500" />
                       <span>Meus Pedidos</span>
                     </Link>
+
+                    <Link
+                      href="/orcamentos"
+                      onClick={closeMenu}
+                      className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-sm font-medium"
+                    >
+                      <FileText className="h-4 w-4 text-orange-500" />
+                      <span>Meus Orçamentos (Lia)</span>
+                    </Link>
                   </div>
 
                   {/* WhatsApp Quick Quote CTA */}

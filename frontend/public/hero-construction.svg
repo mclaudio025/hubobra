@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 400">
+  <rect width="800" height="400" fill="#E0F2F1" />
+  <path d="M100 300 L100 100 L300 100 L300 300 Z" fill="#4CAF50" />
+  <path d="M150 50 L200 10 L250 50 Z" fill="#66BB6A" />
+  <circle cx="400" cy="200" r="50" fill="#81C784" />
+  <text x="100" y="350" font-size="24" fill="#2E7D32">Construção Sustentável</text>
+</svg>

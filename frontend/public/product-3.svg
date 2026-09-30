@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 200">
+  <rect width="300" height="200" fill="#F1F8E9" />
+  <path d="M50 150 Q150 50 250 150" fill="#8BC34A" />
+  <circle cx="150" cy="100" r="40" fill="#689F38" />
+  <text x="60" y="170" font-size="18" fill="#33691E">Inovação Sustentável</text>
+</svg>

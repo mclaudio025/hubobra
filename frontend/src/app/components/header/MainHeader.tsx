@@ -323,6 +323,7 @@ export default function MainHeader() {
                             {[
                               { href: '/perfil', label: 'Meu Perfil', icon: User },
                               { href: '/pedidos', label: 'Meus Pedidos', icon: ShoppingCart },
+                              { href: '/orcamentos', label: 'Meus Orçamentos', icon: Box },
                               { href: '/favoritos', label: 'Lista de Favoritos', icon: Heart },
                               { href: '/dashboard', label: 'Dashboard', icon: Settings }
                             ].map((item, index) => (

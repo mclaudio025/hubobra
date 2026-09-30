@@ -99,6 +99,11 @@ const menuItems: MenuItem[] = [
     badgeColor: 'bg-rose-500'
   },
   {
+    title: 'Orçamentos (Lia)',
+    href: '/admin/orcamentos',
+    icon: <FileText className="h-5 w-5" />
+  },
+  {
     title: 'Pagamentos',
     href: '/admin/pagamentos',
     icon: <CreditCard className="h-5 w-5" />
