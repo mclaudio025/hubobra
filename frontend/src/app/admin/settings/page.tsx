@@ -130,12 +130,20 @@ export default function AdminSettingsPage() {
   };
 
   const handleSaveModalSection = async (sectionData: Partial<HomeSection>) => {
-    if (editingSection) {
-      await updateSection(editingSection.id, sectionData);
-    } else {
-      await addSection(sectionData);
+    try {
+      if (editingSection) {
+        await updateSection(editingSection.id, sectionData);
+      } else {
+        await addSection(sectionData);
+      }
+      await fetchAdminSections();
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
+    } catch (err: any) {
+      console.error('Erro ao salvar camada:', err);
+      alert('Erro ao salvar camada: ' + (err?.message || 'Tente novamente.'));
+      throw err;
     }
-    await fetchAdminSections();
   };
 
   const handleDeleteSection = async (id: string, title?: string) => {

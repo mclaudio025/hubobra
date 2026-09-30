@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-
-const API_BASE_URL = process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8081';
+import { fetchBackend } from '@/lib/backend-client';
 
 export async function GET(request: NextRequest) {
   try {
-    const response = await fetch(`${API_BASE_URL}/components/config-public`, {
+    const response = await fetchBackend('/components/config-public', {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -18,10 +17,10 @@ export async function GET(request: NextRequest) {
 
     const data = await response.json();
     return NextResponse.json(data);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Erro na API pública de configuração de componentes:', error);
     return NextResponse.json(
-      { error: 'Erro interno do servidor' },
+      { error: error?.message || 'Erro interno do servidor' },
       { status: 500 }
     );
   }

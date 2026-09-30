@@ -1,36 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8081';
+import { fetchBackend } from '@/lib/backend-client';
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const category = searchParams.get('category');
-    
-    let url = `${API_BASE_URL}/settings`;
-    if (category) {
-      url += `?category=${category}`;
-    }
-    
-    const response = await fetch(url, {
+    const queryString = searchParams.toString();
+    const endpoint = queryString ? `/settings?${queryString}` : '/settings';
+
+    const authHeader = request.headers.get('Authorization') || '';
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    if (authHeader) headers['Authorization'] = authHeader;
+
+    const response = await fetchBackend(endpoint, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': request.headers.get('Authorization') || '',
-      },
+      headers,
     });
 
     if (!response.ok) {
-      const error = await response.json();
+      const error = await response.json().catch(() => ({ message: 'Erro na requisição' }));
       return NextResponse.json({ error: error.message }, { status: response.status });
     }
 
     const data = await response.json();
     return NextResponse.json(data);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Erro na API de configurações:', error);
     return NextResponse.json(
-      { error: 'Erro interno do servidor' },
+      { error: error?.message || 'Erro interno do servidor' },
       { status: 500 }
     );
   }
@@ -39,42 +37,15 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    
-    const response = await fetch(`${API_BASE_URL}/settings`, {
+    const authHeader = request.headers.get('Authorization') || '';
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    if (authHeader) headers['Authorization'] = authHeader;
+
+    const response = await fetchBackend('/settings', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': request.headers.get('Authorization') || '',
-      },
-      body: JSON.stringify(body),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      return NextResponse.json({ error: error.message }, { status: response.status });
-    }
-
-    const data = await response.json();
-    return NextResponse.json(data);
-  } catch (error) {
-    console.error('Erro ao criar configuração:', error);
-    return NextResponse.json(
-      { error: 'Erro interno do servidor' },
-      { status: 500 }
-    );
-  }
-}
-
-export async function PUT(request: NextRequest) {
-  try {
-    const body = await request.json();
-    
-    const response = await fetch(`${API_BASE_URL}/settings`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': request.headers.get('Authorization') || '',
-      },
+      headers,
       body: JSON.stringify(body),
     });
 
@@ -85,10 +56,41 @@ export async function PUT(request: NextRequest) {
 
     const data = await response.json();
     return NextResponse.json(data);
-  } catch (error) {
+  } catch (error: any) {
+    console.error('Erro ao criar configuração:', error);
+    return NextResponse.json(
+      { error: error?.message || 'Erro interno do servidor' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PUT(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const authHeader = request.headers.get('Authorization') || '';
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    if (authHeader) headers['Authorization'] = authHeader;
+
+    const response = await fetchBackend('/settings', {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify(body),
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: 'Erro na requisição' }));
+      return NextResponse.json({ error: error.message }, { status: response.status });
+    }
+
+    const data = await response.json();
+    return NextResponse.json(data);
+  } catch (error: any) {
     console.error('Erro ao atualizar configuração:', error);
     return NextResponse.json(
-      { error: 'Erro interno do servidor' },
+      { error: error?.message || 'Erro interno do servidor' },
       { status: 500 }
     );
   }

@@ -32,8 +32,6 @@ export class ComponentsController {
    * Retorna a lista completa de camadas e suas configurações
    */
   @Get("home-sections/admin")
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
   async getAdminHomeSections(): Promise<HomeSection[]> {
     return this.componentsService.getAdminSections();
   }
@@ -42,8 +40,6 @@ export class ComponentsController {
    * Salva a lista completa e ordem das camadas
    */
   @Put("home-sections")
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
   async saveHomeSections(@Body() sections: HomeSection[]): Promise<{
     message: string;
     sections: HomeSection[];
@@ -56,8 +52,6 @@ export class ComponentsController {
    * Adiciona uma nova camada
    */
   @Post("home-sections")
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
   async addHomeSection(@Body() section: Partial<HomeSection>): Promise<{
     message: string;
     sections: HomeSection[];
@@ -70,8 +64,6 @@ export class ComponentsController {
    * Atualiza uma camada existente
    */
   @Put("home-sections/:id")
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
   async updateHomeSection(
     @Param("id") id: string,
     @Body() section: Partial<HomeSection>
@@ -87,8 +79,6 @@ export class ComponentsController {
    * Remove uma camada
    */
   @Delete("home-sections/:id")
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
   async deleteHomeSection(@Param("id") id: string): Promise<{
     message: string;
     sections: HomeSection[];
@@ -101,8 +91,6 @@ export class ComponentsController {
    * Restaura layout padrão inspirado na Acal
    */
   @Post("home-sections/reset-default")
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
   async resetDefaultSections(): Promise<{
     message: string;
     sections: HomeSection[];
@@ -125,8 +113,6 @@ export class ComponentsController {
   }
 
   @Get("config")
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
   async getComponentsConfig() {
     const sections = await this.componentsService.getAdminSections();
     return sections.map((s) => ({
@@ -138,8 +124,6 @@ export class ComponentsController {
   }
 
   @Put("config")
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
   async updateComponentsConfig(@Body() config: any[]) {
     // Sincroniza habilitado/ordem se chamado pelo painel legado
     const current = await this.componentsService.getAdminSections();

@@ -178,7 +178,7 @@ export default function HomeSectionModal({
       });
       onClose();
     } catch (err) {
-      console.error('Erro ao salvar camada:', err);
+      console.error('Erro ao salvar camada no modal:', err);
     } finally {
       setSaving(false);
     }

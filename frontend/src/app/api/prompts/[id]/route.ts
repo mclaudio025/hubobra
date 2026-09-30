@@ -1,34 +1,33 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { fetchBackend } from '@/lib/backend-client';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-
-export async function PUT(
+export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const body = await request.json();
-    
-    const response = await fetch(`${API_BASE_URL}/prompts/${params.id}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': request.headers.get('Authorization') || '',
-      },
-      body: JSON.stringify(body),
+    const authHeader = request.headers.get('Authorization') || '';
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    if (authHeader) headers['Authorization'] = authHeader;
+
+    const response = await fetchBackend(`/prompts/${params.id}`, {
+      method: 'GET',
+      headers,
     });
 
     if (!response.ok) {
-      const error = await response.json();
+      const error = await response.json().catch(() => ({ message: 'Erro na requisição' }));
       return NextResponse.json({ error: error.message }, { status: response.status });
     }
 
     const data = await response.json();
     return NextResponse.json(data);
-  } catch (error) {
-    console.error('Erro ao atualizar prompt:', error);
+  } catch (error: any) {
+    console.error('Erro ao buscar prompt:', error);
     return NextResponse.json(
-      { error: 'Erro interno do servidor' },
+      { error: error?.message || 'Erro interno do servidor' },
       { status: 500 }
     );
   }

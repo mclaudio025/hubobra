@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-
-const API_BASE_URL = process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8081';
+import { fetchBackend } from '@/lib/backend-client';
 
 export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
   try {
@@ -8,12 +7,14 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     const body = await request.json();
     const authHeader = request.headers.get('Authorization') || '';
 
-    const response = await fetch(`${API_BASE_URL}/components/home-sections/${id}`, {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    if (authHeader) headers['Authorization'] = authHeader;
+
+    const response = await fetchBackend(`/components/home-sections/${id}`, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': authHeader,
-      },
+      headers,
       body: JSON.stringify(body),
     });
 
@@ -24,9 +25,9 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 
     const data = await response.json();
     return NextResponse.json(data);
-  } catch (error) {
+  } catch (error: any) {
     console.error(`Erro na rota PUT /api/components/home-sections/${params.id}:`, error);
-    return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 });
+    return NextResponse.json({ error: error?.message || 'Erro interno do servidor' }, { status: 500 });
   }
 }
 
@@ -35,12 +36,14 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     const { id } = params;
     const authHeader = request.headers.get('Authorization') || '';
 
-    const response = await fetch(`${API_BASE_URL}/components/home-sections/${id}`, {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    if (authHeader) headers['Authorization'] = authHeader;
+
+    const response = await fetchBackend(`/components/home-sections/${id}`, {
       method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': authHeader,
-      },
+      headers,
     });
 
     if (!response.ok) {
@@ -50,8 +53,8 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
 
     const data = await response.json();
     return NextResponse.json(data);
-  } catch (error) {
+  } catch (error: any) {
     console.error(`Erro na rota DELETE /api/components/home-sections/${params.id}:`, error);
-    return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 });
+    return NextResponse.json({ error: error?.message || 'Erro interno do servidor' }, { status: 500 });
   }
 }

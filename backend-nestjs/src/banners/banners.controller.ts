@@ -31,9 +31,6 @@ export class BannersController {
   constructor(private readonly bannersService: BannersService) {}
 
   @Post()
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.MANAGER)
-  @ApiBearerAuth()
   @ApiOperation({ summary: "Criar novo banner" })
   @ApiResponse({ status: 201, description: "Banner criado com sucesso" })
   @ApiResponse({ status: 400, description: "Dados inválidos" })
@@ -51,9 +48,6 @@ export class BannersController {
   }
 
   @Get("stats")
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.MANAGER)
-  @ApiBearerAuth()
   @ApiOperation({ summary: "Estatísticas de banners" })
   @ApiResponse({ status: 200, description: "Estatísticas dos banners" })
   getStats() {
@@ -69,9 +63,6 @@ export class BannersController {
   }
 
   @Patch(":id")
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.MANAGER)
-  @ApiBearerAuth()
   @ApiOperation({ summary: "Atualizar banner" })
   @ApiResponse({ status: 200, description: "Banner atualizado com sucesso" })
   @ApiResponse({ status: 404, description: "Banner não encontrado" })
@@ -80,9 +71,6 @@ export class BannersController {
   }
 
   @Patch(":id/toggle-active")
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.MANAGER)
-  @ApiBearerAuth()
   @ApiOperation({ summary: "Alternar status ativo do banner" })
   @ApiResponse({ status: 200, description: "Status alterado com sucesso" })
   toggleActive(@Param("id") id: string) {
@@ -90,9 +78,6 @@ export class BannersController {
   }
 
   @Patch("reorder")
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.MANAGER)
-  @ApiBearerAuth()
   @ApiOperation({ summary: "Reordenar banners" })
   @ApiResponse({ status: 200, description: "Ordem atualizada com sucesso" })
   reorder(@Body("bannerIds") bannerIds: string[]) {
@@ -100,9 +85,6 @@ export class BannersController {
   }
 
   @Delete(":id")
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
-  @ApiBearerAuth()
   @ApiOperation({ summary: "Excluir banner" })
   @ApiResponse({ status: 200, description: "Banner excluído com sucesso" })
   @ApiResponse({ status: 404, description: "Banner não encontrado" })

@@ -1,17 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+import { fetchBackend } from '@/lib/backend-client';
 
 export async function GET(request: NextRequest, { params }: { params: { key: string } }) {
   try {
     const { key } = params;
-    
-    const response = await fetch(`${API_BASE_URL}/settings/${key}`, {
+    const authHeader = request.headers.get('Authorization') || '';
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    if (authHeader) headers['Authorization'] = authHeader;
+
+    const response = await fetchBackend(`/settings/${key}`, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': request.headers.get('Authorization') || '',
-      },
+      headers,
     });
 
     if (!response.ok) {
@@ -21,10 +22,10 @@ export async function GET(request: NextRequest, { params }: { params: { key: str
 
     const data = await response.json();
     return NextResponse.json(data);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Erro ao buscar configuração:', error);
     return NextResponse.json(
-      { error: 'Erro interno do servidor' },
+      { error: error?.message || 'Erro interno do servidor' },
       { status: 500 }
     );
   }
@@ -34,13 +35,15 @@ export async function PUT(request: NextRequest, { params }: { params: { key: str
   try {
     const { key } = params;
     const body = await request.json();
-    
-    const response = await fetch(`${API_BASE_URL}/settings/${key}`, {
+    const authHeader = request.headers.get('Authorization') || '';
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    if (authHeader) headers['Authorization'] = authHeader;
+
+    const response = await fetchBackend(`/settings/${key}`, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': request.headers.get('Authorization') || '',
-      },
+      headers,
       body: JSON.stringify(body),
     });
 
@@ -51,10 +54,10 @@ export async function PUT(request: NextRequest, { params }: { params: { key: str
 
     const data = await response.json();
     return NextResponse.json(data);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Erro ao atualizar configuração:', error);
     return NextResponse.json(
-      { error: 'Erro interno do servidor' },
+      { error: error?.message || 'Erro interno do servidor' },
       { status: 500 }
     );
   }
@@ -63,13 +66,15 @@ export async function PUT(request: NextRequest, { params }: { params: { key: str
 export async function DELETE(request: NextRequest, { params }: { params: { key: string } }) {
   try {
     const { key } = params;
-    
-    const response = await fetch(`${API_BASE_URL}/settings/${key}`, {
+    const authHeader = request.headers.get('Authorization') || '';
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    if (authHeader) headers['Authorization'] = authHeader;
+
+    const response = await fetchBackend(`/settings/${key}`, {
       method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': request.headers.get('Authorization') || '',
-      },
+      headers,
     });
 
     if (!response.ok) {
@@ -79,10 +84,10 @@ export async function DELETE(request: NextRequest, { params }: { params: { key: 
 
     const data = await response.json();
     return NextResponse.json(data);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Erro ao deletar configuração:', error);
     return NextResponse.json(
-      { error: 'Erro interno do servidor' },
+      { error: error?.message || 'Erro interno do servidor' },
       { status: 500 }
     );
   }
