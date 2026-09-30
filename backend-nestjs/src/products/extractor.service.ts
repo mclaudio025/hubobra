@@ -2,6 +2,7 @@ import { Injectable, Logger } from "@nestjs/common";
 import axios from "axios";
 import { Prisma } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
+import { CategoryClassifierService } from "../categories/category-classifier.service";
 
 export interface ExtractedProduct {
   store: string;
@@ -52,7 +53,10 @@ export class ExtractorService {
     },
   });
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly categoryClassifier: CategoryClassifierService
+  ) {}
 
   /**
    * Decodifica entidades HTML básicas
@@ -538,6 +542,9 @@ export class ExtractorService {
       });
     }
 
+    // Carrega base de conhecimento de categorias para classificação precisa
+    const knowledgeBase = await this.categoryClassifier.buildKnowledgeBase().catch(() => []);
+
     let importedCount = 0;
     let skippedCount = 0;
     const createdProducts: any[] = [];
@@ -565,38 +572,20 @@ export class ExtractorService {
           continue;
         }
 
-        // Categorização inteligente
+        // Categorização inteligente usando o CategoryClassifierService
         let categoryId = defaultCategory.id;
-        const lowerName = (item.name + " " + (item.categoryName || "")).toLowerCase();
-
-        const orConditions: Prisma.CategoryWhereInput[] = [
-          { name: { contains: lowerName.split(" ")[0], mode: "insensitive" } },
-        ];
-
-        if (lowerName.includes("tinta") || lowerName.includes("verniz") || lowerName.includes("esmalte sint")) {
-          orConditions.push({ name: { contains: "Tinta", mode: "insensitive" } });
-        }
-        if (lowerName.includes("piso") || lowerName.includes("porcelanato") || lowerName.includes("revestimento")) {
-          orConditions.push({ name: { contains: "Piso", mode: "insensitive" } });
-        }
-        if (lowerName.includes("cimento") || lowerName.includes("argamassa")) {
-          orConditions.push({ name: { contains: "Cimento", mode: "insensitive" } });
-        }
-        if (lowerName.includes("tubo") || lowerName.includes("conexão") || lowerName.includes("tigre") || lowerName.includes("torneira") || lowerName.includes("caixa")) {
-          orConditions.push({ name: { contains: "Hidráulica", mode: "insensitive" } });
-        }
-        if (lowerName.includes("fio") || lowerName.includes("cabo") || lowerName.includes("disjuntor") || lowerName.includes("tomada") || lowerName.includes("interruptor") || lowerName.includes("luz")) {
-          orConditions.push({ name: { contains: "Elétrica", mode: "insensitive" } });
-        }
-
-        const matchedCategory = await this.prisma.category.findFirst({
-          where: {
-            OR: orConditions,
-          },
-        });
-
-        if (matchedCategory) {
-          categoryId = matchedCategory.id;
+        if (knowledgeBase && knowledgeBase.length > 0) {
+          const classification = this.categoryClassifier.classifyWithRules(
+            {
+              name: item.name,
+              brand: item.brand,
+              description: `${item.name} ${item.categoryName || ""} ${item.description || ""}`,
+            },
+            knowledgeBase
+          );
+          if (classification && classification.categoryId) {
+            categoryId = classification.categoryId;
+          }
         }
 
         const price = Number(item.price) || 49.9;
@@ -610,6 +599,7 @@ export class ExtractorService {
             : Math.round(price * 0.7 * 100) / 100;
 
         let unit = item.unit || "UN";
+        const lowerName = item.name.toLowerCase();
         if (lowerName.includes("piso") || lowerName.includes("porcelanato") || lowerName.includes("revestimento")) {
           unit = "M2";
         } else if (lowerName.includes("cimento") || lowerName.includes("argamassa")) {
@@ -666,3 +656,4 @@ export class ExtractorService {
     };
   }
 }
+

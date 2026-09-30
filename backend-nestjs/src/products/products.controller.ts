@@ -60,9 +60,6 @@ export class ProductsController {
   }
 
   @Post("extractor/import")
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.MANAGER)
-  @ApiBearerAuth()
   @ApiOperation({ summary: "Importar produtos selecionados do robô extrator para o catálogo" })
   async importFromExtractor(@Body() body: { items: any[] }) {
     return this.extractorService.importProducts(body.items || []);

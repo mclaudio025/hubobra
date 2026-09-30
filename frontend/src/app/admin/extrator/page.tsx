@@ -155,21 +155,16 @@ export default function ExtractorAdminPage() {
       };
       if (token) headers['Authorization'] = `Bearer ${token}`;
 
-      let res = await fetch(`${API_URL}/products/extractor/import`, {
+      const res = await fetch('/api/products/extractor/import', {
         method: 'POST',
         headers,
         body: JSON.stringify(payload),
       });
 
       if (!res.ok) {
-        res = await fetch('/api/products/extractor/import', {
-          method: 'POST',
-          headers,
-          body: JSON.stringify(payload),
-        });
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.message || errJson.error || 'Falha ao importar produto');
       }
-
-      if (!res.ok) throw new Error('Falha ao importar produto');
       const data = await res.json();
 
       if (data.imported > 0) {
@@ -234,21 +229,16 @@ export default function ExtractorAdminPage() {
       };
       if (token) headers['Authorization'] = `Bearer ${token}`;
 
-      let res = await fetch(`${API_URL}/products/extractor/import`, {
+      const res = await fetch('/api/products/extractor/import', {
         method: 'POST',
         headers,
         body: JSON.stringify(payload),
       });
 
       if (!res.ok) {
-        res = await fetch('/api/products/extractor/import', {
-          method: 'POST',
-          headers,
-          body: JSON.stringify(payload),
-        });
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.message || errJson.error || 'Falha na importação em massa');
       }
-
-      if (!res.ok) throw new Error('Falha na importação em massa');
       const data = await res.json();
 
       const newImported = new Set(importedIds);

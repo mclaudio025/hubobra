@@ -8,9 +8,10 @@ import { UploadModule } from "../upload/upload.module";
 
 import { SpecsEnrichmentService } from "./specs-enrichment.service";
 import { ExtractorService } from "./extractor.service";
+import { CategoriesModule } from "../categories/categories.module";
 
 @Module({
-  imports: [CacheModule, UploadModule],
+  imports: [CacheModule, UploadModule, CategoriesModule],
   providers: [
     ProductsService,
     ImportService,
