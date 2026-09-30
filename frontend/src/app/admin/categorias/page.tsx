@@ -137,13 +137,13 @@ export default function AdminCategorias() {
       addToast({
         type: 'success',
         title: 'Categoria excluída',
-        message: 'Categoria excluída com sucesso'
+        message: `Categoria "${category.name}" excluída com sucesso`
       });
-    } catch (error) {
+    } catch (error: any) {
       addToast({
         type: 'error',
-        title: 'Erro',
-        message: 'Não foi possível excluir a categoria'
+        title: 'Erro ao excluir categoria',
+        message: error?.message || 'Não foi possível excluir a categoria'
       });
     }
   };

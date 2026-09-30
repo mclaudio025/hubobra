@@ -412,26 +412,35 @@ export class CategoriesService {
   async remove(id: string) {
     const category = await this.findById(id);
 
-    // Verificar se há produtos associados
-    const productsCount = await this.prisma.product.count({
+    // Buscar todas as subcategorias filhas
+    const children = await this.prisma.category.findMany({
+      where: { parentId: id },
+      include: {
+        _count: {
+          select: { products: true }
+        }
+      }
+    });
+
+    // Verificar se a categoria principal ou alguma subcategoria possui produtos associados
+    const ownProductsCount = await this.prisma.product.count({
       where: { categoryId: id },
     });
 
-    if (productsCount > 0) {
+    const childProductsCount = children.reduce((sum, c) => sum + c._count.products, 0);
+    const totalProducts = ownProductsCount + childProductsCount;
+
+    if (totalProducts > 0) {
       throw new BadRequestException(
-        `Não é possível excluir categoria com ${productsCount} produto(s) associado(s)`,
+        `Não é possível excluir: existem ${totalProducts} produto(s) associado(s) a esta categoria ou às suas subcategorias.`,
       );
     }
 
-    // Verificar se há subcategorias
-    const childrenCount = await this.prisma.category.count({
-      where: { parentId: id },
-    });
-
-    if (childrenCount > 0) {
-      throw new BadRequestException(
-        `Não é possível excluir categoria com ${childrenCount} subcategoria(s)`,
-      );
+    // Se houver subcategorias filhas vazias, excluí-las primeiro para não violar foreign key
+    if (children.length > 0) {
+      await this.prisma.category.deleteMany({
+        where: { parentId: id },
+      });
     }
 
     return this.prisma.category.delete({

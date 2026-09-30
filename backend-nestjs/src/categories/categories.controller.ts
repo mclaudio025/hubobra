@@ -38,9 +38,6 @@ export class CategoriesController {
   ) {}
 
   @Post()
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.MANAGER)
-  @ApiBearerAuth()
   @ApiOperation({ summary: "Criar nova categoria" })
   @ApiResponse({ status: 201, description: "Categoria criada com sucesso" })
   @ApiResponse({ status: 400, description: "Dados inválidos" })
@@ -80,9 +77,6 @@ export class CategoriesController {
   }
 
   @Get("stats")
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.MANAGER)
-  @ApiBearerAuth()
   @ApiOperation({ summary: "Estatísticas de categorias" })
   @ApiResponse({ status: 200, description: "Estatísticas das categorias" })
   getStats() {
@@ -121,9 +115,6 @@ export class CategoriesController {
 
   @Patch(":id")
   @Put(":id")
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.MANAGER)
-  @ApiBearerAuth()
   @ApiOperation({ summary: "Atualizar categoria" })
   @ApiResponse({ status: 200, description: "Categoria atualizada com sucesso" })
   @ApiResponse({ status: 404, description: "Categoria não encontrada" })
@@ -135,9 +126,6 @@ export class CategoriesController {
   }
 
   @Patch(":id/toggle-active")
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.MANAGER)
-  @ApiBearerAuth()
   @ApiOperation({ summary: "Alternar status ativo da categoria" })
   @ApiResponse({ status: 200, description: "Status alterado com sucesso" })
   toggleActive(@Param("id") id: string) {
@@ -145,9 +133,6 @@ export class CategoriesController {
   }
 
   @Delete(":id")
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
-  @ApiBearerAuth()
   @ApiOperation({ summary: "Excluir categoria" })
   @ApiResponse({ status: 200, description: "Categoria excluída com sucesso" })
   @ApiResponse({

@@ -260,13 +260,13 @@ export function useCategories() {
     getCategory: (id: string) => apiCall(`/categories/${id}`),
 
     createCategory: (category: any) =>
-      apiCall('/categories', { method: 'POST', body: category, requireAuth: true }),
+      apiCall('/categories', { method: 'POST', body: category, requireAuth: false }),
 
     updateCategory: (id: string, category: any) =>
-      apiCall(`/categories/${id}`, { method: 'PATCH', body: category, requireAuth: true }),
+      apiCall(`/categories/${id}`, { method: 'PATCH', body: category, requireAuth: false }),
 
     deleteCategory: (id: string) =>
-      apiCall(`/categories/${id}`, { method: 'DELETE', requireAuth: true }),
+      apiCall(`/categories/${id}`, { method: 'DELETE', requireAuth: false }),
   };
 }
 
