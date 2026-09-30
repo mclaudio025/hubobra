@@ -26,17 +26,21 @@ function ThematicProductCarousel({ section }: { section: HomeSection }) {
     const loadProducts = async () => {
       try {
         setLoading(true);
-        let url = '/api/products?limit=12';
+        let url = `/api/products?limit=${section.limit || 12}`;
+
         if (section.productSource === 'category' && section.categorySlug) {
-          url += `&search=${encodeURIComponent(section.categorySlug)}`;
+          url += `&categorySlug=${encodeURIComponent(section.categorySlug)}`;
+        } else if (section.productSource === 'discount') {
+          url += '&discount=true';
         } else if (section.productSource === 'featured') {
           url += '&featured=true';
+        } else if (section.productSource === 'bestsellers') {
+          url += '&orderBy=popular';
+        } else if (section.productSource === 'newest') {
+          url += '&orderBy=newest';
         }
 
         let res = await fetch(url, { cache: 'no-store' });
-        if (!res.ok) {
-          res = await fetch('/api/products?limit=12', { cache: 'no-store' });
-        }
 
         if (res.ok) {
           const data = await res.json();
@@ -49,17 +53,7 @@ function ThematicProductCarousel({ section }: { section: HomeSection }) {
             : [];
 
           if (isMounted) {
-            if (items.length > 0) {
-              setProducts(items);
-            } else {
-              // Fallback para todos os produtos se a categoria estiver vazia
-              const fallbackRes = await fetch('/api/products?limit=12', { cache: 'no-store' });
-              if (fallbackRes.ok) {
-                const fbData = await fallbackRes.json();
-                const fbItems = Array.isArray(fbData?.products) ? fbData.products : Array.isArray(fbData) ? fbData : [];
-                if (isMounted && fbItems.length > 0) setProducts(fbItems);
-              }
-            }
+            setProducts(items);
           }
         }
       } catch (err) {

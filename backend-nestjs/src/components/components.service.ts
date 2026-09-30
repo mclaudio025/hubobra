@@ -296,13 +296,16 @@ export class ComponentsService {
       }
 
       // 2. Por Categoria (incluindo todas as subcategorias filhas)
-      else if (section.productSource === "category" && section.categorySlug) {
+      else if (section.productSource === "category" && (section.categorySlug || section.categoryName)) {
+        const slugQuery = section.categorySlug || "";
+        const nameQuery = section.categoryName || section.categorySlug || "";
+
         let category = await this.prisma.category.findFirst({
           where: {
             OR: [
-              { slug: section.categorySlug },
-              { slug: { contains: section.categorySlug, mode: "insensitive" } },
-              { name: { contains: section.categoryName || section.categorySlug, mode: "insensitive" } },
+              { slug: slugQuery },
+              { slug: { contains: slugQuery, mode: "insensitive" } },
+              { name: { contains: nameQuery, mode: "insensitive" } },
             ],
           },
         });
@@ -382,24 +385,6 @@ export class ComponentsService {
           take: limit,
           orderBy: [{ featured: "desc" }, { createdAt: "desc" }],
         });
-      }
-
-      // Se a vitrine tiver menos de 6 produtos, complementa com outros produtos ativos para nunca ficar vazia
-      if (matchedProducts.length < 8) {
-        const existingIds = matchedProducts.map((p) => p.id);
-        const fillers = await this.prisma.product.findMany({
-          where: {
-            id: { notIn: existingIds },
-            active: true,
-          },
-          include: {
-            images: { select: { url: true, alt: true } },
-            category: { select: { id: true, name: true, slug: true } },
-          },
-          take: limit - matchedProducts.length,
-          orderBy: { createdAt: "desc" },
-        });
-        matchedProducts = [...matchedProducts, ...fillers];
       }
 
       return matchedProducts;
