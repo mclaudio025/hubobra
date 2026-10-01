@@ -438,9 +438,10 @@ export default function DepartmentShortcuts() {
                     </div>
                   </Link>
                 </div>
-              ))}
-            </div>
+              );
+            })}
           </div>
+        </div>
 
           {/* 🔘 DOTS DE PAGINAÇÃO */}
           {scrollSnaps.length > 1 && (
