@@ -39,6 +39,7 @@ export default function NovaCategoriaPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingCategories, setLoadingCategories] = useState(true);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const router = useRouter();
@@ -107,8 +108,8 @@ export default function NovaCategoriaPage() {
       const submitData: any = {
         name: formData.name.trim(),
         description: formData.description ? formData.description.trim() : undefined,
-        parentId: formData.parentId ? formData.parentId : undefined,
-        image: formData.image || undefined,
+        parentId: formData.parentId ? formData.parentId : null,
+        image: formData.image?.trim() || null,
         icon: formData.icon ? formData.icon.trim() : undefined,
         order: Number(formData.order) || 0,
         active: Boolean(formData.active)
@@ -148,6 +149,7 @@ export default function NovaCategoriaPage() {
     const file = e.target.files?.[0];
     if (file) {
       try {
+        setUploadingImage(true);
         const formData = new FormData();
         formData.append('file', file);
         const res = await fetch('/api/upload', {
@@ -159,16 +161,34 @@ export default function NovaCategoriaPage() {
         });
         if (res.ok) {
           const result = await res.json();
-          handleInputChange('image', result.url || result.publicUrl || result.imageUrl);
+          const finalUrl = result.url || result.publicUrl || result.imageUrl;
+          handleInputChange('image', finalUrl);
+          addToast({
+            type: 'success',
+            title: 'Upload concluído',
+            message: 'Imagem enviada e salva com sucesso!',
+          });
         } else {
           const reader = new FileReader();
           reader.onload = () => {
             handleInputChange('image', reader.result as string);
           };
           reader.readAsDataURL(file);
+          addToast({
+            type: 'info',
+            title: 'Imagem carregada',
+            message: 'Imagem carregada em formato direto.',
+          });
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error('Erro no upload da imagem:', err);
+        addToast({
+          type: 'error',
+          title: 'Erro no upload',
+          message: 'Falha ao enviar arquivo. Tente colar o link direto.',
+        });
+      } finally {
+        setUploadingImage(false);
       }
     }
   };
@@ -294,34 +314,54 @@ export default function NovaCategoriaPage() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Imagem da Categoria
                   </label>
-                  <div className="flex items-center gap-4">
-                    {formData.image && (
-                      <div className="relative">
-                        <img
-                          src={formData.image}
-                          alt="Preview"
-                          className="w-20 h-20 object-cover rounded-lg border border-gray-200"
+                  
+                  <div className="space-y-3">
+                    <div className="flex flex-wrap items-center gap-4">
+                      {formData.image && (
+                        <div className="relative">
+                          <img
+                            src={formData.image}
+                            alt="Preview"
+                            className="w-20 h-20 object-cover rounded-lg border border-gray-200 shadow-sm"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleInputChange('image', '')}
+                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition shadow-sm"
+                            title="Remover imagem"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </div>
+                      )}
+                      
+                      <label className={`flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer transition ${uploadingImage ? 'opacity-50 pointer-events-none' : ''}`}>
+                        <Upload className="h-4 w-4 text-gray-600" />
+                        <span className="text-sm font-medium text-gray-700">
+                          {uploadingImage ? 'Enviando imagem...' : 'Escolher Arquivo'}
+                        </span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleImageUpload}
+                          disabled={uploadingImage}
+                          className="hidden"
                         />
-                        <button
-                          type="button"
-                          onClick={() => handleInputChange('image', '')}
-                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </div>
-                    )}
-                    
-                    <label className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer transition">
-                      <Upload className="h-4 w-4" />
-                      <span className="text-sm">Escolher Imagem</span>
+                      </label>
+                    </div>
+
+                    <div>
                       <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleImageUpload}
-                        className="hidden"
+                        type="text"
+                        placeholder="Ou cole a URL da imagem aqui (ex: https://...)"
+                        value={formData.image}
+                        onChange={(e) => handleInputChange('image', e.target.value)}
+                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                       />
-                    </label>
+                      <p className="mt-1 text-xs text-gray-500">
+                        Você pode subir um arquivo do computador ou colar um link direto de imagem.
+                      </p>
+                    </div>
                   </div>
                 </div>
 

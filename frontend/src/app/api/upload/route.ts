@@ -9,7 +9,7 @@ export async function POST(request: NextRequest) {
     const headers: Record<string, string> = {};
     if (authHeader) headers['Authorization'] = authHeader;
 
-    const response = await fetchBackend('/upload', {
+    const response = await fetchBackend('/upload/image', {
       method: 'POST',
       headers,
       body: formData,
