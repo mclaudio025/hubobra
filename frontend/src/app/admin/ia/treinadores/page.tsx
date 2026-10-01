@@ -200,16 +200,33 @@ export default function TreinadoresPage() {
             <div className="p-3 bg-emerald-500/10 rounded-xl border border-emerald-500/20 text-emerald-400 mt-1">
               <Sparkles className="w-6 h-6" />
             </div>
-            <div>
-              <h3 className="font-semibold text-emerald-300 text-base">Como funciona o treinamento via WhatsApp:</h3>
-              <p className="text-sm text-slate-300 mt-1 leading-relaxed">
-                Qualquer pessoa desta lista pode mandar um <strong>áudio de voz</strong> ou texto para o WhatsApp da Lia dizendo:<br />
-                <span className="text-emerald-400 font-mono text-xs bg-slate-950/80 px-2 py-1 rounded inline-block mt-2">
-                  "Lia, anota aí: quando o cliente pedir 'mangueira de nível', o produto oficial é a 'Mangueira de Silicone Transparente 5/16'."
-                </span>
-                <br />
-                A Lia processará a instrução, salvará no banco de dados e responderá confirmando em áudio no mesmo instante!
-              </p>
+            <div className="space-y-3">
+              <div>
+                <h3 className="font-semibold text-emerald-300 text-base">Permissões Especiais dos Números Autorizados no WhatsApp:</h3>
+                <p className="text-sm text-slate-300 mt-1 leading-relaxed">
+                  Os telefones cadastrados abaixo possuem privilégios administrativos para interagir diretamente com a <strong>Lia</strong>:
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+                <div className="bg-slate-950/70 p-3.5 rounded-xl border border-slate-700/60">
+                  <p className="text-xs font-semibold text-emerald-400 mb-1 flex items-center gap-1.5">
+                    🏷️ <span>Alteração de Preços em Tempo Real</span>
+                  </p>
+                  <p className="text-xs text-slate-300 leading-relaxed">
+                    Envie <code className="text-emerald-300 bg-slate-900 px-1 py-0.5 rounded">"Lia, altera o preço do Cimento Poty para 34,90"</code> ou comando direto <code className="text-emerald-300 bg-slate-900 px-1 py-0.5 rounded">#preco SKU 34.90</code>. A Lia localizará o item e pedirá confirmação com <strong>SIM/NÃO</strong> antes de salvar no catálogo.
+                  </p>
+                </div>
+
+                <div className="bg-slate-950/70 p-3.5 rounded-xl border border-slate-700/60">
+                  <p className="text-xs font-semibold text-emerald-400 mb-1 flex items-center gap-1.5">
+                    🧠 <span>Ensino de Gírias e Regras da Loja</span>
+                  </p>
+                  <p className="text-xs text-slate-300 leading-relaxed">
+                    Envie texto ou áudio: <code className="text-emerald-300 bg-slate-900 px-1 py-0.5 rounded">"Lia, anota aí: quando pedirem 'vedalit', o produto oficial é o 'Aditivo Plastificante 1L'"</code>. A Lia gravará o aprendizado na hora!
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         </div>

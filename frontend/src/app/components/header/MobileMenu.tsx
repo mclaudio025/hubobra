@@ -27,7 +27,8 @@ import {
   ShieldCheck,
   PackageCheck,
   ExternalLink,
-  FileText
+  FileText,
+  Truck
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCart } from '../../contexts/CartContext';
@@ -38,7 +39,7 @@ import { STORE_CONFIG, getWhatsAppWholesaleLink } from '@/config/store.config';
 export default function MobileMenu() {
   const [isOpen, setIsOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const { user, isAuthenticated, isAdmin, isManager, logout } = useAuth();
+  const { user, isAuthenticated, isAdmin, isManager, isExpedition, logout } = useAuth();
   const { totalItems } = useCart();
   const { totalFavorites } = useFavorites();
 
@@ -386,6 +387,17 @@ export default function MobileMenu() {
                     >
                       <span>Sobre a HubObra</span>
                     </Link>
+
+                    {isExpedition && (
+                      <Link
+                        href="/expedicao"
+                        onClick={closeMenu}
+                        className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-orange-600 dark:text-orange-400 font-bold hover:bg-orange-50 dark:hover:bg-orange-950/30 transition-colors"
+                      >
+                        <Truck className="h-3.5 w-3.5 text-orange-500" />
+                        <span>Painel de Expedição</span>
+                      </Link>
+                    )}
 
                     {(isAdmin || isManager) && (
                       <Link

@@ -55,7 +55,7 @@ interface CustomerData {
 
 export default function PerfilPage() {
   const router = useRouter();
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, isAuthenticated, isAdmin, isExpedition, logout } = useAuth();
   const { addToast } = useToast();
   const ordersApi = useOrders();
 
@@ -340,10 +340,22 @@ export default function PerfilPage() {
                   <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
                     {formData.name || 'Cliente HubObra'}
                   </h1>
-                  <span className="inline-flex items-center gap-1 text-[11px] font-bold bg-orange-100 text-orange-700 px-2.5 py-0.5 rounded-full">
-                    <Sparkles className="h-3 w-3" />
-                    Cliente VIP
-                  </span>
+                  {user?.role === 'EXPEDITION' ? (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-bold bg-amber-100 text-amber-800 px-2.5 py-0.5 rounded-full border border-amber-300">
+                      <Truck className="h-3 w-3 text-amber-600" />
+                      Operador de Expedição
+                    </span>
+                  ) : isAdmin ? (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-bold bg-blue-100 text-blue-800 px-2.5 py-0.5 rounded-full border border-blue-300">
+                      <Shield className="h-3 w-3 text-blue-600" />
+                      Administrador
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-bold bg-orange-100 text-orange-700 px-2.5 py-0.5 rounded-full">
+                      <Sparkles className="h-3 w-3" />
+                      Cliente VIP
+                    </span>
+                  )}
                 </div>
                 
                 <p className="text-xs sm:text-sm text-slate-500 flex items-center gap-1.5">
@@ -360,6 +372,26 @@ export default function PerfilPage() {
 
             {/* Header Fast Actions */}
             <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+              {isExpedition && (
+                <Link
+                  href="/expedicao"
+                  className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-4 py-2.5 bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 text-white font-bold text-xs rounded-xl shadow-md shadow-orange-500/20 transition"
+                >
+                  <Truck className="h-4 w-4" />
+                  Painel de Expedição
+                </Link>
+              )}
+
+              {isAdmin && (
+                <Link
+                  href="/admin"
+                  className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl transition"
+                >
+                  <Shield className="h-4 w-4" />
+                  Painel Admin
+                </Link>
+              )}
+
               <Link
                 href="/pedidos"
                 className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-4 py-2.5 bg-orange-50 hover:bg-orange-100 text-orange-700 font-semibold text-xs rounded-xl border border-orange-200 transition"

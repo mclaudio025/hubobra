@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, User, ShoppingCart, LogOut, Settings, Phone, MapPin, Sparkles, Box, Zap, Star } from 'lucide-react';
+import { Heart, User, ShoppingCart, LogOut, Settings, Phone, MapPin, Sparkles, Box, Zap, Star, Truck } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCart } from '../../contexts/CartContext';
 import { useFavorites } from '../../contexts/FavoritesContext';
@@ -19,7 +19,7 @@ import { getWhatsAppWholesaleLink } from '@/config/store.config';
 export default function MainHeader() {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [isHovered, setIsHovered] = useState('');
-  const { user, isAuthenticated, isAdmin, isManager, logout } = useAuth();
+  const { user, isAuthenticated, isAdmin, isManager, isExpedition, logout } = useAuth();
   const { totalItems } = useCart();
   const { totalFavorites } = useFavorites();
 
@@ -344,6 +344,26 @@ export default function MainHeader() {
                               </motion.div>
                             ))}
                             
+                            {isExpedition && (
+                              <>
+                                <hr className="my-2 border-gray-200/50 dark:border-gray-700/50" />
+                                <motion.div
+                                  initial={{ opacity: 0, x: -20 }}
+                                  animate={{ opacity: 1, x: 0 }}
+                                  transition={{ delay: 0.12 }}
+                                >
+                                  <Link
+                                    href="/expedicao"
+                                    className="flex items-center px-4 py-2 text-sm text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-950/20 font-semibold transition-colors"
+                                    onClick={() => setShowUserMenu(false)}
+                                  >
+                                    <Truck className="h-4 w-4 mr-3 text-orange-500" />
+                                    Painel de Expedição
+                                  </Link>
+                                </motion.div>
+                              </>
+                            )}
+
                             {(isAdmin || isManager) && (
                               <>
                                 <hr className="my-2 border-gray-200/50 dark:border-gray-700/50" />

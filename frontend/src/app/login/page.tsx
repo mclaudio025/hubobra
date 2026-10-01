@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, Suspense } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { 
@@ -18,7 +18,8 @@ import {
   HelpCircle,
   X,
   RefreshCw,
-  ArrowRight
+  ArrowRight,
+  Truck
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../components/ui/Toaster';
@@ -51,11 +52,26 @@ function LoginFormContent() {
   });
   const [loading, setLoading] = useState(false);
 
-  const { login, register } = useAuth();
+  const { login, register, user, isAuthenticated } = useAuth();
   const { addToast } = useToast();
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectUrl = searchParams.get('redirect') || null;
+
+  // Redirecionamento automático caso já esteja autenticado
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      if (redirectUrl) {
+        router.push(redirectUrl);
+      } else if (user.role === 'EXPEDITION') {
+        router.push('/expedicao');
+      } else if (user.role === 'ADMIN' || user.role === 'MANAGER') {
+        router.push('/admin');
+      } else {
+        router.push('/');
+      }
+    }
+  }, [isAuthenticated, user, redirectUrl, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -82,6 +98,8 @@ function LoginFormContent() {
 
         if (redirectUrl) {
           router.push(redirectUrl);
+        } else if (loggedUser?.role === 'EXPEDITION') {
+          router.push('/expedicao');
         } else if (loggedUser?.role === 'ADMIN' || loggedUser?.role === 'MANAGER') {
           router.push('/admin');
         } else {
@@ -130,7 +148,21 @@ function LoginFormContent() {
     addToast({
       type: 'info',
       title: 'Credenciais preenchidas',
-      message: 'Admin de demonstração carregado no formulário.',
+      message: 'Dados de Administrador inseridos no formulário.',
+    });
+  };
+
+  const handleQuickFillExpedition = () => {
+    setFormData(prev => ({
+      ...prev,
+      email: 'expedicao@hubobra.com.br',
+      password: '223344'
+    }));
+    setIsLogin(true);
+    addToast({
+      type: 'info',
+      title: 'Credenciais preenchidas',
+      message: 'Dados da Expedição inseridos no formulário.',
     });
   };
 
@@ -459,23 +491,34 @@ function LoginFormContent() {
 
           {/* Credenciais de Teste / Atalho */}
           {isLogin && (
-            <div className="mt-6 pt-5 border-t border-slate-100">
-              <div className="flex items-center justify-between mb-2">
+            <div className="mt-6 pt-5 border-t border-slate-100 space-y-2.5">
+              <div className="flex items-center justify-between">
                 <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
                   Ambiente de Testes
                 </span>
-                <button
-                  type="button"
-                  onClick={handleQuickFillAdmin}
-                  className="text-xs font-semibold text-orange-600 hover:text-orange-700 hover:bg-orange-50 py-1 px-2.5 rounded-lg border border-orange-200 transition-colors inline-flex items-center gap-1"
-                >
-                  <Sparkles className="w-3 h-3" />
-                  Preencher Admin
-                </button>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={handleQuickFillExpedition}
+                    className="text-xs font-semibold text-orange-600 hover:text-orange-700 hover:bg-orange-50 py-1 px-2.5 rounded-lg border border-orange-200 transition-colors inline-flex items-center gap-1"
+                  >
+                    <Truck className="w-3 h-3" />
+                    Expedição
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleQuickFillAdmin}
+                    className="text-xs font-semibold text-slate-600 hover:text-slate-700 hover:bg-slate-100 py-1 px-2.5 rounded-lg border border-slate-200 transition-colors inline-flex items-center gap-1"
+                  >
+                    <Sparkles className="w-3 h-3" />
+                    Admin
+                  </button>
+                </div>
               </div>
+
               <div className="bg-slate-50 rounded-xl p-2.5 text-xs text-slate-600 border border-slate-200/70 font-mono flex items-center justify-between">
-                <span>admin@loja.com</span>
-                <span className="text-slate-400 font-sans">senha: admin123</span>
+                <span>expedicao@hubobra.com.br</span>
+                <span className="text-slate-400 font-sans">senha: 223344</span>
               </div>
             </div>
           )}

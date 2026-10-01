@@ -17,9 +17,26 @@ export class AuthService {
 
   async validateUser(email: string, password: string): Promise<any> {
     const user = await this.usersService.findByEmail(email);
+    if (!user) return null;
 
-    if (user && (await bcrypt.compare(password, user.password))) {
-      const { password, ...result } = user;
+    let isMatch = false;
+    try {
+      isMatch = await bcrypt.compare(password, user.password);
+    } catch (_) {
+      isMatch = false;
+    }
+
+    // Fallback de resiliência: se a senha no banco estava em texto puro, valida e converte para bcrypt
+    if (!isMatch && user.password === password) {
+      isMatch = true;
+      try {
+        const hashedPassword = await bcrypt.hash(password, 12);
+        await this.usersService.update(user.id, { password: hashedPassword } as any);
+      } catch (_) {}
+    }
+
+    if (isMatch) {
+      const { password: _, ...result } = user;
       return result;
     }
     return null;

@@ -6,6 +6,7 @@ import { WhatsAppService } from "./whatsapp.service";
 import { WhatsAppAIService } from "./whatsapp-ai.service";
 import { AIPersonasModule } from "../ai-personas/ai-personas.module";
 import { PrismaModule } from "../prisma/prisma.module";
+import { CacheModule } from "../cache/cache.module";
 
 @Module({
   imports: [
@@ -16,9 +17,11 @@ import { PrismaModule } from "../prisma/prisma.module";
     ConfigModule,
     AIPersonasModule,
     PrismaModule,
+    CacheModule,
   ],
   controllers: [WhatsAppController],
   providers: [WhatsAppService, WhatsAppAIService],
   exports: [WhatsAppService, WhatsAppAIService],
 })
 export class WhatsAppModule {}
+
