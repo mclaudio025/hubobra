@@ -294,17 +294,18 @@ export default function DepartmentShortcuts() {
         const res = await categoriesApi.getCategories(true);
         if (res && Array.isArray(res) && res.length > 0) {
           const matched = MASTER_CATEGORIES_DATA.map((card) => {
-            const found = res.find(
-              (c: any) =>
-                c.slug === card.slug ||
-                c.id === card.id ||
-                c.name?.toLowerCase().trim() === card.name.toLowerCase().trim()
-            );
+            const found =
+              res.find((c: any) => c.id === card.id) ||
+              res.find((c: any) => c.slug === card.slug) ||
+              res.find((c: any) => c.name?.toLowerCase().trim() === card.name.toLowerCase().trim()) ||
+              res.find((c: any) => card.slug.includes('portas') && (c.slug?.includes('portas') || c.name?.toLowerCase().includes('portas')));
+
+            const candidateImage = found?.image;
             return {
               ...card,
               id: found?.id || card.id,
               slug: found?.slug || card.slug,
-              image: (found?.image && isValidImageUrl(found.image)) ? found.image : card.image,
+              image: (candidateImage && isValidImageUrl(candidateImage)) ? candidateImage : card.image,
             };
           });
           setCategoriesList(matched);
