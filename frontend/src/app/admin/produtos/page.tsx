@@ -26,7 +26,8 @@ import {
   Layers,
   RefreshCw,
   Lock,
-  Unlock
+  Unlock,
+  Copy
 } from 'lucide-react';
 import AdminBreadcrumb from '../../components/admin/AdminBreadcrumb';
 import { useApi, useProducts } from '../../hooks/useApi';
@@ -769,6 +770,13 @@ export default function AdminProdutos() {
                                 title="Edição Completa"
                               >
                                 <Edit className="h-4 w-4" />
+                              </Link>
+                              <Link
+                                href={`/admin/produtos/novo?cloneFrom=${product.id}`}
+                                className="p-1.5 text-gray-500 hover:text-emerald-600 hover:bg-emerald-50 rounded-md transition"
+                                title="Clonar Produto (Duplicar fotos e dados)"
+                              >
+                                <Copy className="h-4 w-4" />
                               </Link>
                               <button
                                 type="button"

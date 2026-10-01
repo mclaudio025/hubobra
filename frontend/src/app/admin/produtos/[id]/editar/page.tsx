@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Save, X, Barcode } from 'lucide-react';
+import { ArrowLeft, Save, X, Barcode, Copy } from 'lucide-react';
 import AdminBreadcrumb from '@/app/components/admin/AdminBreadcrumb';
 
 interface Category {
@@ -272,6 +272,17 @@ export default function EditarProdutoPage() {
               <h1 className="text-3xl font-bold text-gray-900">Editar Produto</h1>
               <p className="text-gray-600">{product.name}</p>
             </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <Link
+              href={`/admin/produtos/novo?cloneFrom=${product.id}`}
+              className="inline-flex items-center px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition shadow-sm font-semibold text-sm"
+              title="Criar novo produto duplicando este"
+            >
+              <Copy className="h-4 w-4 mr-2" />
+              Clonar como Novo
+            </Link>
           </div>
         </div>
 
