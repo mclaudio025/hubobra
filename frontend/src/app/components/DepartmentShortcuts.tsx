@@ -280,8 +280,15 @@ export default function DepartmentShortcuts() {
     emblaApi.on('reInit', onSelect);
   }, [emblaApi, onSelect]);
 
-  // Sincronizar dinamicamente imagens que o usuário cadastrar no banco
+  // Sincronizar dinamicamente imagens que o usuário cadastrar no banco (ignorando blobs temporários)
   useEffect(() => {
+    const isValidImageUrl = (url?: string | null): boolean => {
+      if (!url || typeof url !== 'string') return false;
+      const clean = url.trim();
+      if (clean.startsWith('blob:') || clean.startsWith('data:')) return false;
+      return clean.startsWith('http://') || clean.startsWith('https://') || clean.startsWith('/');
+    };
+
     const loadCategories = async () => {
       try {
         const res = await categoriesApi.getCategories(true);
@@ -291,13 +298,13 @@ export default function DepartmentShortcuts() {
               (c: any) =>
                 c.slug === card.slug ||
                 c.id === card.id ||
-                c.name.toLowerCase() === card.name.toLowerCase()
+                c.name?.toLowerCase().trim() === card.name.toLowerCase().trim()
             );
             return {
               ...card,
               id: found?.id || card.id,
               slug: found?.slug || card.slug,
-              image: found?.image || card.image,
+              image: (found?.image && isValidImageUrl(found.image)) ? found.image : card.image,
             };
           });
           setCategoriesList(matched);
@@ -376,28 +383,35 @@ export default function DepartmentShortcuts() {
           {/* Viewport do Carrossel */}
           <div className="overflow-hidden px-1 py-2" ref={emblaRef}>
             <div className="flex gap-3 sm:gap-4 md:gap-4">
-              {categoriesList.map((cat) => (
-                <div
-                  key={cat.id}
-                  className="flex-[0_0_145px] sm:flex-[0_0_165px] md:flex-[0_0_180px] select-none"
-                >
-                  <Link
-                    href={`/categoria/${cat.slug}`}
-                    className="group flex flex-col h-full rounded-2xl overflow-hidden shadow-md hover:shadow-2xl transition-all duration-300 border border-slate-700/60 bg-[#00264d] hover:-translate-y-1.5"
+              {categoriesList.map((cat) => {
+                const defaultImage =
+                  MASTER_CATEGORIES_DATA.find((m) => m.slug === cat.slug || m.id === cat.id)?.image ||
+                  cat.image;
+
+                return (
+                  <div
+                    key={cat.id}
+                    className="flex-[0_0_145px] sm:flex-[0_0_165px] md:flex-[0_0_180px] select-none"
                   >
-                    {/* 📸 1. FOTO REALISTA SUPERIOR */}
-                    <div className="relative w-full h-32 sm:h-36 bg-slate-900 overflow-hidden">
-                      <img
-                        src={cat.image}
-                        alt={cat.name}
-                        className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
-                        loading="lazy"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src =
-                            'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=500&auto=format&fit=crop&q=80';
-                        }}
-                      />
-                    </div>
+                    <Link
+                      href={`/categoria/${cat.slug}`}
+                      className="group flex flex-col h-full rounded-2xl overflow-hidden shadow-md hover:shadow-2xl transition-all duration-300 border border-slate-700/60 bg-[#00264d] hover:-translate-y-1.5"
+                    >
+                      {/* 📸 1. FOTO REALISTA SUPERIOR */}
+                      <div className="relative w-full h-32 sm:h-36 bg-slate-900 overflow-hidden">
+                        <img
+                          src={cat.image || defaultImage}
+                          alt={cat.name}
+                          className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
+                          loading="lazy"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            if (target.src !== defaultImage) {
+                              target.src = defaultImage;
+                            }
+                          }}
+                        />
+                      </div>
 
                     {/* 📦 2. CORPO AZUL COM O SÍMBOLO EXATO, NOME E DESCRIÇÃO */}
                     <div className="p-3 flex flex-col items-center justify-between flex-1 bg-[#00264d] text-center min-h-[125px]">

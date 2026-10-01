@@ -188,13 +188,32 @@ export default function EditarCategoriaPage() {
     }
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Aqui você implementaria o upload da imagem
-      // Por enquanto, vamos simular uma URL
-      const mockUrl = URL.createObjectURL(file);
-      handleInputChange('image', mockUrl);
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+        const res = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData,
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
+          },
+        });
+        if (res.ok) {
+          const result = await res.json();
+          handleInputChange('image', result.url || result.publicUrl || result.imageUrl);
+        } else {
+          const reader = new FileReader();
+          reader.onload = () => {
+            handleInputChange('image', reader.result as string);
+          };
+          reader.readAsDataURL(file);
+        }
+      } catch (err) {
+        console.error('Erro no upload da imagem:', err);
+      }
     }
   };
 
