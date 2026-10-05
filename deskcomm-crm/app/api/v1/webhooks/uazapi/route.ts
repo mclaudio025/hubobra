@@ -145,6 +145,8 @@ export async function POST(req: NextRequest): Promise<Response> {
     .maybeSingle();
 
   const now = new Date().toISOString();
+  const isCarlos = text.toLowerCase().includes("carlos") || senderName.toLowerCase().includes("carlos");
+  const carlosUserId = "aaceb251-fd64-40cf-8867-e95abd7f1988";
 
   if (existingConv) {
     conversationId = existingConv.id;
@@ -155,6 +157,7 @@ export async function POST(req: NextRequest): Promise<Response> {
         last_message_preview: (text || "Mídia recebida").slice(0, 100),
         unread_count_for_assignee: fromMe ? 0 : (existingConv.unread_count_for_assignee || 0) + 1,
         ...(fromMe ? { last_outbound_at: now } : { last_inbound_at: now }),
+        ...(isCarlos ? { assigned_to_user_id: carlosUserId } : {}),
       })
       .eq("id", conversationId);
   } else {
@@ -164,12 +167,13 @@ export async function POST(req: NextRequest): Promise<Response> {
         organization_id: organizationId,
         contact_id: contactId,
         channel_session_id: channelSessionId,
-        channel: "waha",
+        channel: "whatsapp",
         status: "open",
         last_message_at: now,
         last_message_preview: (text || "Mídia recebida").slice(0, 100),
         unread_count_for_assignee: fromMe ? 0 : 1,
         ...(fromMe ? { last_outbound_at: now } : { last_inbound_at: now }),
+        ...(isCarlos ? { assigned_to_user_id: carlosUserId } : {}),
       })
       .select("id")
       .single();
