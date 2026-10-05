@@ -1,0 +1,11 @@
+export async function register() {
+  if (typeof globalThis.WebSocket === "undefined") {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const WebSocket = require("ws");
+      globalThis.WebSocket = WebSocket;
+    } catch {
+      // ws not available, fallback
+    }
+  }
+}
