@@ -63,7 +63,7 @@ const schema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
 
   // Supabase — obrigatórias sempre (até pra dev local)
-  NEXT_PUBLIC_SUPABASE_URL: requiredAlways("NEXT_PUBLIC_SUPABASE_URL").url(),
+  NEXT_PUBLIC_SUPABASE_URL: requiredAlways("NEXT_PUBLIC_SUPABASE_URL", "https://placeholder.invalid"),
   NEXT_PUBLIC_SUPABASE_ANON_KEY: requiredAlways("NEXT_PUBLIC_SUPABASE_ANON_KEY"),
   SUPABASE_SERVICE_ROLE_KEY: requiredAlways("SUPABASE_SERVICE_ROLE_KEY"),
   /**
