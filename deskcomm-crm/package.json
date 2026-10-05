@@ -92,6 +92,7 @@
     "nodemailer": "10.0.10",
     "pdfjs-dist": "^6.3.289",
     "pg": "^8.23.0",
+    "postcss": "^8.5.28",
     "qrcode": "^1.5.4",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
