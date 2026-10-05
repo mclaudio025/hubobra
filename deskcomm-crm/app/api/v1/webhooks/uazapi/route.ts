@@ -60,14 +60,16 @@ export async function POST(req: NextRequest): Promise<Response> {
 
   let remoteJid = data.from || data.phone || data.remoteJid || key.remoteJid || data.sender || "";
   if (typeof remoteJid === "string") {
-    remoteJid = remoteJid.split("@")[0].split(":")[0];
+    const atSplit = remoteJid.split("@")[0] ?? "";
+    remoteJid = atSplit.split(":")[0] ?? "";
   }
 
   // If fromMe and remoteJid is store number, try to extract recipient
   if (fromMe && (remoteJid.includes("558587129529") || !remoteJid)) {
-    remoteJid = data.to || data.recipient || key.remoteJid || "";
-    if (typeof remoteJid === "string") {
-      remoteJid = remoteJid.split("@")[0].split(":")[0];
+    const fallback = data.to || data.recipient || key.remoteJid || "";
+    if (typeof fallback === "string") {
+      const atSplit = fallback.split("@")[0] ?? "";
+      remoteJid = atSplit.split(":")[0] ?? "";
     }
   }
 
