@@ -64,9 +64,9 @@ export function mergeThreadItems(
   passagens: CartaoDaPassagem[] = [],
 ): ThreadItem[] {
   const items: ThreadItem[] = [
-    ...messages.map((data): ThreadItem => ({ kind: "message", ts: data.sent_at, data })),
-    ...notes.map((data): ThreadItem => ({ kind: "note", ts: data.created_at, data })),
-    ...passagens.map((data): ThreadItem => ({ kind: "passagem", ts: data.criadoEm, data })),
+    ...messages.map((data): ThreadItem => ({ kind: "message", ts: data.sent_at || (data as any).created_at || new Date().toISOString(), data })),
+    ...notes.map((data): ThreadItem => ({ kind: "note", ts: data.created_at || new Date().toISOString(), data })),
+    ...passagens.map((data): ThreadItem => ({ kind: "passagem", ts: data.criadoEm || new Date().toISOString(), data })),
   ];
   // Sort estável (Array#sort é estável no V8/Node): empate mantém a ordem de
   // inserção acima — mensagens antes de notas no mesmo instante, e a passagem

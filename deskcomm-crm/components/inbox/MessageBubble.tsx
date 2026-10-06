@@ -97,7 +97,14 @@ export function MessageBubble({
   const localeDaData = useLocaleDeData();
   const t = useT();
   const isOutbound = message.direction === "outbound";
-  const time = format(new Date(message.sent_at), "HH:mm", { locale: localeDaData });
+  const rawDate = message.sent_at || (message as any).created_at || new Date().toISOString();
+  let time = "";
+  try {
+    const parsedDate = new Date(rawDate);
+    time = isNaN(parsedDate.getTime()) ? "" : format(parsedDate, "HH:mm", { locale: localeDaData });
+  } catch {
+    time = "";
+  }
   const isFailed = message.status === "failed";
   const hasMedia = Boolean(message.media_url || message.media_storage_path);
   const isContact = message.type === "contact";
