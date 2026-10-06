@@ -145,7 +145,12 @@ export async function POST(req: NextRequest): Promise<Response> {
     .maybeSingle();
 
   const now = new Date().toISOString();
-  const isCarlos = text.toLowerCase().includes("carlos") || senderName.toLowerCase().includes("carlos");
+  const isCarlos =
+    text.toLowerCase().includes("carlos") ||
+    senderName.toLowerCase().includes("carlos") ||
+    text.includes("TRANSFER_TO") ||
+    text.includes("Vendedor Carlos Eduardo") ||
+    text.includes("transferindo o seu atendimento");
   const carlosUserId = "aaceb251-fd64-40cf-8867-e95abd7f1988";
 
   if (existingConv) {
