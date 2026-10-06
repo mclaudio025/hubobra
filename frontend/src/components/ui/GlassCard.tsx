@@ -73,6 +73,8 @@ const GlassCard = React.forwardRef<HTMLDivElement, GlassCardProps>(
         style={{
           ...baseStyles,
           ...glowStyles,
+          transformStyle: 'preserve-3d',
+          perspective: '1000px',
         }}
         variants={hoverVariants}
         whileHover={hover ? 'hover' : undefined}
@@ -84,10 +86,6 @@ const GlassCard = React.forwardRef<HTMLDivElement, GlassCardProps>(
           type: "spring",
           stiffness: 100,
           damping: 20
-        }}
-        style={{
-          transformStyle: 'preserve-3d',
-          perspective: '1000px'
         }}
         className={cn(
           'relative overflow-hidden group transform-gpu',

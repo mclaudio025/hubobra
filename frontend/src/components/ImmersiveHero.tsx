@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect } from 'react';
+import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Play, ArrowRight, Sparkles, Zap, Phone, ShoppingBag } from 'lucide-react';
+import { ArrowRight, Sparkles, Zap, ShoppingBag } from 'lucide-react';
 import GlassOverlay from './ui/GlassOverlay';
 import { getWhatsAppWholesaleLink } from '@/config/store.config';
 
@@ -156,13 +157,13 @@ export default function ImmersiveHero() {
 
           {/* Quick Action Buttons (Linha compacta) */}
           <div className="grid grid-cols-2 gap-2">
-            <a
+            <Link
               href="/produtos"
               className="flex items-center justify-center gap-1.5 py-2 px-2.5 bg-gradient-to-r from-orange-500 to-amber-500 rounded-xl font-bold text-slate-950 text-xs shadow-md shadow-orange-500/20 active:scale-95 transition-transform"
             >
               <ShoppingBag className="w-3.5 h-3.5" />
               <span>Ver Produtos</span>
-            </a>
+            </Link>
 
             <a
               href={getWhatsAppWholesaleLink()}
@@ -293,13 +294,13 @@ export default function ImmersiveHero() {
                   transition={{ delay: 0.5, duration: 0.6 }}
                   className="flex flex-row gap-3"
                 >
-                  <a
+                  <Link
                     href="/produtos"
                     className="group relative px-6 py-3 bg-gradient-to-r from-orange-500 via-amber-500 to-orange-600 rounded-xl font-bold text-slate-950 shadow-xl hover:shadow-orange-500/30 transition-all duration-300 text-center flex items-center justify-center gap-2 text-sm sm:text-base"
                   >
                     <span>Explorar Catálogo</span>
                     <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                  </a>
+                  </Link>
 
                   <a
                     href={getWhatsAppWholesaleLink()}
