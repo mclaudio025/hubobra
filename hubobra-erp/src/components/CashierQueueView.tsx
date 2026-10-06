@@ -159,6 +159,159 @@ export const CashierQueueView: React.FC<CashierQueueViewProps> = ({ onPrintOrder
     setActiveCustomer(null);
   };
 
+  // Função para injetar ordens de exemplo dinamicamente no Caixa
+  const handleCreateSampleOrder = async (sampleType: 'SALDO_MATERIAIS' | 'BALCAO_IMEDIATO' | 'LIA_WHATSAPP') => {
+    const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+    let sampleOrder: LocalOrder;
+
+    if (sampleType === 'SALDO_MATERIAIS') {
+      sampleOrder = {
+        id: `ord-sld-${Date.now()}`,
+        orderNumber: `PED-SLD${randomSuffix}`,
+        type: 'PEDIDO_VENDA',
+        createdAt: new Date().toISOString(),
+        sellerId: 'v-1',
+        sellerName: 'Carlos Eduardo (Balcão 1)',
+        origin: 'BALCAO',
+        customerId: 'c-001',
+        customerName: 'Engenheiro Roberto Albuquerque (Obra Jardins)',
+        customerPhone: '(85) 98765-4321',
+        deliveryMode: 'FUTURE_PICKUP',
+        isFutureDelivery: true,
+        items: [
+          {
+            productId: 'p-001',
+            name: 'Cimento Poty Todas as Obras 50kg CP II-F',
+            sku: '001100',
+            unit: 'SACO',
+            unitPrice: 53.90,
+            cost: 39.50,
+            quantity: 150,
+            discount: 0,
+            total: 8085.00,
+            location: 'Galpão 01 - Baia A (Estoque Retido)',
+          },
+          {
+            productId: 'p-007',
+            name: 'Tijolo Cerâmico 8 Furos 9x19x19cm (Lote 10 Milheiro)',
+            sku: 'TIJ001',
+            unit: 'MILHEIRO',
+            unitPrice: 890.00,
+            cost: 650.00,
+            quantity: 8,
+            discount: 0,
+            total: 7120.00,
+            location: 'Pátio Aberto - Bloco 04',
+          }
+        ],
+        subtotal: 15205.00,
+        discount: 205.00,
+        shipping: 0.00,
+        total: 15000.00,
+        paymentCondition: 'À Vista no Caixa (PIX / TED)',
+        status: 'AGUARDANDO_PAGAMENTO',
+        fiscalStatus: 'NOT_EMITTED',
+        notes: '📦 SALDO DE MATERIAIS: Cliente comprou 150 sacos de cimento e 8 milheiros de tijolo para travar o preço. Material FICA no galpão e será retirado aos poucos.',
+        syncedToCloud: true,
+        syncedToGestaoClick: false,
+      };
+    } else if (sampleType === 'LIA_WHATSAPP') {
+      sampleOrder = {
+        id: `ord-lia-${Date.now()}`,
+        orderNumber: `PED-IA${randomSuffix}`,
+        type: 'PEDIDO_VENDA',
+        createdAt: new Date().toISOString(),
+        sellerId: 'v-lia-ai',
+        sellerName: 'Lia (Consultora Virtual IA 🤖)',
+        origin: 'LIA_AI',
+        isAiGenerated: true,
+        customerId: 'c-002',
+        customerName: 'Mestre Raimundo Alves (WhatsApp)',
+        customerPhone: '(85) 99123-4567',
+        deliveryMode: 'IMMEDIATE',
+        isFutureDelivery: false,
+        items: [
+          {
+            productId: 'p-004',
+            name: 'Tinta Acrílica Standard Fosco Coral 20L Branco',
+            sku: 'TIN001',
+            unit: 'LITRO',
+            unitPrice: 299.90,
+            cost: 210.00,
+            quantity: 3,
+            discount: 0,
+            total: 899.70,
+            location: 'Showroom - Gôndola Tintas 01',
+          }
+        ],
+        subtotal: 899.70,
+        discount: 19.70,
+        shipping: 0,
+        total: 880.00,
+        paymentCondition: 'PIX WhatsApp / Caixa',
+        status: 'AGUARDANDO_PAGAMENTO',
+        fiscalStatus: 'NOT_EMITTED',
+        notes: '✨ Pedido gerado via WhatsApp pela Lia IA. Retirada rápida no balcão.',
+        syncedToCloud: true,
+        syncedToGestaoClick: true,
+      };
+    } else {
+      sampleOrder = {
+        id: `ord-bal-${Date.now()}`,
+        orderNumber: `PED-${randomSuffix}`,
+        type: 'PEDIDO_VENDA',
+        createdAt: new Date().toISOString(),
+        sellerId: 'v-1',
+        sellerName: 'Carlos Eduardo (Balcão 1)',
+        origin: 'BALCAO',
+        customerId: 'c-001',
+        customerName: 'Construtora e Engenharia Silva Ltda',
+        customerPhone: '(85) 98877-6655',
+        deliveryMode: 'IMMEDIATE',
+        isFutureDelivery: false,
+        items: [
+          {
+            productId: 'p-001',
+            name: 'Cimento Poty Todas as Obras 50kg CP II-F',
+            sku: '001100',
+            unit: 'SACO',
+            unitPrice: 53.90,
+            cost: 39.50,
+            quantity: 20,
+            discount: 0,
+            total: 1078.00,
+            location: 'Galpão 01 - Baia A',
+          },
+          {
+            productId: 'p-008',
+            name: 'Argamassa AC-III Cinza 20kg Quartzolit',
+            sku: 'ARG001',
+            unit: 'SACO',
+            unitPrice: 36.90,
+            cost: 24.50,
+            quantity: 10,
+            discount: 0,
+            total: 369.00,
+            location: 'Galpão 01 - Baia B',
+          }
+        ],
+        subtotal: 1447.00,
+        discount: 47.00,
+        shipping: 0,
+        total: 1400.00,
+        paymentCondition: 'Cartão de Débito / Dinheiro',
+        status: 'AGUARDANDO_PAGAMENTO',
+        fiscalStatus: 'NOT_EMITTED',
+        notes: 'Venda rápida de balcão para retirada imediata.',
+        syncedToCloud: true,
+        syncedToGestaoClick: false,
+      };
+    }
+
+    await db.orders.put(sampleOrder);
+    await loadOrders();
+  };
+
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6 select-none font-sans">
       {/* Top Header */}
@@ -173,11 +326,40 @@ export const CashierQueueView: React.FC<CashierQueueViewProps> = ({ onPrintOrder
           </p>
         </div>
 
-        <div className="w-full md:w-80 relative">
+        {/* Botões Rápidos de Inserção de Exemplo */}
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={() => handleCreateSampleOrder('SALDO_MATERIAIS')}
+            className="px-3 py-1.5 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 font-black rounded-xl text-xs flex items-center gap-1.5 shadow-lg shadow-amber-500/20 transition-all cursor-pointer"
+            title="Adiciona um pedido de Saldo de Materiais (Card Amarelo que não baixa estoque)"
+          >
+            <Package className="w-3.5 h-3.5" />
+            <span>+ Exemplo Saldo Loja (Amarelo)</span>
+          </button>
+
+          <button
+            onClick={() => handleCreateSampleOrder('BALCAO_IMEDIATO')}
+            className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-semibold rounded-xl text-xs flex items-center gap-1.5 transition-all cursor-pointer"
+            title="Adiciona um pedido normal de balcão para retirada imediata"
+          >
+            <span>+ Exemplo Balcão</span>
+          </button>
+
+          <button
+            onClick={() => handleCreateSampleOrder('LIA_WHATSAPP')}
+            className="px-3 py-1.5 bg-purple-900/60 hover:bg-purple-800/80 text-purple-200 border border-purple-500/30 font-semibold rounded-xl text-xs flex items-center gap-1.5 transition-all cursor-pointer"
+            title="Adiciona um pedido gerado pela IA Lia via WhatsApp"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-pink-400" />
+            <span>+ Exemplo Lia IA</span>
+          </button>
+        </div>
+
+        <div className="w-full md:w-72 relative">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
             type="text"
-            placeholder="Buscar pedido, cliente, motorista..."
+            placeholder="Buscar pedido, cliente..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-9 pr-4 py-2 bg-slate-900 border border-slate-800 rounded-xl text-white text-xs focus:border-emerald-500 focus:outline-none"
