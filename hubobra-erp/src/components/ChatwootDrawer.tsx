@@ -149,6 +149,7 @@ export const ChatwootDrawer: React.FC<ChatwootDrawerProps> = ({
   const [isMuted, setIsMuted] = useState<boolean>(false);
   const ringIntervalRef = useRef<any>(null);
   const timerIntervalRef = useRef<any>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Sincronização em Tempo Real com o Deskcomm CRM
   useEffect(() => {
@@ -208,18 +209,13 @@ export const ChatwootDrawer: React.FC<ChatwootDrawerProps> = ({
           setConversations((prev) =>
             prev.map((c) => {
               if (c.id === selectedConvId) {
+                // Manter mensagens locais que ainda estão sendo gravadas no backend
+                const pendingLocal = c.messages.filter(
+                  (m) => m.id.startsWith('local-') && !realMsgs.some((rm) => rm.text === m.text)
+                );
                 return {
                   ...c,
-                  messages: realMsgs.map((rm) => ({
-                    id: rm.id,
-                    sender: rm.sender,
-                    senderName: rm.senderName,
-                    text: rm.text,
-                    time: rm.time,
-                    isVoiceAudio: rm.isVoiceAudio,
-                    audioDuration: rm.audioDuration,
-                    audioTranscript: rm.audioTranscript,
-                  })),
+                  messages: [...realMsgs, ...pendingLocal],
                 };
               }
               return c;
@@ -232,7 +228,7 @@ export const ChatwootDrawer: React.FC<ChatwootDrawerProps> = ({
     };
 
     syncMessages();
-    const msgInterval = setInterval(syncMessages, 2500);
+    const msgInterval = setInterval(syncMessages, 2000);
     return () => {
       isMounted = false;
       clearInterval(msgInterval);
@@ -240,6 +236,13 @@ export const ChatwootDrawer: React.FC<ChatwootDrawerProps> = ({
   }, [selectedConvId]);
 
   const selectedConversation = conversations.find((c) => c.id === selectedConvId) || conversations[0];
+
+  // Auto-scroll ao receber ou enviar novas mensagens
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [selectedConversation?.messages?.length, isOpen]);
 
   // Áudios Web Audio API para simulação realista
   const playSound = (type: 'ring' | 'connect' | 'end') => {
@@ -407,37 +410,38 @@ export const ChatwootDrawer: React.FC<ChatwootDrawerProps> = ({
     return `${mins}:${secs}`;
   };
 
-  const handleSendMessage = (customText?: string) => {
+  const handleSendMessage = async (customText?: string) => {
     const textToSend = customText || messageInput;
     if (!textToSend.trim()) return;
 
     const sellerName = currentUser ? currentUser.name : 'Carlos Eduardo';
 
     const newMsg: ChatMessage = {
-      id: `m-${Date.now()}`,
+      id: `local-${Date.now()}`,
       sender: 'SELLER',
       senderName: sellerName,
       text: textToSend.trim(),
       time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
     };
 
-    const updated = conversations.map((c) => {
-      if (c.id === selectedConversation.id) {
-        return {
-          ...c,
-          messages: [...c.messages, newMsg],
-          lastMessageTime: newMsg.time,
-        };
-      }
-      return c;
-    });
+    setConversations((prev) =>
+      prev.map((c) => {
+        if (c.id === selectedConversation.id) {
+          return {
+            ...c,
+            messages: [...c.messages, newMsg],
+            lastMessageTime: newMsg.time,
+          };
+        }
+        return c;
+      })
+    );
 
-    setConversations(updated);
     if (!customText) setMessageInput('');
 
-    // Disparar envio em segundo plano para o WhatsApp real via Uazapi / Deskcomm
+    // Disparar envio para o WhatsApp real via Uazapi e gravar no Supabase
     if (selectedConversation.customerPhone) {
-      sendWhatsAppMessage(
+      await sendWhatsAppMessage(
         selectedConversation.id,
         selectedConversation.customerPhone,
         textToSend.trim(),
@@ -1028,6 +1032,7 @@ export const ChatwootDrawer: React.FC<ChatwootDrawerProps> = ({
                 </div>
               );
             })}
+            <div ref={messagesEndRef} />
           </div>
 
           {/* Ações Rápidas de 1 Clique (Enviar Orçamento / PIX) */}
