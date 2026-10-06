@@ -3,7 +3,7 @@
 import React, { useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { ArrowRight, Sparkles, Zap, ShoppingBag } from 'lucide-react';
+import { ArrowRight, Sparkles, Zap, ShoppingBag, Phone } from 'lucide-react';
 import GlassOverlay from './ui/GlassOverlay';
 import { getWhatsAppWholesaleLink } from '@/config/store.config';
 
