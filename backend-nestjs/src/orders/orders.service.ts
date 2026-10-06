@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  Logger,
 } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { GestaoclickService } from "../gestaoclick/gestaoclick.service";
@@ -15,6 +16,8 @@ import {
 
 @Injectable()
 export class OrdersService {
+  private readonly logger = new Logger(OrdersService.name);
+
   constructor(
     private prisma: PrismaService,
     private gestaoclickService: GestaoclickService,
@@ -1005,5 +1008,29 @@ export class OrdersService {
 
     return orders;
   }
+
+  private async restoreStock(orderId: string): Promise<void> {
+    try {
+      const order = await this.prisma.order.findUnique({
+        where: { id: orderId },
+        include: { items: true },
+      });
+      if (order && order.items) {
+        for (const item of order.items) {
+          await this.prisma.product.update({
+            where: { id: item.productId },
+            data: {
+              stock: { increment: item.quantity },
+            },
+          }).catch((e) => {
+            this.logger.warn(`Could not restore stock for product ${item.productId}: ${e.message}`);
+          });
+        }
+      }
+    } catch (e: any) {
+      this.logger.error(`Error restoring stock for order ${orderId}: ${e.message}`);
+    }
+  }
 }
+
 

@@ -211,6 +211,12 @@ model Order {
   shipping        Float            @default(0)
   tax             Float            @default(0)
   notes           String?
+  deliveryMode    String?          @default("IMMEDIATE") // IMMEDIATE, FUTURE_PICKUP, SCHEDULED_DELIVERY
+  signatureUrl    String?
+  receivedBy      String?
+  receiverDoc     String?
+  dispatchedAt    DateTime?
+  dispatchedBy    String?
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
   userId          String
@@ -228,16 +234,38 @@ model Order {
 }
 
 model OrderItem {
-  id        String  @id @default(uuid())
-  quantity  Int
-  price     Float
-  total     Float
-  orderId   String
-  productId String
-  product   Product @relation(fields: [productId], references: [id])
-  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  id                String  @id @default(uuid())
+  quantity          Int
+  quantityPurchased Int?    @default(0)
+  quantityDelivered Int?    @default(0)
+  quantityRemaining Int?    @default(0)
+  price             Float
+  total             Float
+  orderId           String
+  productId         String
+  product           Product @relation(fields: [productId], references: [id])
+  order             Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   @@map("order_items")
+}
+
+model MaterialWithdrawal {
+  id                String   @id @default(uuid())
+  orderId           String
+  orderItemId       String?
+  productId         String?
+  productName       String?
+  quantityWithdrawn Int
+  remainingQuantity Int
+  receivedBy        String
+  receiverDoc       String?
+  vehiclePlate      String?
+  signatureUrl      String?
+  notes             String?
+  withdrawnAt       DateTime @default(now())
+  createdAt         DateTime @default(now())
+
+  @@map("material_withdrawals")
 }
 
 model ShippingAddress {
