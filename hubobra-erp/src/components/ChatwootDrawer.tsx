@@ -144,6 +144,13 @@ export const ChatwootDrawer: React.FC<ChatwootDrawerProps> = ({
   const [messageInput, setMessageInput] = useState<string>('');
   const [activeTab, setActiveTab] = useState<'SIMULATOR' | 'SETTINGS' | 'LIVE_IFRAME'>('SIMULATOR');
   const [playingAudioId, setPlayingAudioId] = useState<string | null>(null);
+  const [showCallMenu, setShowCallMenu] = useState<boolean>(false);
+  const [isCalling, setIsCalling] = useState<boolean>(false);
+  const [callStatus, setCallStatus] = useState<'DIALING' | 'RINGING' | 'CONNECTED' | 'ENDED'>('DIALING');
+  const [callDuration, setCallDuration] = useState<number>(0);
+  const [isMuted, setIsMuted] = useState<boolean>(false);
+  const ringIntervalRef = useRef<any>(null);
+  const timerIntervalRef = useRef<any>(null);
 
   // Sincronização em Tempo Real com o Deskcomm CRM
   useEffect(() => {
