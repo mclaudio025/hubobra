@@ -80,35 +80,33 @@ interface ChatConversation {
 
 const SAMPLE_CONVERSATIONS: ChatConversation[] = [
   {
-    id: 'conv-1',
-    customerName: 'Engenheiro Roberto Rocha',
-    customerPhone: '(85) 99888-7766',
-    companyName: 'Construtora Silva Ltda',
+    id: '96af6ff5-ff85-40e2-9c80-4f88a8c9dacb',
+    customerName: 'Claudio Sousa',
+    customerPhone: '+55 85 8921-9126',
+    companyName: 'Cliente WhatsApp',
     unreadCount: 1,
-    lastMessageTime: '10:42',
-    avatarText: 'RR',
+    lastMessageTime: 'Agora',
+    avatarText: 'CS',
     pendingItemsToImport: [
-      { productName: 'Cimento Poty Todas as Obras 50kg CP II-F', sku: '001100', quantity: 40, unit: 'SACO' },
-      { productName: 'Argamassa AC-III Cinza 20kg Quartzolit', sku: 'ARG001', quantity: 10, unit: 'SACO' },
+      { productName: 'Cimento Poty Todas as Obras 50kg CP II-F', sku: '001100', quantity: 50, unit: 'SACO' },
     ],
     messages: [
       {
         id: 'm-1',
         sender: 'CUSTOMER',
-        senderName: 'Engenheiro Roberto',
-        text: 'Bom dia Carlos! Tudo bem? Estou na Obra Alpha 04.',
-        time: '10:38',
+        senderName: 'Claudio Sousa',
+        text: '🎤 Áudio de Voz: "Olá Lia, gostaria de falar com o Carlos Eduardo para fechar um orçamento de cimento com ele."',
+        time: 'Agora',
+        isVoiceAudio: true,
+        audioDuration: '0:07',
+        audioTranscript: 'Olá Lia, gostaria de falar com o Carlos Eduardo para fechar um orçamento de cimento com ele.',
       },
       {
         id: 'm-2',
-        sender: 'CUSTOMER',
-        senderName: 'Engenheiro Roberto',
-        text: 'Áudio do WhatsApp recebido',
-        time: '10:42',
-        isVoiceAudio: true,
-        audioDuration: '0:18',
-        audioTranscript:
-          'Fala Carlos! Me passa o orçamento de 40 sacos de Cimento Poty e 10 sacos de Argamassa AC-3 com entrega pra hoje à tarde aqui na Obra Alpha 04?',
+        sender: 'LIA_AI',
+        senderName: 'Lia (IA HubObra)',
+        text: 'Com certeza, Claudio! Estou transferindo o seu atendimento para o vendedor Carlos Eduardo agora mesmo. Ele já vai assumir a conversa aqui no chat para fechar o seu orçamento com as melhores condições! 🏗️',
+        time: 'Agora',
       },
     ],
   },
@@ -527,7 +525,7 @@ export const ChatwootDrawer: React.FC<ChatwootDrawerProps> = ({
           </div>
           <div>
             <h2 className="text-xs font-bold text-white flex items-center gap-2">
-              <span>Chatwoot • Atendimento WhatsApp</span>
+              <span>Deskcomm CRM • WhatsApp Integrado</span>
               <span className="text-[9px] bg-emerald-500/20 text-emerald-400 font-mono px-1.5 py-0.5 rounded border border-emerald-500/30 flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
                 On-line
