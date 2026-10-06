@@ -1,10 +1,9 @@
-// Custom Server Entrypoint para Next.js no cPanel Node.js Selector
 const { createServer } = require('http');
 const { parse } = require('url');
 const next = require('next');
 
 const dev = process.env.NODE_ENV !== 'production';
-const hostname = 'localhost';
+const hostname = process.env.HOSTNAME || '0.0.0.0';
 const port = parseInt(process.env.PORT || '3000', 10);
 const app = next({ dev, hostname, port });
 const handle = app.getRequestHandler();
@@ -19,8 +18,8 @@ app.prepare().then(() => {
       res.statusCode = 500;
       res.end('Internal server error');
     }
-  }).listen(port, (err) => {
+  }).listen(port, '0.0.0.0', (err) => {
     if (err) throw err;
-    console.log(`> Frontend pronto e ouvindo na porta ${port}`);
+    console.log(`> Frontend pronto e ouvindo em http://0.0.0.0:${port}`);
   });
 });
