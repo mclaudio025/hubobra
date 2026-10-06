@@ -104,6 +104,8 @@ export interface LocalOrder {
   storeCreditUsed?: number;
   origin?: 'BALCAO' | 'MOBILE' | 'LIA_AI' | 'ECOMMERCE';
   isAiGenerated?: boolean;
+  deliveryMode?: 'IMMEDIATE' | 'FUTURE_PICKUP' | 'SCHEDULED_DELIVERY';
+  isFutureDelivery?: boolean;
   deliveryDriver?: string; // Nome do motorista ou vendedor que levou a maquininha
   status: 'AGUARDANDO_PAGAMENTO' | 'EM_ROTA_ENTREGA' | 'PAGO' | 'EM_SEPARACAO' | 'ENTREGUE' | 'CANCELADO';
   paidAt?: string;

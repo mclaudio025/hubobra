@@ -132,16 +132,23 @@ export const CashierQueueView: React.FC<CashierQueueViewProps> = ({ onPrintOrder
 
     await db.orders.update(selectedOrder.id, updatedOrderData);
 
-    // Baixa de estoque dos produtos
-    for (const item of selectedOrder.items) {
-      const prod = await db.products.get(item.productId);
-      if (prod) {
-        await db.products.update(item.productId, {
-          stock: Math.max(0, prod.stock - item.quantity),
-          reservedStock: Math.max(0, (prod.reservedStock || 0) - item.quantity),
-          updatedAt: new Date().toISOString(),
-        });
+    const isFuturePickup = selectedOrder.deliveryMode === 'FUTURE_PICKUP' || selectedOrder.isFutureDelivery;
+
+    // Baixa de estoque dos produtos SOMENTE se for entrega/retirada imediata
+    // Se for Saldo de Materiais (FUTURE_PICKUP), o estoque físico permanece INTACTO no galpão
+    if (!isFuturePickup) {
+      for (const item of selectedOrder.items) {
+        const prod = await db.products.get(item.productId);
+        if (prod) {
+          await db.products.update(item.productId, {
+            stock: Math.max(0, prod.stock - item.quantity),
+            reservedStock: Math.max(0, (prod.reservedStock || 0) - item.quantity),
+            updatedAt: new Date().toISOString(),
+          });
+        }
       }
+    } else {
+      console.log(`📦 Venda #${selectedOrder.orderNumber} confirmada como SALDO DE MATERIAIS. Estoque físico mantido na loja.`);
     }
 
     setIsPaymentModalOpen(false);
@@ -221,6 +228,7 @@ export const CashierQueueView: React.FC<CashierQueueViewProps> = ({ onPrintOrder
       {activeQueueTab === 'PENDING' && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredPending.map((order) => {
+            const isFuturePickup = order.deliveryMode === 'FUTURE_PICKUP' || order.isFutureDelivery;
             const isAiOrder = order.isAiGenerated || order.origin === 'LIA_AI' || order.sellerName.toLowerCase().includes('lia');
             const isDeliveryPayment = order.paymentCondition?.toLowerCase().includes('entrega');
 
@@ -228,24 +236,30 @@ export const CashierQueueView: React.FC<CashierQueueViewProps> = ({ onPrintOrder
               <div
                 key={order.id}
                 className={`bg-slate-900 rounded-2xl p-5 flex flex-col justify-between shadow-xl transition-all relative overflow-hidden group border ${
-                  isAiOrder
+                  isFuturePickup
+                    ? 'border-amber-400 shadow-amber-500/15 hover:border-amber-300 bg-gradient-to-b from-slate-900 via-slate-900 to-amber-950/40 ring-1 ring-amber-400/40'
+                    : isAiOrder
                     ? 'border-purple-500/50 shadow-purple-500/10 hover:border-purple-400 bg-gradient-to-b from-slate-900 to-purple-950/20'
                     : isDeliveryPayment
                     ? 'border-cyan-500/40 hover:border-cyan-400'
-                    : 'border-amber-500/30 hover:border-amber-500'
+                    : 'border-slate-800 hover:border-slate-700'
                 }`}
               >
                 {/* Badge de Status / Origem */}
                 <div
-                  className={`absolute top-0 right-0 font-black text-[10px] px-3 py-1 rounded-bl-xl uppercase flex items-center gap-1 ${
-                    isAiOrder
+                  className={`absolute top-0 right-0 font-black text-[10px] px-3 py-1 rounded-bl-xl uppercase flex items-center gap-1 shadow-md ${
+                    isFuturePickup
+                      ? 'bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-400 text-slate-950 font-black shadow-amber-500/20'
+                      : isAiOrder
                       ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-md'
                       : isDeliveryPayment
                       ? 'bg-cyan-500 text-slate-950 font-black'
-                      : 'bg-amber-500 text-slate-950'
+                      : 'bg-slate-800 text-slate-300'
                   }`}
                 >
-                  {isAiOrder ? (
+                  {isFuturePickup ? (
+                    <span className="flex items-center gap-1">📦 SALDO NA LOJA (RETIRADA FUTURA)</span>
+                  ) : isAiOrder ? (
                     <span>✨ FEITO POR IA (LIA)</span>
                   ) : isDeliveryPayment ? (
                     <span>🚚 PAGAR NA ENTREGA</span>
@@ -256,23 +270,31 @@ export const CashierQueueView: React.FC<CashierQueueViewProps> = ({ onPrintOrder
 
                 <div>
                   <div className="flex items-center gap-2 mb-2">
-                    <span className={`font-mono font-black text-sm ${isAiOrder ? 'text-purple-400' : 'text-amber-400'}`}>
+                    <span className={`font-mono font-black text-sm ${isFuturePickup ? 'text-amber-400 font-bold' : isAiOrder ? 'text-purple-400' : 'text-slate-300'}`}>
                       {order.orderNumber}
                     </span>
                     <span className="text-[10px] text-slate-500">•</span>
-                    <span className={`text-[10px] font-bold flex items-center gap-1 ${isAiOrder ? 'text-pink-300' : 'text-slate-400'}`}>
+                    <span className={`text-[10px] font-bold flex items-center gap-1 ${isFuturePickup ? 'text-yellow-300' : isAiOrder ? 'text-pink-300' : 'text-slate-400'}`}>
                       {order.sellerName}
                     </span>
                   </div>
 
                   <h4 className="text-sm font-bold text-white mb-1 truncate">{order.customerName}</h4>
                   
-                  <div className="flex items-center gap-2 text-xs text-slate-400 mb-3">
+                  <div className="flex items-center gap-2 text-xs text-slate-400 mb-2">
                     <span>Condição: <strong className="text-slate-300">{order.paymentCondition || 'A Vista'}</strong></span>
                     {order.customerPhone && (
                       <span className="text-[10px] text-emerald-400 font-mono">📱 {order.customerPhone}</span>
                     )}
                   </div>
+
+                  {/* ALERTA VISUAL DE SALDO DE MATERIAL RETIDO */}
+                  {isFuturePickup && (
+                    <div className="mb-3 p-2 bg-amber-500/10 border border-amber-500/30 rounded-xl flex items-center gap-2 text-amber-300 text-[11px] font-bold">
+                      <Package className="w-4 h-4 text-amber-400 shrink-0" />
+                      <span>⚠️ Material FICA na loja. NÃO carregar caminhão agora.</span>
+                    </div>
+                  )}
 
                   {/* Resumo de Itens */}
                   <div className="bg-slate-950 p-2.5 rounded-xl border border-slate-800 space-y-1 max-h-32 overflow-y-auto">
@@ -302,19 +324,21 @@ export const CashierQueueView: React.FC<CashierQueueViewProps> = ({ onPrintOrder
 
                     <button
                       onClick={() => handleOpenPayment(order)}
-                      className={`px-4 py-2.5 font-bold text-xs rounded-xl flex items-center gap-1.5 shadow-lg transition-all text-white ${
-                        isAiOrder
-                          ? 'bg-gradient-to-r from-purple-600 to-emerald-600 hover:from-purple-500 hover:to-emerald-500 shadow-purple-600/20'
-                          : 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-600/20'
+                      className={`px-4 py-2.5 font-black text-xs rounded-xl flex items-center gap-1.5 shadow-lg transition-all ${
+                        isFuturePickup
+                          ? 'bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-slate-950 shadow-amber-500/20'
+                          : isAiOrder
+                          ? 'bg-gradient-to-r from-purple-600 to-emerald-600 hover:from-purple-500 hover:to-emerald-500 text-white shadow-purple-600/20'
+                          : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/20'
                       }`}
                     >
-                      <span>Receber no Caixa [F10]</span>
+                      <span>{isFuturePickup ? 'Receber & Gerar Saldo [F10]' : 'Receber no Caixa [F10]'}</span>
                       <ArrowRight className="w-4 h-4" />
                     </button>
                   </div>
 
                   {/* Botão de Liberar para Entrega com Maquininha */}
-                  {isDeliveryPayment && (
+                  {isDeliveryPayment && !isFuturePickup && (
                     <button
                       onClick={() => handleReleaseForDelivery(order)}
                       className="w-full py-2 bg-cyan-600/20 hover:bg-cyan-600 text-cyan-300 hover:text-white rounded-xl text-xs font-bold border border-cyan-500/30 transition-all flex items-center justify-center gap-1.5"

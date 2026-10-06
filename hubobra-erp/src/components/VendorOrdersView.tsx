@@ -62,6 +62,7 @@ export const VendorOrdersView: React.FC<VendorOrdersViewProps> = ({
   const [shippingCost, setShippingCost] = useState<number>(0);
   const [generalDiscount, setGeneralDiscount] = useState<number>(0);
   const [paymentCondition, setPaymentCondition] = useState<string>('A Vista no Caixa (PIX / Dinheiro)');
+  const [deliveryMode, setDeliveryMode] = useState<'IMMEDIATE' | 'FUTURE_PICKUP'>('IMMEDIATE');
   const [orderNotes, setOrderNotes] = useState<string>('');
 
   // Linha de Digitação de Produto Rápido
@@ -393,6 +394,7 @@ export const VendorOrdersView: React.FC<VendorOrdersViewProps> = ({
     setOrderItems([]);
     setGeneralDiscount(0);
     setShippingCost(0);
+    setDeliveryMode('IMMEDIATE');
     setOrderNotes('');
     searchInputRef.current?.focus();
   };
@@ -406,6 +408,7 @@ export const VendorOrdersView: React.FC<VendorOrdersViewProps> = ({
 
     const subtotal = orderItems.reduce((acc, i) => acc + i.total, 0);
     const finalTotal = Math.max(0, subtotal - generalDiscount + shippingCost);
+    const isFuture = deliveryMode === 'FUTURE_PICKUP';
 
     const newOrder: LocalOrder = {
       id: 'ord-' + Date.now(),
@@ -423,10 +426,12 @@ export const VendorOrdersView: React.FC<VendorOrdersViewProps> = ({
       discount: generalDiscount,
       shipping: shippingCost,
       total: finalTotal,
-      paymentCondition,
+      deliveryMode,
+      isFutureDelivery: isFuture,
+      paymentCondition: isFuture ? `📦 Saldo de Material • ${paymentCondition}` : paymentCondition,
       status: 'AGUARDANDO_PAGAMENTO',
       fiscalStatus: 'NOT_EMITTED',
-      notes: orderNotes,
+      notes: isFuture ? `[SALDO DE MATERIAL EM HAVER] ${orderNotes}`.trim() : orderNotes,
       syncedToCloud: true,
       syncedToGestaoClick: false,
     };
@@ -436,7 +441,7 @@ export const VendorOrdersView: React.FC<VendorOrdersViewProps> = ({
 
     // Notificar callback e limpar tela
     onOrderSentToCashier(newOrder);
-    alert(`🎉 Pedido #${orderNumber} enviado com sucesso para a fila do Caixa Central!`);
+    alert(`🎉 Pedido #${orderNumber} (${isFuture ? '📦 SALDO DE MATERIAIS' : '🚚 ENTREGA/RETIRADA'}) enviado com sucesso para a fila do Caixa Central!`);
     handleNewOrder();
   };
 
@@ -877,11 +882,47 @@ export const VendorOrdersView: React.FC<VendorOrdersViewProps> = ({
 
       {/* 5. FOOTER COM RESUMO, CONDIÇÃO DE PAGAMENTO & ENVIO AO CAIXA [F5] */}
       <div className="bg-slate-900 border-t border-slate-800 p-4 flex flex-col md:flex-row items-center justify-between gap-4">
-        {/* Observações e Condição de Pagamento */}
-        <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3 w-full">
+        {/* Modalidade de Entrega, Condição de Pagamento e Observações */}
+        <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-3 w-full">
           <div>
             <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
-              Condição de Pagamento Negociada
+              Modalidade do Pedido
+            </label>
+            <div className="grid grid-cols-2 gap-1.5 p-1 bg-slate-950 border border-slate-700 rounded-xl">
+              <button
+                type="button"
+                onClick={() => setDeliveryMode('IMMEDIATE')}
+                className={`py-1.5 px-2 rounded-lg text-[11px] font-bold transition-all flex items-center justify-center gap-1 ${
+                  deliveryMode === 'IMMEDIATE'
+                    ? 'bg-slate-800 text-white shadow'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <span>🚚 Imediato</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setDeliveryMode('FUTURE_PICKUP')}
+                className={`py-1.5 px-2 rounded-lg text-[11px] font-black transition-all flex items-center justify-center gap-1 ${
+                  deliveryMode === 'FUTURE_PICKUP'
+                    ? 'bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 shadow-md shadow-amber-500/20'
+                    : 'text-amber-400 hover:text-amber-300'
+                }`}
+              >
+                <span>📦 Saldo Loja</span>
+              </button>
+            </div>
+            {deliveryMode === 'FUTURE_PICKUP' && (
+              <span className="text-[9px] text-amber-400 font-bold block mt-1">
+                ⚡ Material fica retido na loja (não baixa estoque no caixa)
+              </span>
+            )}
+          </div>
+
+          <div>
+            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+              Condição de Pagamento
             </label>
             <select
               value={paymentCondition}
@@ -891,8 +932,8 @@ export const VendorOrdersView: React.FC<VendorOrdersViewProps> = ({
               <option value="A Vista no Caixa (PIX / Dinheiro)">À Vista no Caixa (PIX / Dinheiro)</option>
               <option value="Cartão Débito / Crédito 1x">Cartão Débito / Crédito no Balcão</option>
               <option value="Cartão de Crédito 3x Sem Juros">Cartão de Crédito em 3x</option>
-              <option value="Pagar na Entrega (Maquininha de Cartão)">🚚 Pagar na Entrega (Maquininha de Cartão)</option>
-              <option value="Pagar na Entrega (Dinheiro / Troco)">🚚 Pagar na Entrega (Dinheiro com Troco)</option>
+              <option value="Pagar na Entrega (Maquininha de Cartão)">🚚 Pagar na Entrega (Maquininha)</option>
+              <option value="Pagar na Entrega (Dinheiro / Troco)">🚚 Pagar na Entrega (Dinheiro c/ Troco)</option>
               <option value="Pagar na Entrega (PIX na Obra)">🚚 Pagar na Entrega (PIX na Obra)</option>
               <option value="Boleto 30 Dias / Faturado">Boleto 30 Dias (Faturado / Crediário)</option>
               <option value="Boleto 30/60/90 Dias">Boleto 30/60/90 Dias</option>
@@ -901,11 +942,11 @@ export const VendorOrdersView: React.FC<VendorOrdersViewProps> = ({
 
           <div>
             <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
-              Observações da Obra / Entrega
+              Observações da Obra / Saldo
             </label>
             <input
               type="text"
-              placeholder="Ex: Entregar até 16h, descarregar no piso térreo..."
+              placeholder={deliveryMode === 'FUTURE_PICKUP' ? 'Ex: Cliente retira 10 sacos por semana...' : 'Ex: Entregar até 16h, descarregar no piso térreo...'}
               value={orderNotes}
               onChange={(e) => setOrderNotes(e.target.value)}
               className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-xs text-white focus:border-amber-500 focus:outline-none"

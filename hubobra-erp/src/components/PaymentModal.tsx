@@ -334,6 +334,17 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
           </button>
         </div>
 
+        {/* BANNER DE VENDA PARA ENTREGA FUTURA (SALDO DE MATERIAIS) */}
+        {(order?.deliveryMode === 'FUTURE_PICKUP' || order?.isFutureDelivery) && (
+          <div className="bg-amber-500/15 border-b border-amber-500/30 px-6 py-2.5 flex items-center gap-2.5 text-amber-300 text-xs font-bold">
+            <span className="p-1 bg-amber-500/20 text-amber-400 rounded-lg text-sm">📦</span>
+            <div>
+              <p className="text-xs font-black text-amber-300">MODALIDADE: SALDO DE MATERIAIS (RETIRADA FUTURA)</p>
+              <p className="text-[10px] text-amber-200/80">A venda financeira será processada no caixa, mas o estoque físico permanece intacto no galpão para retiradas fracionadas.</p>
+            </div>
+          </div>
+        )}
+
         {/* BANNER DE HAVER / CRÉDITO DO CLIENTE (SE HOUVER SALDO) */}
         {storeCreditAvailable > 0 && (
           <div className="bg-gradient-to-r from-amber-500/20 via-amber-500/10 to-transparent border-b border-amber-500/30 px-6 py-2.5 flex items-center justify-between">
