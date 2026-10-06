@@ -202,7 +202,6 @@ export async function POST(req: NextRequest): Promise<Response> {
     status: "delivered",
     external_id: messageId,
     sent_at: now,
-    sent_via: fromMe ? "ai_agent" : "whatsapp",
     metadata: {
       uazapi: true,
       sender_name: senderName,
