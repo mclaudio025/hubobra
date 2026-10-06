@@ -29,6 +29,7 @@ import { PaymentsModule } from "./payments/payments.module";
 import { MailModule } from "./mail/mail.module";
 import { ReviewsModule } from "./reviews/reviews.module";
 import { QuotesModule } from "./quotes/quotes.module";
+import { GestaoclickModule } from "./gestaoclick/gestaoclick.module";
 import { getThrottlerConfig } from "./security/throttler.config";
 import { LoggingInterceptor } from "./logging/logging.interceptor";
 import { MetricsInterceptor } from "./metrics/metrics.interceptor";
@@ -72,6 +73,7 @@ import { MetricsInterceptor } from "./metrics/metrics.interceptor";
     PaymentsModule,
     MailModule,
     ReviewsModule,
+    GestaoclickModule,
   ],
   providers: [
     {

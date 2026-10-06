@@ -4,6 +4,7 @@ import {
   BadRequestException,
 } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
+import { GestaoclickService } from "../gestaoclick/gestaoclick.service";
 import { CreateOrderDto } from "./dto/create-order.dto";
 import {
   UpdateOrderStatusDto,
@@ -14,7 +15,10 @@ import {
 
 @Injectable()
 export class OrdersService {
-  constructor(private prisma: PrismaService) { }
+  constructor(
+    private prisma: PrismaService,
+    private gestaoclickService: GestaoclickService,
+  ) { }
 
   async create(createOrderDto: CreateOrderDto, userId: string) {
     const {
@@ -163,6 +167,11 @@ export class OrdersService {
       } catch (cartErr: any) {
         console.warn("[OrdersService] Aviso ao limpar itens do carrinho:", cartErr?.message);
       }
+
+      // Sincronização em segundo plano com o ERP GestãoClick (não bloqueante para o checkout do cliente)
+      this.gestaoclickService.syncOrderToGestaoClick(newOrder).catch((erpErr) => {
+        console.error("[OrdersService] Erro na sincronização assíncrona com GestãoClick:", erpErr?.message);
+      });
 
       return newOrder;
     } catch (dbErr: any) {
@@ -332,6 +341,11 @@ export class OrdersService {
         payment: true,
         user: true
       }
+    });
+
+    // Sincronização em segundo plano com o ERP GestãoClick para pedidos originados pelo WhatsApp/Bot
+    this.gestaoclickService.syncOrderToGestaoClick(newOrder).catch((erpErr) => {
+      console.error("[OrdersService] Erro na sincronização com GestãoClick (Bot Order):", erpErr?.message);
     });
 
     return {
@@ -801,24 +815,195 @@ export class OrdersService {
     }
   }
 
-  private async restoreStock(orderId: string) {
+  async recordMaterialWithdrawal(orderId: string, data: {
+    items: Array<{ orderItemId?: string; productId: string; quantityWithdrawn: number; productName?: string }>;
+    withdrawnBy: string;
+    receiverDoc?: string;
+    vehiclePlate?: string;
+    signatureUrl?: string;
+    notes?: string;
+  }) {
     const order = await this.prisma.order.findUnique({
       where: { id: orderId },
-      include: { items: true },
+      include: {
+        items: {
+          include: { product: true }
+        },
+        user: true
+      }
     });
 
-    if (!order) return;
+    if (!order) {
+      throw new NotFoundException('Pedido não encontrado');
+    }
 
-    // Restaurar estoque dos produtos
-    for (const item of order.items) {
-      await this.prisma.product.update({
-        where: { id: item.productId },
-        data: {
-          stock: {
-            increment: item.quantity,
-          },
-        },
+    if (!data.items || data.items.length === 0) {
+      throw new BadRequestException('Nenhum item informado para retirada');
+    }
+
+    const withdrawalRecords: any[] = [];
+
+    for (const itemWithdrawal of data.items) {
+      const qty = Number(itemWithdrawal.quantityWithdrawn) || 0;
+      if (qty <= 0) continue;
+
+      // Localizar item do pedido correspondente
+      const targetItem = order.items.find(
+        (it) => it.id === itemWithdrawal.orderItemId || it.productId === itemWithdrawal.productId
+      );
+
+      const productName = targetItem?.product?.name || itemWithdrawal.productName || 'Material da Obra';
+
+      // Atualizar saldo do item no banco
+      if (targetItem) {
+        await this.prisma.$executeRaw`
+          UPDATE public.order_items
+          SET "quantityDelivered" = COALESCE("quantityDelivered", 0) + ${qty},
+              "quantityRemaining" = GREATEST(0, COALESCE("quantityRemaining", quantity, 1) - ${qty})
+          WHERE id = ${targetItem.id}::uuid OR id::text = ${targetItem.id};
+        `;
+      }
+
+      // Baixar estoque físico do produto
+      if (itemWithdrawal.productId) {
+        try {
+          await this.prisma.$executeRaw`
+            UPDATE public.products
+            SET stock = GREATEST(0, COALESCE(stock, 0) - ${qty})
+            WHERE id = ${itemWithdrawal.productId}::uuid OR id::text = ${itemWithdrawal.productId};
+          `;
+        } catch (e) {
+          console.warn('Erro ao atualizar estoque do produto:', e);
+        }
+      }
+
+      // Registrar retirada na tabela material_withdrawals
+      const withdrawalInsert = await this.prisma.$queryRaw<any[]>`
+        INSERT INTO public.material_withdrawals (
+          "orderId", "orderItemId", "productId", "productName", "quantityWithdrawn",
+          "withdrawnBy", "receiverDoc", "vehiclePlate", "signatureUrl", notes, "createdAt"
+        )
+        VALUES (
+          ${orderId}, ${itemWithdrawal.orderItemId || null}, ${itemWithdrawal.productId || null},
+          ${productName}, ${qty}, ${data.withdrawnBy}, ${data.receiverDoc || null},
+          ${data.vehiclePlate || null}, ${data.signatureUrl || null}, ${data.notes || null}, NOW()
+        )
+        RETURNING *;
+      `;
+
+      withdrawalRecords.push(withdrawalInsert[0] || {
+        productName,
+        quantityWithdrawn: qty,
+        withdrawnBy: data.withdrawnBy
       });
     }
+
+    // Verificar se todos os itens foram entregues
+    const updatedItems = await this.prisma.$queryRaw<any[]>`
+      SELECT COALESCE(SUM("quantityRemaining"), 0) as remaining_total
+      FROM public.order_items
+      WHERE "orderId" = ${orderId}::uuid OR "orderId"::text = ${orderId};
+    `;
+
+    const remainingTotal = Number(updatedItems[0]?.remaining_total || 0);
+
+    // Se fornecida assinatura, gravar no pedido
+    if (data.signatureUrl || data.withdrawnBy) {
+      await this.prisma.$executeRaw`
+        UPDATE public.orders
+        SET "signatureUrl" = COALESCE(${data.signatureUrl || null}, "signatureUrl"),
+            "receivedBy" = COALESCE(${data.withdrawnBy || null}, "receivedBy"),
+            "receiverDoc" = COALESCE(${data.receiverDoc || null}, "receiverDoc"),
+            "dispatchedAt" = NOW(),
+            status = CASE WHEN ${remainingTotal === 0} THEN 'DELIVERED' ELSE status END
+        WHERE id = ${orderId}::uuid OR id::text = ${orderId};
+      `;
+    }
+
+    return {
+      success: true,
+      message: 'Retirada registrada com sucesso!',
+      orderId,
+      orderNumber: order.orderNumber,
+      customerName: order.user?.name || 'Cliente Balcão',
+      withdrawnBy: data.withdrawnBy,
+      withdrawals: withdrawalRecords,
+      isFullyDelivered: remainingTotal === 0
+    };
+  }
+
+  async signOrderDelivery(orderId: string, data: {
+    signatureUrl: string;
+    receivedBy: string;
+    receiverDoc?: string;
+    dispatchedBy?: string;
+    notes?: string;
+  }) {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId }
+    });
+
+    if (!order) {
+      throw new NotFoundException('Pedido não encontrado');
+    }
+
+    await this.prisma.$executeRaw`
+      UPDATE public.orders
+      SET "signatureUrl" = ${data.signatureUrl},
+          "receivedBy" = ${data.receivedBy},
+          "receiverDoc" = ${data.receiverDoc || null},
+          "dispatchedBy" = ${data.dispatchedBy || 'Conferente'},
+          "dispatchedAt" = NOW(),
+          status = 'DELIVERED'
+      WHERE id = ${orderId}::uuid OR id::text = ${orderId};
+    `;
+
+    // Marcar todos os itens como entregues
+    await this.prisma.$executeRaw`
+      UPDATE public.order_items
+      SET "quantityDelivered" = COALESCE(quantity, 1),
+          "quantityRemaining" = 0
+      WHERE "orderId" = ${orderId}::uuid OR "orderId"::text = ${orderId};
+    `;
+
+    return {
+      success: true,
+      message: 'Assinatura registrada e pedido finalizado com sucesso!',
+      orderId,
+      status: 'DELIVERED',
+      signatureUrl: data.signatureUrl,
+      receivedBy: data.receivedBy
+    };
+  }
+
+  async getOrderWithdrawals(orderId: string) {
+    const withdrawals = await this.prisma.$queryRaw<any[]>`
+      SELECT * FROM public.material_withdrawals
+      WHERE "orderId" = ${orderId}::text OR "orderId" = ${orderId}
+      ORDER BY "createdAt" DESC;
+    `;
+    return withdrawals;
+  }
+
+  async getFutureDeliveries(search?: string) {
+    const orders = await this.prisma.order.findMany({
+      where: {
+        OR: [
+          { deliveryMode: 'FUTURE_PICKUP' },
+          { status: { in: ['CONFIRMED', 'PROCESSING', 'PAGO'] } }
+        ]
+      },
+      include: {
+        items: {
+          include: { product: true }
+        },
+        user: true
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 50
+    });
+
+    return orders;
   }
 }
+

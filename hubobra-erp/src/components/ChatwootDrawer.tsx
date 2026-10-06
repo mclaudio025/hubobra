@@ -63,6 +63,7 @@ interface ChatMessage {
 
 interface ChatConversation {
   id: string;
+  contactId?: string;
   customerName: string;
   customerPhone: string;
   companyName?: string;
@@ -165,6 +166,7 @@ export const ChatwootDrawer: React.FC<ChatwootDrawerProps> = ({
               const existing = prev.find((p) => p.id === rc.id);
               return {
                 id: rc.id,
+                contactId: rc.contactId,
                 customerName: rc.customerName,
                 customerPhone: rc.customerPhone,
                 companyName: rc.companyName,
@@ -205,7 +207,7 @@ export const ChatwootDrawer: React.FC<ChatwootDrawerProps> = ({
     const syncMessages = async () => {
       try {
         const realMsgs = await getRealtimeMessages(selectedConvId);
-        if (isMounted && realMsgs && realMsgs.length > 0) {
+        if (isMounted && realMsgs) {
           setConversations((prev) =>
             prev.map((c) => {
               if (c.id === selectedConvId) {
@@ -445,7 +447,8 @@ export const ChatwootDrawer: React.FC<ChatwootDrawerProps> = ({
         selectedConversation.id,
         selectedConversation.customerPhone,
         textToSend.trim(),
-        sellerName
+        sellerName,
+        selectedConversation.contactId
       );
     }
   };

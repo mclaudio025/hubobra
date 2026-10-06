@@ -67,6 +67,53 @@ export class OrdersController {
     return this.ordersService.findExpeditionQueue(status, search);
   }
 
+  @Get("future-deliveries")
+  @ApiOperation({ summary: "Listar pedidos com entrega futura / saldo de materiais pendente" })
+  @ApiResponse({ status: 200, description: "Lista de pedidos com saldo a retirar" })
+  findFutureDeliveries(@Query("search") search?: string) {
+    return this.ordersService.getFutureDeliveries(search);
+  }
+
+  @Post(":id/withdraw")
+  @ApiOperation({ summary: "Registrar retirada fracionada de materiais do pedido" })
+  @ApiResponse({ status: 201, description: "Retirada registrada com sucesso" })
+  recordWithdrawal(
+    @Param("id") id: string,
+    @Body() withdrawalDto: {
+      items: Array<{ orderItemId?: string; productId: string; quantityWithdrawn: number; productName?: string }>;
+      withdrawnBy: string;
+      receiverDoc?: string;
+      vehiclePlate?: string;
+      signatureUrl?: string;
+      notes?: string;
+    },
+  ) {
+    return this.ordersService.recordMaterialWithdrawal(id, withdrawalDto);
+  }
+
+  @Post(":id/sign-delivery")
+  @ApiOperation({ summary: "Registrar assinatura digital e finalizar entrega do pedido" })
+  @ApiResponse({ status: 200, description: "Assinatura registrada com sucesso" })
+  signDelivery(
+    @Param("id") id: string,
+    @Body() signDto: {
+      signatureUrl: string;
+      receivedBy: string;
+      receiverDoc?: string;
+      dispatchedBy?: string;
+      notes?: string;
+    },
+  ) {
+    return this.ordersService.signOrderDelivery(id, signDto);
+  }
+
+  @Get(":id/withdrawals")
+  @ApiOperation({ summary: "Obter histórico de retiradas de materiais do pedido" })
+  @ApiResponse({ status: 200, description: "Histórico de retiradas" })
+  getOrderWithdrawals(@Param("id") id: string) {
+    return this.ordersService.getOrderWithdrawals(id);
+  }
+
   @Patch(":id/dispatch")
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.MANAGER, UserRole.EXPEDITION)

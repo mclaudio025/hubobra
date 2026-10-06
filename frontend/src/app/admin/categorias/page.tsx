@@ -64,13 +64,13 @@ export default function AdminCategorias() {
       const list: Category[] = response || [];
       setCategories(list);
       
-      // Expandir automaticamente todas as categorias principais que possuem subcategorias
-      const parentIdsWithChildren = new Set(
+      // Expandir automaticamente todas as categorias que possuem subcategorias
+      const allParentIds = new Set(
         list
-          .filter(c => !c.parentId && c.children && c.children.length > 0)
+          .filter(c => list.some(child => child.parentId === c.id))
           .map(c => c.id)
       );
-      setExpandedCategories(parentIdsWithChildren);
+      setExpandedCategories(allParentIds);
     } catch (error) {
       console.error('Erro ao carregar categorias:', error);
       addToast({
@@ -148,18 +148,60 @@ export default function AdminCategorias() {
     }
   };
 
-  const filteredCategories = categories.filter(category => {
-    // Se não estiver pesquisando por termo, mostrar apenas categorias principais no nível raiz (subcategorias aparecem aninhadas dentro delas)
-    if (!searchTerm && category.parentId) {
-      return false;
+  // Construir árvore hierárquica perfeita a partir de todos os itens retornados pela API
+  const buildCategoryTree = (items: Category[]): Category[] => {
+    const itemMap = new Map<string, Category>();
+    
+    // 1. Criar cópia de cada item com lista de filhos limpa
+    items.forEach(item => {
+      itemMap.set(item.id, {
+        ...item,
+        children: []
+      });
+    });
+
+    const roots: Category[] = [];
+
+    // 2. Montar os vínculos pai-filho
+    items.forEach(item => {
+      const node = itemMap.get(item.id)!;
+      if (item.parentId && itemMap.has(item.parentId)) {
+        itemMap.get(item.parentId)!.children!.push(node);
+      } else if (!item.parentId) {
+        roots.push(node);
+      }
+    });
+
+    // 3. Ordenar raízes e filhos por ordem e nome
+    const sortNodes = (nodes: Category[]) => {
+      nodes.sort((a, b) => (a.order - b.order) || a.name.localeCompare(b.name));
+      nodes.forEach(n => {
+        if (n.children && n.children.length > 0) {
+          sortNodes(n.children);
+        }
+      });
+    };
+
+    sortNodes(roots);
+    return roots;
+  };
+
+  const treeCategories = buildCategoryTree(categories);
+
+  const filteredCategories = treeCategories.filter(category => {
+    if (searchTerm) {
+      const matchInSelf = category.name.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchInChildren = (cat: Category): boolean => {
+        if (cat.name.toLowerCase().includes(searchTerm.toLowerCase())) return true;
+        return (cat.children || []).some(c => matchInChildren(c));
+      };
+      if (!matchInSelf && !matchInChildren(category)) return false;
     }
 
-    const matchesSearch = category.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === '' || 
-      (statusFilter === 'active' && category.active) ||
-      (statusFilter === 'inactive' && !category.active);
-    
-    return matchesSearch && matchesStatus;
+    if (statusFilter === 'active' && !category.active) return false;
+    if (statusFilter === 'inactive' && category.active) return false;
+
+    return true;
   });
 
   const renderCategory = (category: Category, level = 0) => {
@@ -194,20 +236,30 @@ export default function AdminCategorias() {
             )}
 
             <div className="flex items-center gap-3">
-              {category.icon ? (
-                <i className={`${category.icon} text-gray-600`}></i>
+              {category.image ? (
+                <img
+                  src={category.image}
+                  alt={category.name}
+                  className="w-10 h-10 rounded-lg object-cover border border-gray-200 shadow-sm flex-shrink-0"
+                />
+              ) : category.icon ? (
+                <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
+                  <i className={`${category.icon} text-gray-600`}></i>
+                </div>
               ) : (
-                hasChildren ? (
-                  <FolderOpen className="h-5 w-5 text-gray-600" />
-                ) : (
-                  <Folder className="h-5 w-5 text-gray-600" />
-                )
+                <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
+                  {hasChildren ? (
+                    <FolderOpen className="h-5 w-5 text-gray-600" />
+                  ) : (
+                    <Folder className="h-5 w-5 text-gray-600" />
+                  )}
+                </div>
               )}
               
               <div>
                 <h3 className="font-semibold text-gray-900">{category.name}</h3>
                 {category.description && (
-                  <p className="text-sm text-gray-600">{category.description}</p>
+                  <p className="text-sm text-gray-600 line-clamp-1">{category.description}</p>
                 )}
               </div>
             </div>

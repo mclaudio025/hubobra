@@ -8,6 +8,7 @@ const UAZAPI_TOKEN = '2b8e068e-e174-4419-a64c-9b97f4760527';
 
 export interface DeskcommConversation {
   id: string;
+  contactId?: string;
   customerName: string;
   customerPhone: string;
   companyName?: string;
@@ -95,6 +96,7 @@ export async function getRealtimeConversations(): Promise<DeskcommConversation[]
 
       return {
         id: item.id,
+        contactId: item.contact_id,
         customerName: name,
         customerPhone: phone,
         unreadCount: item.unread_count_for_assignee || 0,
@@ -137,7 +139,8 @@ export async function getRealtimeMessages(conversationId: string): Promise<Deskc
         }
       }
 
-      const date = m.created_at ? new Date(m.created_at) : new Date();
+      const dateStr = m.sent_at || m.created_at || new Date().toISOString();
+      const date = new Date(dateStr);
       const timeStr = date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 
       const isAudio = m.type === 'audio' || m.body?.includes('[Áudio') || m.metadata?.is_audio;
@@ -163,36 +166,76 @@ export async function sendWhatsAppMessage(
   conversationId: string,
   phoneNumber: string,
   text: string,
-  sellerName = 'Carlos Eduardo'
+  sellerName = 'Carlos Eduardo',
+  contactId?: string
 ): Promise<boolean> {
   try {
     const cleanPhone = phoneNumber.replace(/\D/g, '');
 
     // 1. Enviar mensagem via Uazapi diretamente para o WhatsApp do cliente
-    await fetch('https://hubobra.uazapi.com/send/text', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        token: UAZAPI_TOKEN,
-      },
-      body: JSON.stringify({
-        number: cleanPhone,
-        text,
-      }),
-    });
+    try {
+      await fetch('https://hubobra.uazapi.com/send/text', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          token: UAZAPI_TOKEN,
+        },
+        body: JSON.stringify({
+          number: cleanPhone,
+          text,
+        }),
+      });
+    } catch (uazapiErr) {
+      console.warn('Falha no envio Uazapi:', uazapiErr);
+    }
 
-    // 2. Gravar no Supabase / Deskcomm CRM
-    await fetch(`${SUPABASE_URL}/rest/v1/messages`, {
+    // 2. Resolver contactId se não informado
+    let resolvedContactId = contactId;
+    if (!resolvedContactId) {
+      const convRes = await fetch(
+        `${SUPABASE_URL}/rest/v1/conversations?id=eq.${conversationId}&select=contact_id`,
+        { headers }
+      );
+      if (convRes.ok) {
+        const convData = await convRes.json();
+        if (convData?.[0]?.contact_id) {
+          resolvedContactId = convData[0].contact_id;
+        }
+      }
+    }
+
+    if (!resolvedContactId) {
+      // Fallback para buscar contato pelo telefone
+      const formattedPhone = cleanPhone.startsWith('55') ? `+${cleanPhone}` : `+55${cleanPhone}`;
+      const contactRes = await fetch(
+        `${SUPABASE_URL}/rest/v1/contacts?organization_id=eq.${ORGANIZATION_ID}&phone_number=eq.${encodeURIComponent(
+          formattedPhone
+        )}&select=id`,
+        { headers }
+      );
+      if (contactRes.ok) {
+        const cData = await contactRes.json();
+        resolvedContactId = cData?.[0]?.id;
+      }
+    }
+
+    // 3. Gravar no Supabase / Deskcomm CRM
+    const now = new Date().toISOString();
+    const msgRes = await fetch(`${SUPABASE_URL}/rest/v1/messages`, {
       method: 'POST',
       headers,
       body: JSON.stringify({
         organization_id: ORGANIZATION_ID,
         conversation_id: conversationId,
         channel_session_id: 'd19b8703-4ff5-4221-9b42-bb50d75ddf02',
+        contact_id: resolvedContactId,
         direction: 'outbound',
         type: 'text',
         body: text,
         status: 'delivered',
+        sent_via: 'crm',
+        sent_by_user_id: 'aaceb251-fd64-40cf-8867-e95abd7f1988',
+        sent_at: now,
         metadata: {
           sender_name: sellerName,
           seller_portal: true,
@@ -200,13 +243,20 @@ export async function sendWhatsAppMessage(
       }),
     });
 
-    // 3. Atualizar preview na conversa
+    if (!msgRes.ok) {
+      const errText = await msgRes.text();
+      console.error('Falha ao persistir mensagem no Supabase:', msgRes.status, errText);
+    }
+
+    // 4. Atualizar preview e dono na conversa
     await fetch(`${SUPABASE_URL}/rest/v1/conversations?id=eq.${conversationId}`, {
       method: 'PATCH',
       headers,
       body: JSON.stringify({
-        last_message_at: new Date().toISOString(),
+        last_message_at: now,
         last_message_preview: text.slice(0, 100),
+        last_outbound_at: now,
+        assigned_to_user_id: 'aaceb251-fd64-40cf-8867-e95abd7f1988',
       }),
     });
 

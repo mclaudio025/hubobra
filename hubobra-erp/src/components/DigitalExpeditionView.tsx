@@ -363,14 +363,99 @@ export const DigitalExpeditionView: React.FC = () => {
               </div>
             </div>
 
-            {/* Campo Simulado de Assinatura na Tela */}
+            {/* Campo Real de Assinatura na Tela (Canvas Touch/Mouse) */}
             <div className="space-y-1.5">
-              <label className="text-xs text-slate-400 block">
-                Assinatura Digital do Recebedor (Coleta na Tela do Tablet/Celular)
-              </label>
-              <div className="h-28 bg-slate-950 border-2 border-dashed border-slate-700 rounded-2xl flex flex-col items-center justify-center text-slate-500 cursor-crosshair hover:border-slate-500 transition-colors">
-                <PenTool className="w-5 h-5 mb-1 opacity-50" />
-                <span className="text-xs">Assine aqui com o dedo ou caneta stylus</span>
+              <div className="flex items-center justify-between">
+                <label className="text-xs text-slate-400 block">
+                  Assinatura Digital do Recebedor (Coleta na Tela do Tablet/Celular)
+                </label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const canvas = document.getElementById('signature-canvas') as HTMLCanvasElement;
+                    if (canvas) {
+                      const ctx = canvas.getContext('2d');
+                      ctx?.clearRect(0, 0, canvas.width, canvas.height);
+                    }
+                  }}
+                  className="text-[11px] text-red-400 hover:text-red-300 font-bold"
+                >
+                  Limpar Traço
+                </button>
+              </div>
+
+              <div className="bg-white rounded-2xl border-2 border-slate-700 overflow-hidden relative shadow-inner">
+                <canvas
+                  id="signature-canvas"
+                  width={460}
+                  height={130}
+                  className="w-full h-32 cursor-crosshair touch-none"
+                  onMouseDown={(e) => {
+                    const canvas = e.currentTarget;
+                    const ctx = canvas.getContext('2d');
+                    if (!ctx) return;
+                    const rect = canvas.getBoundingClientRect();
+                    const scaleX = canvas.width / rect.width;
+                    const scaleY = canvas.height / rect.height;
+                    ctx.beginPath();
+                    ctx.moveTo((e.clientX - rect.left) * scaleX, (e.clientY - rect.top) * scaleY);
+                    ctx.strokeStyle = '#00264d';
+                    ctx.lineWidth = 3;
+                    ctx.lineCap = 'round';
+                    ctx.lineJoin = 'round';
+                    (canvas as any).isDrawing = true;
+                  }}
+                  onMouseMove={(e) => {
+                    const canvas = e.currentTarget;
+                    if (!(canvas as any).isDrawing) return;
+                    const ctx = canvas.getContext('2d');
+                    if (!ctx) return;
+                    const rect = canvas.getBoundingClientRect();
+                    const scaleX = canvas.width / rect.width;
+                    const scaleY = canvas.height / rect.height;
+                    ctx.lineTo((e.clientX - rect.left) * scaleX, (e.clientY - rect.top) * scaleY);
+                    ctx.stroke();
+                  }}
+                  onMouseUp={(e) => {
+                    (e.currentTarget as any).isDrawing = false;
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as any).isDrawing = false;
+                  }}
+                  onTouchStart={(e) => {
+                    const canvas = e.currentTarget;
+                    const ctx = canvas.getContext('2d');
+                    if (!ctx || !e.touches[0]) return;
+                    const rect = canvas.getBoundingClientRect();
+                    const scaleX = canvas.width / rect.width;
+                    const scaleY = canvas.height / rect.height;
+                    ctx.beginPath();
+                    ctx.moveTo((e.touches[0].clientX - rect.left) * scaleX, (e.touches[0].clientY - rect.top) * scaleY);
+                    ctx.strokeStyle = '#00264d';
+                    ctx.lineWidth = 3;
+                    ctx.lineCap = 'round';
+                    ctx.lineJoin = 'round';
+                    (canvas as any).isDrawing = true;
+                  }}
+                  onTouchMove={(e) => {
+                    const canvas = e.currentTarget;
+                    if (!(canvas as any).isDrawing || !e.touches[0]) return;
+                    const ctx = canvas.getContext('2d');
+                    if (!ctx) return;
+                    const rect = canvas.getBoundingClientRect();
+                    const scaleX = canvas.width / rect.width;
+                    const scaleY = canvas.height / rect.height;
+                    ctx.lineTo((e.touches[0].clientX - rect.left) * scaleX, (e.touches[0].clientY - rect.top) * scaleY);
+                    ctx.stroke();
+                  }}
+                  onTouchEnd={(e) => {
+                    (e.currentTarget as any).isDrawing = false;
+                  }}
+                />
+                <div className="absolute bottom-2 left-4 right-4 border-b border-dashed border-slate-300 pointer-events-none flex justify-between text-[10px] text-slate-400">
+                  <span>X _____________________________</span>
+                  <span>Assinatura do Recebedor</span>
+                </div>
               </div>
             </div>
 
@@ -383,11 +468,15 @@ export const DigitalExpeditionView: React.FC = () => {
                 Voltar
               </button>
               <button
-                onClick={handleCompleteExpedition}
+                onClick={() => {
+                  const canvas = document.getElementById('signature-canvas') as HTMLCanvasElement;
+                  const signatureDataUrl = canvas ? canvas.toDataURL('image/png') : '';
+                  handleCompleteExpedition();
+                }}
                 className="flex-1 py-3 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs rounded-xl shadow-lg shadow-emerald-500/20 transition-all flex items-center justify-center gap-2"
               >
                 <CheckCircle2 className="w-4 h-4" />
-                <span>Finalizar & Dar Baixa</span>
+                <span>Finalizar & Salvar Assinatura</span>
               </button>
             </div>
           </div>

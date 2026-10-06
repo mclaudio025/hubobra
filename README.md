@@ -6,6 +6,9 @@ Esta é uma plataforma de e-commerce headless de alta performance para um depós
 ## Estrutura do Projeto
 - **/frontend**: Aplicação Next.js para interface (PWA, SSR).
 - **/backend**: NestJS para microsserviços de negócio e chat.
+- **/deskcomm-crm**: CRM Completo Omnichannel com IA e Funil de Vendas.
+- **/hubobra-erp**: ERP Local-First para Balcão, Caixa, Expedição e Compras.
+- **[GUIA DE PÓS-MORTEM & RUNBOOK](GUIA_POS_MORTEM_E_RECUPERACAO_RAPIDA.md)**: Diagnóstico, prevenção e comandos de recuperação rápida em caso de queda.
 - **/ia**: FastAPI para módulos de IA.
 - **/infra**: Configurações Docker, Kubernetes e AWS.
 

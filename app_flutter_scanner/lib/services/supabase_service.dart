@@ -252,4 +252,130 @@ class SupabaseService {
       return [];
     }
   }
+
+  /// Busca pedidos na fila de expedição / entrega / retirada fracionada
+  Future<List<dynamic>> fetchDispatchOrders({String? search}) async {
+    try {
+      var query = _client
+          .from('orders')
+          .select('*, user:users(id, name, phone), shippingAddress:shipping_addresses(*), items:order_items(*, product:products(id, name, image, stock))')
+          .order('createdAt', ascending: false)
+          .limit(40);
+
+      final response = await query;
+      return response as List<dynamic>;
+    } catch (e) {
+      print('Erro ao buscar pedidos no Supabase: $e');
+      return [];
+    }
+  }
+
+  /// Conclui a entrega de um pedido com assinatura digital
+  Future<bool> signAndCompleteOrder({
+    required String orderId,
+    required String signatureBase64,
+    required String receivedBy,
+    String? receiverDoc,
+    String? dispatcherName,
+    String? notes,
+  }) async {
+    try {
+      await _client.from('orders').update({
+        'status': 'DELIVERED',
+        'signatureUrl': signatureBase64,
+        'receivedBy': receivedBy,
+        'receiverDoc': receiverDoc,
+        'dispatchedBy': dispatcherName ?? 'Conferente Mobile',
+        'dispatchedAt': DateTime.now().toIso8601String(),
+        'notes': notes,
+      }).eq('id', orderId);
+
+      // Atualiza itens para entregues
+      await _client.from('order_items').update({
+        'quantityDelivered': 1,
+        'quantityRemaining': 0,
+      }).eq('orderId', orderId);
+
+      return true;
+    } catch (e) {
+      print('Erro ao salvar assinatura no Supabase: $e');
+      return false;
+    }
+  }
+
+  /// Registra uma retirada parcial/fracionada de materiais com assinatura digital
+  Future<bool> recordFractionalWithdrawal({
+    required String orderId,
+    required List<Map<String, dynamic>> itemsToWithdraw,
+    required String withdrawnBy,
+    String? receiverDoc,
+    String? vehiclePlate,
+    String? signatureBase64,
+    String? notes,
+  }) async {
+    try {
+      for (final item in itemsToWithdraw) {
+        final orderItemId = item['orderItemId']?.toString();
+        final productId = item['productId']?.toString();
+        final productName = item['productName'] ?? 'Material';
+        final qtyWithdrawn = (item['quantityWithdrawn'] as num).toInt();
+
+        if (qtyWithdrawn <= 0) continue;
+
+        // 1. Grava no histórico de retiradas
+        await _client.from('material_withdrawals').insert({
+          'orderId': orderId,
+          'orderItemId': orderItemId,
+          'productId': productId,
+          'productName': productName,
+          'quantityWithdrawn': qtyWithdrawn,
+          'withdrawnBy': withdrawnBy,
+          'receiverDoc': receiverDoc,
+          'vehiclePlate': vehiclePlate,
+          'signatureUrl': signatureBase64,
+          'notes': notes,
+          'createdAt': DateTime.now().toIso8601String(),
+        });
+
+        // 2. Atualiza saldo restante no item
+        if (orderItemId != null && orderItemId.isNotEmpty) {
+          final currentItem = await _client.from('order_items').select('quantityRemaining, quantityDelivered').eq('id', orderItemId).maybeSingle();
+          if (currentItem != null) {
+            final remaining = ((currentItem['quantityRemaining'] ?? 1) as num).toInt();
+            final delivered = ((currentItem['quantityDelivered'] ?? 0) as num).toInt();
+            await _client.from('order_items').update({
+              'quantityRemaining': (remaining - qtyWithdrawn).clamp(0, 999999),
+              'quantityDelivered': delivered + qtyWithdrawn,
+            }).eq('id', orderItemId);
+          }
+        }
+
+        // 3. Abate estoque físico do produto
+        if (productId != null && productId.isNotEmpty) {
+          final prod = await _client.from('products').select('stock').eq('id', productId).maybeSingle();
+          if (prod != null && prod['stock'] != null) {
+            final currentStock = (prod['stock'] as num).toInt();
+            await _client.from('products').update({
+              'stock': (currentStock - qtyWithdrawn).clamp(0, 999999),
+            }).eq('id', productId);
+          }
+        }
+      }
+
+      // Se passou assinatura, salva no pedido
+      if (signatureBase64 != null) {
+        await _client.from('orders').update({
+          'signatureUrl': signatureBase64,
+          'receivedBy': withdrawnBy,
+          'receiverDoc': receiverDoc,
+          'dispatchedAt': DateTime.now().toIso8601String(),
+        }).eq('id', orderId);
+      }
+
+      return true;
+    } catch (e) {
+      print('Erro ao registrar retirada fracionada no Supabase: $e');
+      return false;
+    }
+  }
 }

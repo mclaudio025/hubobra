@@ -5,6 +5,7 @@ import 'config/theme.dart';
 import 'screens/scanner_screen.dart';
 import 'screens/inventory_list_screen.dart';
 import 'screens/home_center_extractor_screen.dart';
+import 'screens/order_dispatch_screen.dart';
 import 'screens/settings_screen.dart';
 
 void main() async {
@@ -45,6 +46,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
   final List<Widget> _screens = const [
     ScannerScreen(),
+    OrderDispatchScreen(),
     HomeCenterExtractorScreen(),
     InventoryListScreen(),
     SettingsScreen(),
@@ -69,6 +71,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             label: 'Scanner',
           ),
           NavigationDestination(
+            icon: Icon(Icons.local_shipping_outlined),
+            selectedIcon: Icon(Icons.local_shipping, color: Colors.white),
+            label: 'Expedição',
+          ),
+          NavigationDestination(
             icon: Icon(Icons.storefront_outlined),
             selectedIcon: Icon(Icons.storefront, color: Colors.white),
             label: 'Extrator',
@@ -88,3 +95,4 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     );
   }
 }
+
