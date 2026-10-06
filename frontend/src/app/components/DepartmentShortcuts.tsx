@@ -239,6 +239,30 @@ function renderCustomCategoryIcon(type: CategoryCardData['iconType']) {
   }
 }
 
+// Helper para determinar o ícone temático de acordo com o nome ou slug da categoria
+function getCategoryIconType(name: string, slug: string): CategoryCardData['iconType'] {
+  const s = (slug || '').toLowerCase();
+  const n = (name || '').toLowerCase();
+
+  if (s.includes('alvenaria') || s.includes('construc') || n.includes('alvenaria') || n.includes('construção') || n.includes('cimento') || n.includes('obra')) return 'alvenaria';
+  if (s.includes('hidraul') || n.includes('hidráulica') || s.includes('encanamento') || n.includes('encanamento') || s.includes('tubo') || s.includes('esgoto')) return 'hidraulica';
+  if (s.includes('eletric') || n.includes('elétrica') || s.includes('energia') || n.includes('energia') || s.includes('fio') || s.includes('cabo')) return 'eletrica';
+  if (s.includes('tinta') || n.includes('tinta') || s.includes('pintura') || n.includes('pintura') || s.includes('verniz')) return 'tintas';
+  if (s.includes('ferramenta') || n.includes('ferramenta') || s.includes('maquina') || s.includes('abrasivo') || s.includes('disco')) return 'ferramentas';
+  if (s.includes('piso') || n.includes('piso') || s.includes('revestimento') || n.includes('revestimento') || s.includes('ceramica') || n.includes('porcelanato')) return 'pisos';
+  if (s.includes('porta') || n.includes('porta') || s.includes('janela') || n.includes('janela') || s.includes('ferrag') || s.includes('fechadura')) return 'portas';
+  if (s.includes('ilumina') || n.includes('iluminação') || s.includes('lustre') || n.includes('lustre') || s.includes('lampada') || s.includes('led')) return 'iluminacao';
+  return 'utilidades';
+}
+
+function normalizeKey(str: string): string {
+  return (str || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '');
+}
+
 export default function DepartmentShortcuts() {
   const [categoriesList, setCategoriesList] = useState<CategoryCardData[]>(MASTER_CATEGORIES_DATA);
   const categoriesApi = useCategories();
@@ -280,38 +304,61 @@ export default function DepartmentShortcuts() {
     emblaApi.on('reInit', onSelect);
   }, [emblaApi, onSelect]);
 
-  // Sincronizar dinamicamente imagens que o usuário cadastrar no banco (ignorando blobs temporários)
+  // Sincronizar dinamicamente categorias e imagens do banco de dados
   useEffect(() => {
     const isValidImageUrl = (url?: string | null): boolean => {
       if (!url || typeof url !== 'string') return false;
       const clean = url.trim();
-      if (clean.startsWith('blob:') || clean.startsWith('data:')) return false;
-      return clean.startsWith('http://') || clean.startsWith('https://') || clean.startsWith('/');
+      if (clean.length === 0 || clean.startsWith('blob:')) return false;
+      return clean.startsWith('http://') || clean.startsWith('https://') || clean.startsWith('/') || clean.startsWith('data:image/');
     };
 
     const loadCategories = async () => {
       try {
         const res = await categoriesApi.getCategories(true);
         if (res && Array.isArray(res) && res.length > 0) {
-          const matched = MASTER_CATEGORIES_DATA.map((card) => {
-            const found =
-              res.find((c: any) => c.id === card.id) ||
-              res.find((c: any) => c.slug === card.slug) ||
-              res.find((c: any) => c.name?.toLowerCase().trim() === card.name.toLowerCase().trim()) ||
-              res.find((c: any) => card.slug.includes('portas') && (c.slug?.includes('portas') || c.name?.toLowerCase().includes('portas')));
+          // Filtrar departamentos principais (raiz ou sem parentId)
+          const rootCategories = res.filter((c: any) => !c.parentId);
+          const sourceList = rootCategories.length > 0 ? rootCategories : res;
 
-            const candidateImage = found?.image;
+          const dynamicMapped: CategoryCardData[] = sourceList.map((dbCat: any) => {
+            const normDbSlug = normalizeKey(dbCat.slug);
+            const normDbName = normalizeKey(dbCat.name);
+
+            // Tenta encontrar dados de estilo padrão no catálogo mestre
+            const masterFallback = MASTER_CATEGORIES_DATA.find((m) => {
+              const normMasterSlug = normalizeKey(m.slug);
+              const normMasterName = normalizeKey(m.name);
+              return (
+                m.id === dbCat.id ||
+                normMasterSlug === normDbSlug ||
+                normMasterName === normDbName ||
+                normDbSlug.includes(normMasterSlug) ||
+                normMasterSlug.includes(normDbSlug)
+              );
+            });
+
+            const rawImage = dbCat.image;
+            const finalImage = (rawImage && isValidImageUrl(rawImage))
+              ? rawImage
+              : (masterFallback?.image || 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=500&auto=format&fit=crop&q=80');
+
             return {
-              ...card,
-              id: found?.id || card.id,
-              slug: found?.slug || card.slug,
-              image: (candidateImage && isValidImageUrl(candidateImage)) ? candidateImage : card.image,
+              id: dbCat.id,
+              name: dbCat.name,
+              slug: dbCat.slug,
+              tagline: dbCat.description || masterFallback?.tagline || 'Tudo para sua construção e acabamento.',
+              image: finalImage,
+              iconType: masterFallback?.iconType || getCategoryIconType(dbCat.name, dbCat.slug),
             };
           });
-          setCategoriesList(matched);
+
+          if (dynamicMapped.length > 0) {
+            setCategoriesList(dynamicMapped);
+          }
         }
       } catch (err) {
-        console.error('Erro ao sincronizar categorias:', err);
+        console.warn('Erro ao sincronizar categorias:', err);
       }
     };
 
