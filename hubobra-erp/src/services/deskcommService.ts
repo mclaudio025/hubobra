@@ -192,12 +192,21 @@ export async function sendWhatsAppMessage(
         direction: 'outbound',
         type: 'text',
         body: text,
-        sent_via: 'user',
         status: 'delivered',
         metadata: {
           sender_name: sellerName,
           seller_portal: true,
         },
+      }),
+    });
+
+    // 3. Atualizar preview na conversa
+    await fetch(`${SUPABASE_URL}/rest/v1/conversations?id=eq.${conversationId}`, {
+      method: 'PATCH',
+      headers,
+      body: JSON.stringify({
+        last_message_at: new Date().toISOString(),
+        last_message_preview: text.slice(0, 100),
       }),
     });
 
