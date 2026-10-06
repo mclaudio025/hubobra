@@ -219,12 +219,116 @@ export async function seedLocalDatabase() {
         notes: '🚚 Em rota de entrega. Motorista João levou a maquininha Stone para cobrar no ato da descarga da obra.',
         syncedToCloud: true,
         syncedToGestaoClick: true,
+      },
+      {
+        id: 'ord-saldo-8820',
+        orderNumber: 'PED-SLD8820',
+        type: 'PEDIDO_VENDA',
+        createdAt: new Date(Date.now() - 5 * 60000).toISOString(),
+        sellerId: 'v-1',
+        sellerName: 'Carlos Eduardo (Balcão 1)',
+        origin: 'BALCAO',
+        customerId: 'c-001',
+        customerName: 'Engenheiro Roberto Albuquerque (Residencial Jardins)',
+        customerPhone: '(85) 98765-4321',
+        deliveryMode: 'FUTURE_PICKUP',
+        isFutureDelivery: true,
+        items: [
+          {
+            productId: 'p-001',
+            name: 'Cimento Poty Todas as Obras 50kg CP II-F',
+            sku: '001100',
+            unit: 'SACO',
+            unitPrice: 53.90,
+            cost: 39.50,
+            quantity: 200,
+            discount: 0,
+            total: 10780.00,
+            location: 'Galpão 01 - Baia A (Estoque Retido)',
+          },
+          {
+            productId: 'p-007',
+            name: 'Tijolo Cerâmico 8 Furos 9x19x19cm (Lote 10 Milheiro)',
+            sku: 'TIJ001',
+            unit: 'MILHEIRO',
+            unitPrice: 890.00,
+            cost: 650.00,
+            quantity: 10,
+            discount: 0,
+            total: 8900.00,
+            location: 'Pátio Aberto - Bloco 04',
+          }
+        ],
+        subtotal: 19680.00,
+        discount: 180.00,
+        shipping: 0.00,
+        total: 19500.00,
+        paymentCondition: 'À Vista no Caixa (PIX / TED)',
+        status: 'AGUARDANDO_PAGAMENTO',
+        fiscalStatus: 'NOT_EMITTED',
+        notes: '📦 SALDO DE MATERIAIS: Cliente comprou 200 sacos de cimento e 10 milheiros de tijolo para travar o preço. Material FICA na loja e será retirado aos poucos.',
+        syncedToCloud: true,
+        syncedToGestaoClick: false,
       }
     ];
 
     for (const ord of initialOrders) {
       await db.orders.put(ord);
     }
+  }
+
+  // Garantir que a ordem de saldo de materiais esteja sempre disponível para demonstração
+  if (!(await db.orders.get('ord-saldo-8820'))) {
+    await db.orders.put({
+      id: 'ord-saldo-8820',
+      orderNumber: 'PED-SLD8820',
+      type: 'PEDIDO_VENDA',
+      createdAt: new Date(Date.now() - 5 * 60000).toISOString(),
+      sellerId: 'v-1',
+      sellerName: 'Carlos Eduardo (Balcão 1)',
+      origin: 'BALCAO',
+      customerId: 'c-001',
+      customerName: 'Engenheiro Roberto Albuquerque (Residencial Jardins)',
+      customerPhone: '(85) 98765-4321',
+      deliveryMode: 'FUTURE_PICKUP',
+      isFutureDelivery: true,
+      items: [
+        {
+          productId: 'p-001',
+          name: 'Cimento Poty Todas as Obras 50kg CP II-F',
+          sku: '001100',
+          unit: 'SACO',
+          unitPrice: 53.90,
+          cost: 39.50,
+          quantity: 200,
+          discount: 0,
+          total: 10780.00,
+          location: 'Galpão 01 - Baia A (Estoque Retido)',
+        },
+        {
+          productId: 'p-007',
+          name: 'Tijolo Cerâmico 8 Furos 9x19x19cm (Lote 10 Milheiro)',
+          sku: 'TIJ001',
+          unit: 'MILHEIRO',
+          unitPrice: 890.00,
+          cost: 650.00,
+          quantity: 10,
+          discount: 0,
+          total: 8900.00,
+          location: 'Pátio Aberto - Bloco 04',
+        }
+      ],
+      subtotal: 19680.00,
+      discount: 180.00,
+      shipping: 0.00,
+      total: 19500.00,
+      paymentCondition: 'À Vista no Caixa (PIX / TED)',
+      status: 'AGUARDANDO_PAGAMENTO',
+      fiscalStatus: 'NOT_EMITTED',
+      notes: '📦 SALDO DE MATERIAIS: Cliente comprou 200 sacos de cimento e 10 milheiros de tijolo para travar o preço. Material FICA na loja e será retirado aos poucos.',
+      syncedToCloud: true,
+      syncedToGestaoClick: false,
+    });
   }
 
   // Fornecedores Oficiais da Construção Civil
