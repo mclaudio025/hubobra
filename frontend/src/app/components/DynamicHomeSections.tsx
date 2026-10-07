@@ -41,20 +41,41 @@ function ThematicProductCarousel({ section }: { section: HomeSection }) {
         }
 
         let res = await fetch(url, { cache: 'no-store' });
+        let items: any[] = [];
 
         if (res.ok) {
           const data = await res.json();
-          const items = Array.isArray(data?.products)
+          items = Array.isArray(data?.products)
             ? data.products
             : Array.isArray(data?.data)
             ? data.data
             : Array.isArray(data)
             ? data
             : [];
+        }
 
-          if (isMounted) {
-            setProducts(items);
+        // Se a busca filtrada (ex: desconto ou categoria específica) retornou vazia,
+        // busca produtos gerais do catálogo para garantir vitrine sempre preenchida
+        if (items.length === 0) {
+          try {
+            const fallbackRes = await fetch(`/api/products?limit=${section.limit || 12}`, { cache: 'no-store' });
+            if (fallbackRes.ok) {
+              const fbData = await fallbackRes.json();
+              items = Array.isArray(fbData?.products)
+                ? fbData.products
+                : Array.isArray(fbData?.data)
+                ? fbData.data
+                : Array.isArray(fbData)
+                ? fbData
+                : [];
+            }
+          } catch (fbErr) {
+            // Silencioso
           }
+        }
+
+        if (isMounted && items.length > 0) {
+          setProducts(items);
         }
       } catch (err) {
         console.warn('Erro ao carregar produtos para vitrine:', err);
