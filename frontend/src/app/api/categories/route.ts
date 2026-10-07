@@ -1,16 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { fetchBackend } from '@/lib/backend-client';
 
+// Cache em memória no servidor Next.js (TTL 120 segundos)
+const serverCategoriesCache = new Map<string, { data: any; expiresAt: number }>();
+const CATEGORIES_CACHE_TTL = 120 * 1000;
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const active = searchParams.get('active');
     const endpoint = active ? `/categories?active=${active}` : '/categories';
 
+    const auth = request.headers.get('Authorization') || request.headers.get('authorization');
+    const isCacheable = !auth || auth.trim().length === 0;
+
+    if (isCacheable) {
+      const cached = serverCategoriesCache.get(endpoint);
+      if (cached && Date.now() < cached.expiresAt) {
+        return NextResponse.json(cached.data, {
+          headers: {
+            'Cache-Control': 'public, s-maxage=120, stale-while-revalidate=600',
+            'X-Cache': 'HIT-MEMORY',
+          },
+        });
+      }
+    }
+
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
     };
-    const auth = request.headers.get('Authorization') || request.headers.get('authorization');
     if (auth && auth.trim().length > 0) {
       headers['Authorization'] = auth;
     }
@@ -26,9 +44,18 @@ export async function GET(request: NextRequest) {
     }
 
     const data = await response.json();
+
+    if (isCacheable && Array.isArray(data) && data.length > 0) {
+      serverCategoriesCache.set(endpoint, {
+        data,
+        expiresAt: Date.now() + CATEGORIES_CACHE_TTL,
+      });
+    }
+
     return NextResponse.json(data, {
       headers: {
         'Cache-Control': 'public, s-maxage=120, stale-while-revalidate=600',
+        'X-Cache': 'MISS',
       },
     });
   } catch (error) {

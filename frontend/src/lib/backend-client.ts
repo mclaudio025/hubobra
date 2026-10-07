@@ -69,9 +69,11 @@ export async function fetchBackend(endpoint: string, options: RequestInit = {}):
       const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
       const fullUrl = `${base}${cleanEndpoint}`;
 
-      // Timeout agressivo de 2.5 segundos por tentativa
+      // Timeout de 10s para a base principal/em cache e 2.5s para descoberta
+      const isPrimary = base === cachedWorkingBase || base === 'http://tasks.n8n_api:8081';
+      const timeoutMs = isPrimary ? 10000 : 2500;
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 2500);
+      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
       if (options.signal) {
         options.signal.addEventListener('abort', () => controller.abort(), { once: true });

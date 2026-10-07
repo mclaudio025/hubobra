@@ -1,8 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { fetchBackend } from '@/lib/backend-client';
 
+// Cache em memória no servidor Next.js (TTL 120 segundos)
+const serverHomeSectionsCache = { data: null as any, expiresAt: 0 };
+const HOME_SECTIONS_CACHE_TTL = 120 * 1000;
+
 export async function GET(request: NextRequest) {
   try {
+    const auth = request.headers.get('Authorization') || request.headers.get('authorization');
+    const isCacheable = !auth || auth.trim().length === 0;
+
+    if (isCacheable && serverHomeSectionsCache.data && Date.now() < serverHomeSectionsCache.expiresAt) {
+      return NextResponse.json(serverHomeSectionsCache.data, {
+        headers: {
+          'Cache-Control': 'public, s-maxage=120, stale-while-revalidate=600',
+          'X-Cache': 'HIT-MEMORY',
+        },
+      });
+    }
+
     const response = await fetchBackend('/components/home-sections', {
       method: 'GET',
       headers: {
@@ -16,7 +32,18 @@ export async function GET(request: NextRequest) {
     }
 
     const data = await response.json();
-    return NextResponse.json(data);
+
+    if (isCacheable && data) {
+      serverHomeSectionsCache.data = data;
+      serverHomeSectionsCache.expiresAt = Date.now() + HOME_SECTIONS_CACHE_TTL;
+    }
+
+    return NextResponse.json(data, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=120, stale-while-revalidate=600',
+        'X-Cache': 'MISS',
+      },
+    });
   } catch (error) {
     console.error('Erro na rota GET /api/components/home-sections:', error);
     return NextResponse.json([], { status: 200 });

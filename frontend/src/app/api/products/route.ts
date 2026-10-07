@@ -1,16 +1,35 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { fetchBackend } from '@/lib/backend-client';
 
+// Cache em memória de alta performance no servidor Next.js (TTL 60 segundos)
+const serverProductsCache = new Map<string, { data: any; expiresAt: number }>();
+const PRODUCTS_CACHE_TTL = 60 * 1000;
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const queryString = searchParams.toString();
     const endpoint = queryString ? `/products?${queryString}` : '/products';
 
+    const auth = request.headers.get('Authorization') || request.headers.get('authorization');
+    const isCacheable = !auth || auth.trim().length === 0;
+
+    // 1. Resposta instantânea (0ms) do cache em memória se disponível
+    if (isCacheable) {
+      const cached = serverProductsCache.get(endpoint);
+      if (cached && Date.now() < cached.expiresAt) {
+        return NextResponse.json(cached.data, {
+          headers: {
+            'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
+            'X-Cache': 'HIT-MEMORY',
+          },
+        });
+      }
+    }
+
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
     };
-    const auth = request.headers.get('Authorization') || request.headers.get('authorization');
     if (auth && auth.trim().length > 0) {
       headers['Authorization'] = auth;
     }
@@ -35,11 +54,26 @@ export async function GET(request: NextRequest) {
       : [];
     const totalCount = data?.total ?? data?.totalProducts ?? productsArray.length;
 
-    return NextResponse.json({
+    const payload = {
       ...data,
       products: productsArray,
       total: totalCount,
       totalProducts: totalCount,
+    };
+
+    // Salva no cache em memória
+    if (isCacheable && productsArray.length > 0) {
+      serverProductsCache.set(endpoint, {
+        data: payload,
+        expiresAt: Date.now() + PRODUCTS_CACHE_TTL,
+      });
+    }
+
+    return NextResponse.json(payload, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
+        'X-Cache': 'MISS',
+      },
     });
   } catch (error: any) {
     console.error('Erro na rota GET /api/products:', error?.message || error);
