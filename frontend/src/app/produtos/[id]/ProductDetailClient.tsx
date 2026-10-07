@@ -144,8 +144,15 @@ export default function ProductDetailClient({ productId, initialProduct }: Produ
 
   const loadRelatedProducts = async () => {
     try {
-      const response = await productsApi.getProducts(1, 4);
-      setRelatedProducts(response.data?.slice(0, 4) || []);
+      const response = await productsApi.getProducts(1, 8);
+      const items = Array.isArray(response?.products)
+        ? response.products
+        : Array.isArray(response?.data)
+        ? response.data
+        : Array.isArray(response)
+        ? response
+        : [];
+      setRelatedProducts(items.filter((p: any) => p.id !== productId).slice(0, 8));
     } catch (error) {
       console.warn('Aviso: Não foi possível carregar produtos relacionados:', error);
     }

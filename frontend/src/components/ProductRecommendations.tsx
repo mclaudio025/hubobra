@@ -71,17 +71,23 @@ const fallbackImages: Record<string, string> = {
 };
 
 function getProductPhoto(prod: ProductItem): string {
-  if (prod.images && prod.images.length > 0 && prod.images[0].url) {
-    return prod.images[0].url;
+  if (prod.images && Array.isArray(prod.images) && prod.images.length > 0) {
+    const firstImg: any = prod.images[0];
+    if (typeof firstImg === 'string' && firstImg.trim().length > 0) {
+      return firstImg;
+    }
+    if (firstImg && typeof firstImg === 'object' && firstImg.url) {
+      return firstImg.url;
+    }
   }
-  const name = prod.name.toLowerCase();
+  const name = (prod.name || '').toLowerCase();
   if (name.includes('cimento') || name.includes('argamassa')) return fallbackImages.cimento;
   if (name.includes('tinta') || name.includes('verniz') || name.includes('esmalte')) return fallbackImages.tintas;
-  if (name.includes('tubo') || name.includes('cano') || name.includes('cola') || name.includes('curva')) return fallbackImages.hidraulica;
+  if (name.includes('tubo') || name.includes('cano') || name.includes('cola') || name.includes('curva') || name.includes('uniao') || name.includes('união') || name.includes('soldavel') || name.includes('soldável')) return fallbackImages.hidraulica;
   if (name.includes('fio') || name.includes('cabo') || name.includes('tomada') || name.includes('disjuntor')) return fallbackImages.eletrica;
   if (name.includes('piso') || name.includes('porcelanato') || name.includes('revestimento')) return fallbackImages.pisos;
   if (name.includes('tijolo') || name.includes('bloco') || name.includes('telha')) return fallbackImages.tijolos;
-  if (name.includes('furadeira') || name.includes('serra') || name.includes('chave') || name.includes('alicate')) return fallbackImages.ferramentas;
+  if (name.includes('furadeira') || name.includes('serra') || name.includes('chave') || name.includes('alicate') || name.includes('ferramenta')) return fallbackImages.ferramentas;
   return fallbackImages.default;
 }
 
@@ -407,25 +413,43 @@ export default function ProductRecommendations({
   const productCategory = currentProductCategory || (typeof currentProduct?.category === 'object' ? currentProduct?.category?.name : currentProduct?.category) || '';
 
   useEffect(() => {
+    if (relatedProducts && Array.isArray(relatedProducts) && relatedProducts.length > 0) {
+      setAllProducts(relatedProducts.filter(p => p.id !== productId));
+      setLoading(false);
+      return;
+    }
+
+    let isMounted = true;
     async function loadCatalog() {
       try {
         setLoading(true);
-        const res = await fetch('/api/products?active=true&limit=24');
-        if (!res.ok) return;
-        const data = await res.json();
-        const items: ProductItem[] = Array.isArray(data) ? data : (data.items || data.products || []);
-        setAllProducts(items.filter(p => p.id !== productId));
+        const res = await fetch('/api/products?limit=24', { cache: 'no-store' });
+        if (res.ok) {
+          const data = await res.json();
+          const items: ProductItem[] = Array.isArray(data?.products)
+            ? data.products
+            : Array.isArray(data?.data)
+            ? data.data
+            : Array.isArray(data)
+            ? data
+            : [];
+          if (isMounted && items.length > 0) {
+            setAllProducts(items.filter(p => p.id !== productId));
+          }
+        }
       } catch (err) {
         console.warn('Erro ao buscar produtos para recomendações:', err);
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     }
 
-    if (productId) {
-      loadCatalog();
-    }
-  }, [productId]);
+    loadCatalog();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [productId, relatedProducts]);
 
   // Split into smart collections
   const complementaryItems = useMemo(() => {

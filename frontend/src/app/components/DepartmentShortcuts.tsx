@@ -37,7 +37,7 @@ export const MASTER_CATEGORIES_DATA: CategoryCardData[] = [
     slug: 'construcao-e-alvenaria',
     tagline: 'Materiais brutos de fundação, elevação, vedação e cobertura para obras.',
     iconType: 'alvenaria',
-    image: 'https://images.unsplash.com/photo-1541888946425-d0fbb18086f6?w=600&auto=format&fit=crop&q=80',
+    image: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=600&auto=format&fit=crop&q=80',
   },
   {
     id: 'afdf6873-1064-49bc-a3c3-add98d9ddf1b',
@@ -260,7 +260,7 @@ function getCategoryFallbackImage(name: string, slug: string): string {
   const n = (name || '').toLowerCase();
 
   if (s.includes('alvenaria') || s.includes('construc') || n.includes('alvenaria') || n.includes('construção') || n.includes('cimento') || n.includes('obra')) 
-    return 'https://images.unsplash.com/photo-1541888946425-d0fbb18086f6?w=600&auto=format&fit=crop&q=80';
+    return 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=600&auto=format&fit=crop&q=80';
   if (s.includes('hidraul') || n.includes('hidráulica') || s.includes('encanamento') || n.includes('encanamento') || s.includes('tubo') || s.includes('esgoto')) 
     return 'https://images.unsplash.com/photo-1585704032915-c3400ca199e7?w=600&auto=format&fit=crop&q=80';
   if (s.includes('eletric') || n.includes('elétrica') || s.includes('energia') || n.includes('energia') || s.includes('fio') || s.includes('cabo')) 
