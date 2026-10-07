@@ -255,6 +255,29 @@ function getCategoryIconType(name: string, slug: string): CategoryCardData['icon
   return 'utilidades';
 }
 
+function getCategoryFallbackImage(name: string, slug: string): string {
+  const s = (slug || '').toLowerCase();
+  const n = (name || '').toLowerCase();
+
+  if (s.includes('alvenaria') || s.includes('construc') || n.includes('alvenaria') || n.includes('construção') || n.includes('cimento') || n.includes('obra')) 
+    return 'https://images.unsplash.com/photo-1590069261209-f8e9b8642343?w=500&auto=format&fit=crop&q=80';
+  if (s.includes('hidraul') || n.includes('hidráulica') || s.includes('encanamento') || n.includes('encanamento') || s.includes('tubo') || s.includes('esgoto')) 
+    return 'https://images.unsplash.com/photo-1585704032915-c3400ca199e7?w=500&auto=format&fit=crop&q=80';
+  if (s.includes('eletric') || n.includes('elétrica') || s.includes('energia') || n.includes('energia') || s.includes('fio') || s.includes('cabo')) 
+    return 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=500&auto=format&fit=crop&q=80';
+  if (s.includes('tinta') || n.includes('tinta') || s.includes('pintura') || n.includes('pintura') || s.includes('verniz')) 
+    return 'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=500&auto=format&fit=crop&q=80';
+  if (s.includes('ferramenta') || n.includes('ferramenta') || s.includes('maquina') || s.includes('abrasivo') || s.includes('disco')) 
+    return 'https://images.unsplash.com/photo-1504148455328-c376907d081c?w=500&auto=format&fit=crop&q=80';
+  if (s.includes('piso') || n.includes('piso') || s.includes('revestimento') || n.includes('revestimento') || s.includes('ceramica') || n.includes('porcelanato')) 
+    return 'https://images.unsplash.com/photo-1581858726788-75bc0f6a952d?w=500&auto=format&fit=crop&q=80';
+  if (s.includes('porta') || n.includes('porta') || s.includes('janela') || n.includes('janela') || s.includes('ferrag') || s.includes('fechadura')) 
+    return 'https://images.unsplash.com/photo-1586864387967-d02ef85d93e8?w=500&auto=format&fit=crop&q=80';
+  if (s.includes('ilumina') || n.includes('iluminação') || s.includes('lustre') || n.includes('lustre') || s.includes('lampada') || s.includes('led')) 
+    return 'https://images.unsplash.com/photo-1513506003901-1e6a229e2d15?w=500&auto=format&fit=crop&q=80';
+  return 'https://images.unsplash.com/photo-1585338107529-13afc5f02586?w=500&auto=format&fit=crop&q=80';
+}
+
 function normalizeKey(str: string): string {
   return (str || '')
     .normalize('NFD')
@@ -263,7 +286,7 @@ function normalizeKey(str: string): string {
     .replace(/[^a-z0-9]/g, '');
 }
 
-const CATEGORIES_CACHE_KEY = 'hubobra_cached_department_shortcuts_v1';
+const CATEGORIES_CACHE_KEY = 'hubobra_cached_department_shortcuts_v2';
 
 export default function DepartmentShortcuts() {
   const [categoriesList, setCategoriesList] = useState<CategoryCardData[]>(() => {
@@ -326,7 +349,7 @@ export default function DepartmentShortcuts() {
     const isValidImageUrl = (url?: string | null): boolean => {
       if (!url || typeof url !== 'string') return false;
       const clean = url.trim();
-      if (clean.length === 0 || clean.startsWith('blob:')) return false;
+      if (clean.length === 0 || clean.startsWith('blob:') || clean === 'null' || clean === 'undefined') return false;
       return clean.startsWith('http://') || clean.startsWith('https://') || clean.startsWith('/') || clean.startsWith('data:image/');
     };
 
@@ -358,7 +381,7 @@ export default function DepartmentShortcuts() {
             const rawImage = dbCat.image;
             const finalImage = (rawImage && isValidImageUrl(rawImage))
               ? rawImage
-              : (masterFallback?.image || 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=500&auto=format&fit=crop&q=80');
+              : (masterFallback?.image || getCategoryFallbackImage(dbCat.name, dbCat.slug));
 
             return {
               id: dbCat.id,
@@ -457,9 +480,8 @@ export default function DepartmentShortcuts() {
           <div className="overflow-hidden px-1 py-2" ref={emblaRef}>
             <div className="flex gap-3 sm:gap-4 md:gap-4">
               {categoriesList.map((cat) => {
-                const defaultImage =
-                  MASTER_CATEGORIES_DATA.find((m) => m.slug === cat.slug || m.id === cat.id)?.image ||
-                  cat.image;
+                const fallbackImg = getCategoryFallbackImage(cat.name, cat.slug);
+                const displayImage = cat.image || fallbackImg;
 
                 return (
                   <div
@@ -473,15 +495,15 @@ export default function DepartmentShortcuts() {
                       {/* 📸 1. FOTO REALISTA SUPERIOR */}
                       <div className="relative w-full h-32 sm:h-36 bg-slate-900 overflow-hidden">
                         <img
-                          src={cat.image || defaultImage}
+                          src={displayImage}
                           alt={cat.name}
                           className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
                           loading="eager"
                           decoding="async"
                           onError={(e) => {
                             const target = e.target as HTMLImageElement;
-                            if (target.src !== defaultImage) {
-                              target.src = defaultImage;
+                            if (target.src !== fallbackImg) {
+                              target.src = fallbackImg;
                             }
                           }}
                         />
