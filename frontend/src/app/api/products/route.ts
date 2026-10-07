@@ -7,12 +7,17 @@ export async function GET(request: NextRequest) {
     const queryString = searchParams.toString();
     const endpoint = queryString ? `/products?${queryString}` : '/products';
 
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    const auth = request.headers.get('Authorization') || request.headers.get('authorization');
+    if (auth && auth.trim().length > 0) {
+      headers['Authorization'] = auth;
+    }
+
     const response = await fetchBackend(endpoint, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': request.headers.get('Authorization') || '',
-      },
+      headers,
     });
 
     if (!response.ok) {
@@ -21,7 +26,21 @@ export async function GET(request: NextRequest) {
     }
 
     const data = await response.json();
-    return NextResponse.json(data);
+    const productsArray = Array.isArray(data?.products)
+      ? data.products
+      : Array.isArray(data?.data)
+      ? data.data
+      : Array.isArray(data)
+      ? data
+      : [];
+    const totalCount = data?.total ?? data?.totalProducts ?? productsArray.length;
+
+    return NextResponse.json({
+      ...data,
+      products: productsArray,
+      total: totalCount,
+      totalProducts: totalCount,
+    });
   } catch (error: any) {
     console.error('Erro na rota GET /api/products:', error?.message || error);
     return NextResponse.json(

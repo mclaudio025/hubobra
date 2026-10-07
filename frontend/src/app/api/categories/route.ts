@@ -7,12 +7,17 @@ export async function GET(request: NextRequest) {
     const active = searchParams.get('active');
     const endpoint = active ? `/categories?active=${active}` : '/categories';
 
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    const auth = request.headers.get('Authorization') || request.headers.get('authorization');
+    if (auth && auth.trim().length > 0) {
+      headers['Authorization'] = auth;
+    }
+
     const response = await fetchBackend(endpoint, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': request.headers.get('Authorization') || '',
-      },
+      headers,
     });
 
     if (!response.ok) {

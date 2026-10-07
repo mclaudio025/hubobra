@@ -7,12 +7,17 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    const auth = request.headers.get('Authorization') || request.headers.get('authorization');
+    if (auth && auth.trim().length > 0) {
+      headers['Authorization'] = auth;
+    }
+
     const response = await fetchBackend(`/products/${id}`, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': request.headers.get('Authorization') || '',
-      },
+      headers,
     });
 
     if (!response.ok) {

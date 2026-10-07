@@ -41,6 +41,26 @@ export async function fetchBackend(endpoint: string, options: RequestInit = {}):
     )
   );
 
+  // Sanitiza headers para remover campos vazios (ex: Authorization: "")
+  const sanitizedHeaders: Record<string, string> = {};
+  if (options.headers) {
+    if (options.headers instanceof Headers) {
+      options.headers.forEach((val, key) => {
+        if (val && val.trim().length > 0) sanitizedHeaders[key] = val;
+      });
+    } else if (Array.isArray(options.headers)) {
+      for (const [key, val] of options.headers) {
+        if (val && val.trim().length > 0) sanitizedHeaders[key] = val;
+      }
+    } else if (typeof options.headers === 'object') {
+      for (const [key, val] of Object.entries(options.headers)) {
+        if (val && typeof val === 'string' && val.trim().length > 0) {
+          sanitizedHeaders[key] = val;
+        }
+      }
+    }
+  }
+
   let lastError: any = null;
   let lastResponse: Response | null = null;
 
@@ -49,17 +69,17 @@ export async function fetchBackend(endpoint: string, options: RequestInit = {}):
       const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
       const fullUrl = `${base}${cleanEndpoint}`;
 
-      // Timeout agressivo de 2 segundos por tentativa para evitar travamentos de SSR
+      // Timeout agressivo de 2.5 segundos por tentativa
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 2000);
+      const timeoutId = setTimeout(() => controller.abort(), 2500);
 
-      // Se o chamador já passou um signal, combina com o timeout
       if (options.signal) {
         options.signal.addEventListener('abort', () => controller.abort(), { once: true });
       }
 
       const res = await fetch(fullUrl, {
         ...options,
+        headers: sanitizedHeaders,
         signal: controller.signal,
         cache: 'no-store',
       });
@@ -67,7 +87,6 @@ export async function fetchBackend(endpoint: string, options: RequestInit = {}):
       clearTimeout(timeoutId);
 
       if (res.ok || (res.status >= 200 && res.status < 500)) {
-        // Salva a base que funcionou com sucesso no cache em memória
         cachedWorkingBase = base;
         lastWorkingBaseTime = Date.now();
         return res;
@@ -76,7 +95,6 @@ export async function fetchBackend(endpoint: string, options: RequestInit = {}):
       lastResponse = res;
     } catch (err: any) {
       lastError = err;
-      // Se a base em cache falhou, invalida imediatamente
       if (cachedWorkingBase === base) {
         cachedWorkingBase = null;
       }
@@ -87,6 +105,6 @@ export async function fetchBackend(endpoint: string, options: RequestInit = {}):
     return lastResponse;
   }
 
-  throw lastError || new Error(`Falha ao conectar com o backend NestJS no endpoint: ${endpoint}`);
+  throw lastError || new Error(`Falha ao conectar com o backend no endpoint: ${endpoint}`);
 }
 
