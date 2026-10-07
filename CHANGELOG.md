@@ -2,7 +2,35 @@
 
 Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
 
-## [2.1.0] - 2025-01-27
+## [2.6.0] - 2026-10-06
+
+### 📦 **HubObra ERP - Sistema de Saldo de Materiais & Caixa Central**
+- **Venda de Saldo / Retirada Futura (`FUTURE_PICKUP`)**:
+  - Mecanismo para permitir compra antecipada de grandes volumes (ex: 200 sacos de cimento, 10 milheiros de tijolos) para travar preço.
+  - **Integridade de Estoque**: A confirmação de pagamento no Caixa Central executa o lançamento financeiro, mas **NÃO debita o estoque físico do galpão** (`deliveryMode === 'FUTURE_PICKUP'`). A baixa ocorre apenas nas retiradas fracionadas com assinatura digital.
+- **Diferenciação Cromática no Caixa Central**:
+  - **Card Amarelo / Dourado Vibrante** (`border-amber-400`, glow âmbar, badge `📦 SALDO NA LOJA (RETIRADA FUTURA)`).
+  - Alerta de segurança no card: `⚠️ Material FICA na loja. NÃO carregar caminhão agora.`.
+  - Botão contextual: `Receber & Gerar Saldo [F10] ➔`.
+- **Injetores de Teste Rápido no Caixa**:
+  - Botões para gerar pedidos de exemplo no Caixa com 1 clique (`+ Exemplo Saldo Loja (Amarelo)`, `+ Exemplo Balcão`, `+ Exemplo Lia IA`).
+
+### 🌐 **Loja Virtual (Next.js 15) - Sincronização Dinâmica de Categorias & Imagens**
+- **Suporte Total a Imagens Personalizadas & Base64**:
+  - Atualizada a validação no componente da vitrine (`DepartmentShortcuts.tsx`) para aceitar Base64 Data URLs (`data:image/...`), caminhos locais (`/uploads/...`) e links externos (`https://...`).
+  - Sincronização 100% dinâmica com o banco de dados: edições de fotos e descrições no Painel Administrativo (`/admin/categorias`) são refletidas instantaneamente na vitrine da loja.
+- **Banner Personalizado na Página de Categoria**:
+  - A página `/categoria/[slug]` (`CategoryClient.tsx`) agora renderiza um banner visual de alta resolução com a foto e descrição cadastradas no banco.
+- **Otimização de Build & Linting**:
+  - Migração de tags `<a>` para componentes `<Link>` do Next.js em `ImmersiveHero.tsx`.
+  - Resolução de propriedade duplicada de estilo em `GlassCard.tsx`.
+
+### 🚀 **DevOps & Infraestrutura VPS (Easypanel / Docker Swarm / Traefik)**
+- **Correção de 502 Bad Gateway no Docker Swarm**:
+  - Configuração do modo de endpoint para DNS Round-Robin (`--endpoint-mode dnsrr`) nos serviços `n8n_frontend` e `n8n_api`, eliminando a falha de rota VIP do Swarm com o Traefik.
+  - Fix de binding do Next.js 15 (`server.js`) em `0.0.0.0:3000` para deploy estável no Nixpacks.
+
+---
 
 ### 📧 **Sistema de Comunicação Completo**
 

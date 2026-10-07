@@ -227,6 +227,29 @@ graph TD
 
 ---
 
+### 🏪 3.8. HubObra ERP Local-First (`hubobra-erp`) & Caixa Central
+- [x] **Arquitetura Offline-First Resiliente:** Operação autônoma via IndexedDB (Dexie.js) que continua faturando mesmo com instabilidades ou queda de internet.
+- [x] **Módulo de Saldo de Materiais / Venda para Retirada Futura (`FUTURE_PICKUP`):**
+  - Permite a clientes (engenheiros, mestres de obras, construtoras) comprarem grandes volumes antecipadamente (ex: 200 sacos de cimento, 10 milheiros de tijolos) travando o preço de atacado.
+  - **Integridade Absoluta de Estoque:** Ao confirmar o pagamento no Caixa Central, o lançamento financeiro é registrado, mas o **estoque físico do galpão NÃO é baixado**.
+  - O material fica registrado no saldo em haver do cliente e é baixado gradualmente apenas no momento da saída física com conferência e assinatura digital.
+- [x] **Caixa Central Inteligente com Diferenciação Cromática:**
+  - **Card Amarelo / Dourado Âmbar:** Destaque vibrante com borda `border-amber-400`, glow e badge `📦 SALDO NA LOJA (RETIRADA FUTURA)`.
+  - **Alerta de Segurança Visual:** Box destacado avisando: `⚠️ Material FICA na loja. NÃO carregar caminhão agora.`.
+  - **Botão Contextual:** `Receber & Gerar Saldo [F10] ➔`.
+  - Suporte a múltiplas filas: Balcão & PIX, Pagar na Entrega (Acerto de Rota com Maquininha) e Recebidos Hoje.
+- [x] **Injetores de Teste Rápido no Caixa:**
+  - Botões dedicados no topo do Caixa (`+ Exemplo Saldo Loja (Amarelo)`, `+ Exemplo Balcão`, `+ Exemplo Lia IA`) para demonstração, treinamento de caixas e testes instantâneos.
+
+---
+
+### 🌐 3.9. Loja Virtual - Sincronização Dinâmica de Categorias & Imagens
+- [x] **Suporte Universal a Imagens Customizadas:** O componente da vitrine (`DepartmentShortcuts.tsx`) valida e aceita Data URLs Base64 (`data:image/...`), links externos (`https://...`) e caminhos locais (`/uploads/...`).
+- [x] **Sincronização em Tempo Real com o Banco:** Categorias criadas ou editadas no Painel Administrativo (`/admin/categorias`) são refletidas instantaneamente na vitrine da loja sem serem sobrescritas por fotos estáticas.
+- [x] **Banner Personalizado na Página da Categoria:** A rota `/categoria/[slug]` renderiza um banner imersivo com a foto e descrição cadastradas no banco de dados.
+
+---
+
 ## 🗄️ 4. Modelagem de Dados (Entidades do Prisma)
 
 O banco de dados PostgreSQL foi desenhado para escalabilidade e arquitetura multi-loja:
