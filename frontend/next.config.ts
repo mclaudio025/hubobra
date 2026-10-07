@@ -30,7 +30,7 @@ const nextConfig: NextConfig = {
 
   // Otimizações para produção
   compiler: {
-    removeConsole: process.env.NODE_ENV === 'production',
+    // Permite logs no servidor para monitoramento
   },
 
   eslint: {
