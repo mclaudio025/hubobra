@@ -14,6 +14,9 @@ export async function fetchBackend(endpoint: string, options: RequestInit = {}):
   // Lista ordenada de candidatos para conexão interna e externa
   const rawCandidateBases = [
     isCacheValid ? cachedWorkingBase : null,
+    'http://tasks.n8n_api:8081',
+    'http://tasks.n8n-api:8081',
+    'https://api.hubobra.com.br',
     process.env.BACKEND_URL,
     process.env.API_URL,
     process.env.NEXT_PUBLIC_API_URL,
@@ -23,7 +26,6 @@ export async function fetchBackend(endpoint: string, options: RequestInit = {}):
     'http://api:8081',
     'http://backend:8081',
     'http://backend-nestjs:8081',
-    'https://api.hubobra.com.br',
     'http://172.17.0.1:8081',
     'http://host.docker.internal:8081',
     'http://127.0.0.1:8081',
