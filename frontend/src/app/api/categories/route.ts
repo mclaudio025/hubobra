@@ -21,7 +21,11 @@ export async function GET(request: NextRequest) {
     }
 
     const data = await response.json();
-    return NextResponse.json(data);
+    return NextResponse.json(data, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=120, stale-while-revalidate=600',
+      },
+    });
   } catch (error) {
     console.warn('Erro ao conectar com API de categorias (usando fallback):', error);
     return NextResponse.json([], { status: 200 });

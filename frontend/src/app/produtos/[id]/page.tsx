@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
 import ProductDetailClient from './ProductDetailClient';
+import { fetchBackend } from '@/lib/backend-client';
 
-const API_BASE = process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8081';
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://hubconstrucoes.com.br';
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://hubobra.com.br';
 
 interface ProductData {
   id: string;
@@ -13,21 +13,31 @@ interface ProductData {
   sku?: string;
   barcode?: string;
   brand?: string;
+  weight?: number;
+  dimensions?: string;
+  specifications?: string;
   category?: {
+    id: string;
     name: string;
     slug: string;
   };
   images?: Array<{
+    id: string;
     url: string;
-    alt?: string;
+    alt: string;
+    order: number;
+  }>;
+  tags?: Array<{
+    tag: {
+      name: string;
+      slug: string;
+    };
   }>;
 }
 
 async function fetchProduct(id: string): Promise<ProductData | null> {
   try {
-    const res = await fetch(`${API_BASE}/products/${id}`, {
-      next: { revalidate: 60 },
-    });
+    const res = await fetchBackend(`/products/${id}`);
     if (!res.ok) return null;
     return await res.json();
   } catch (err) {
@@ -58,14 +68,14 @@ export async function generateMetadata({
       : `Compre ${product.name} com entrega rápida para a sua obra e o melhor preço no HubObra.`;
 
   const primaryImage =
-    product.images && product.images.length > 0
+    product.images && product.images.length > 0 && product.images[0].url
       ? product.images[0].url
       : `${SITE_URL}/icons/icon-512x512.png`;
 
   const formattedPrice = new Intl.NumberFormat('pt-BR', {
     style: 'currency',
     currency: 'BRL',
-  }).format(product.price);
+  }).format(product.price || 0);
 
   return {
     title,
@@ -122,7 +132,7 @@ export default async function ProductPage({
           '@type': 'Offer',
           url: `${SITE_URL}/produtos/${id}`,
           priceCurrency: 'BRL',
-          price: product.price,
+          price: product.price || 0,
           priceValidUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
             .toISOString()
             .split('T')[0],
@@ -147,7 +157,7 @@ export default async function ProductPage({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(productSchema) }}
         />
       )}
-      <ProductDetailClient productId={id} />
+      <ProductDetailClient productId={id} initialProduct={product} />
     </>
   );
 }

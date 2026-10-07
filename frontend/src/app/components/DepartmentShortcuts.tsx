@@ -263,8 +263,25 @@ function normalizeKey(str: string): string {
     .replace(/[^a-z0-9]/g, '');
 }
 
+const CATEGORIES_CACHE_KEY = 'hubobra_cached_department_shortcuts_v1';
+
 export default function DepartmentShortcuts() {
-  const [categoriesList, setCategoriesList] = useState<CategoryCardData[]>(MASTER_CATEGORIES_DATA);
+  const [categoriesList, setCategoriesList] = useState<CategoryCardData[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem(CATEGORIES_CACHE_KEY) || sessionStorage.getItem(CATEGORIES_CACHE_KEY);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            return parsed;
+          }
+        }
+      } catch (e) {
+        // Silenciosamente usar MASTER_CATEGORIES_DATA
+      }
+    }
+    return MASTER_CATEGORIES_DATA;
+  });
   const categoriesApi = useCategories();
 
   const [emblaRef, emblaApi] = useEmblaCarousel({
@@ -304,7 +321,7 @@ export default function DepartmentShortcuts() {
     emblaApi.on('reInit', onSelect);
   }, [emblaApi, onSelect]);
 
-  // Sincronizar dinamicamente categorias e imagens do banco de dados
+  // Sincronizar dinamicamente categorias e imagens do banco de dados com persistência local
   useEffect(() => {
     const isValidImageUrl = (url?: string | null): boolean => {
       if (!url || typeof url !== 'string') return false;
@@ -355,6 +372,14 @@ export default function DepartmentShortcuts() {
 
           if (dynamicMapped.length > 0) {
             setCategoriesList(dynamicMapped);
+            if (typeof window !== 'undefined') {
+              try {
+                localStorage.setItem(CATEGORIES_CACHE_KEY, JSON.stringify(dynamicMapped));
+                sessionStorage.setItem(CATEGORIES_CACHE_KEY, JSON.stringify(dynamicMapped));
+              } catch (e) {
+                // Ignore storage limits
+              }
+            }
           }
         }
       } catch (err) {
@@ -451,7 +476,8 @@ export default function DepartmentShortcuts() {
                           src={cat.image || defaultImage}
                           alt={cat.name}
                           className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
-                          loading="lazy"
+                          loading="eager"
+                          decoding="async"
                           onError={(e) => {
                             const target = e.target as HTMLImageElement;
                             if (target.src !== defaultImage) {
