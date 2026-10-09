@@ -1,17 +1,63 @@
 /**
  * Cliente de Conexão Resiliente de Alta Performance com o Backend NestJS
- * Descobre rapidamente o alias interno do Docker no Easypanel (n8n_api, api, etc.)
- * e memoriza o endereço em memória para respostas instantâneas (0ms de overhead).
+ * - Circuit Breaker com auto-recovery (evita travamento de threads em instabilidades)
+ * - Memorização do alias Docker ativo (0ms de overhead)
+ * - Sanitização automática de headers e proteção contra timeouts
  */
 
+type CircuitState = 'CLOSED' | 'OPEN' | 'HALF_OPEN';
+
+interface CircuitBreakerState {
+  state: CircuitState;
+  failures: number;
+  lastFailureTime: number;
+  openedAt: number;
+}
+
+const circuit: CircuitBreakerState = {
+  state: 'CLOSED',
+  failures: 0,
+  lastFailureTime: 0,
+  openedAt: 0,
+};
+
+const MAX_FAILURES = 3;
+const CIRCUIT_COOLDOWN_MS = 15000; // 15 segundos para tentar reconectar (Half-Open)
 let cachedWorkingBase: string | null = null;
 let lastWorkingBaseTime: number = 0;
-const CACHE_TTL_MS = 60 * 1000; // Revalida o host a cada 1 minuto se necessário
+const CACHE_TTL_MS = 60 * 1000; // 1 minuto de cache para o host validado
+
+export class CircuitBreakerError extends Error {
+  constructor(message = 'Circuito do backend aberto temporariamente para proteção') {
+    super(message);
+    this.name = 'CircuitBreakerError';
+  }
+}
+
+export function getCircuitStatus() {
+  return { ...circuit, cachedWorkingBase };
+}
 
 export async function fetchBackend(endpoint: string, options: RequestInit = {}): Promise<Response> {
-  const isCacheValid = cachedWorkingBase && (Date.now() - lastWorkingBaseTime < CACHE_TTL_MS);
+  const now = Date.now();
 
-  // Lista ordenada de candidatos para conexão interna e externa
+  // 1. Verificação do Circuit Breaker
+  if (circuit.state === 'OPEN') {
+    if (now - circuit.openedAt > CIRCUIT_COOLDOWN_MS) {
+      circuit.state = 'HALF_OPEN';
+    } else {
+      // Falha rápida em 0ms para não prender threads do Traefik/Next.js
+      throw new CircuitBreakerError(
+        `Backend indisponível temporariamente. Circuito reabrindo em ${Math.ceil(
+          (CIRCUIT_COOLDOWN_MS - (now - circuit.openedAt)) / 1000
+        )}s`
+      );
+    }
+  }
+
+  const isCacheValid = cachedWorkingBase && now - lastWorkingBaseTime < CACHE_TTL_MS;
+
+  // Lista de bases candidatas ordenada por prioridade
   const rawCandidateBases = [
     isCacheValid ? cachedWorkingBase : null,
     'http://tasks.n8n_api:8081',
@@ -32,7 +78,6 @@ export async function fetchBackend(endpoint: string, options: RequestInit = {}):
     'http://localhost:8081',
   ];
 
-  // Remove nulos e duplicados mantendo a ordem de prioridade
   const candidateBases = Array.from(
     new Set(
       rawCandidateBases
@@ -41,7 +86,10 @@ export async function fetchBackend(endpoint: string, options: RequestInit = {}):
     )
   );
 
-  // Sanitiza headers para remover campos vazios (ex: Authorization: "")
+  // Em modo HALF_OPEN, testa apenas o host principal para canário
+  const hostsToTry = circuit.state === 'HALF_OPEN' ? candidateBases.slice(0, 2) : candidateBases;
+
+  // Sanitiza headers (remove strings vazias)
   const sanitizedHeaders: Record<string, string> = {};
   if (options.headers) {
     if (options.headers instanceof Headers) {
@@ -64,12 +112,11 @@ export async function fetchBackend(endpoint: string, options: RequestInit = {}):
   let lastError: any = null;
   let lastResponse: Response | null = null;
 
-  for (const base of candidateBases) {
+  for (const base of hostsToTry) {
     try {
       const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
       const fullUrl = `${base}${cleanEndpoint}`;
 
-      // Timeout de 10s para a base principal/em cache e 2.5s para descoberta
       const isPrimary = base === cachedWorkingBase || base === 'http://tasks.n8n_api:8081';
       const timeoutMs = isPrimary ? 10000 : 2500;
       const controller = new AbortController();
@@ -89,8 +136,11 @@ export async function fetchBackend(endpoint: string, options: RequestInit = {}):
       clearTimeout(timeoutId);
 
       if (res.ok || (res.status >= 200 && res.status < 500)) {
+        // Sucesso: fecha o circuito e memoriza o host
         cachedWorkingBase = base;
         lastWorkingBaseTime = Date.now();
+        circuit.state = 'CLOSED';
+        circuit.failures = 0;
         return res;
       }
 
@@ -101,6 +151,15 @@ export async function fetchBackend(endpoint: string, options: RequestInit = {}):
         cachedWorkingBase = null;
       }
     }
+  }
+
+  // Se todas as tentativas falharem, incrementa contador de falhas
+  circuit.failures += 1;
+  circuit.lastFailureTime = Date.now();
+
+  if (circuit.failures >= MAX_FAILURES) {
+    circuit.state = 'OPEN';
+    circuit.openedAt = Date.now();
   }
 
   if (lastResponse) {

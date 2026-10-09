@@ -1,0 +1,2735 @@
+{
+  "id": "IL2N96Rp8RSv6Hyz",
+  "name": "HubObra - Atendimento Inteligente IA (Lia + Zé da Obra) Multimodal Uazapi + Chatwoot CRM + Realtime Supabase",
+  "description": null,
+  "active": true,
+  "activeVersionId": "4b256746-5547-4dd6-8000-41c55136d1be",
+  "createdAt": "2026-09-22T15:10:35.867Z",
+  "updatedAt": "2026-10-04T22:50:55.373Z",
+  "isArchived": false,
+  "versionId": "4b256746-5547-4dd6-8000-41c55136d1be",
+  "versionCounter": 190,
+  "sourceWorkflowId": null,
+  "triggerCount": 1,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "hubobra-whatsapp",
+        "options": {}
+      },
+      "id": "webhook-inbound",
+      "name": "📥 Entrada WhatsApp (HubObra)",
+      "webhookId": "e862a32c-8bbf-4bed-8970-6161f7d6cd0c",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -1536,
+        208
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// ⚙️ NORMALIZADOR DE EVENTOS DA UAZAPI\nconst items = $input.all();\nconst results = [];\n\nfor (const item of items) {\n  const body = item.json.body || item.json;\n  \n  // Ignorar mensagens enviadas pelo próprio robô/atendente (fromMe = true ou wasSentByApi = true)\n  if (body.message?.fromMe === true || body.fromMe === true || body.message?.wasSentByApi === true) {\n    continue;\n  }\n  \n  // Extração de telefone do cliente\n  let rawPhone = body.chat?.phone || body.message?.sender_pn || body.phone || body.from || body.client_phone || body.remoteJid || body.sender || '';\n  let phone = rawPhone.replace(/[^0-9]/g, '');\n  \n  // Extração de nome\n  let name = body.message?.senderName || body.chat?.wa_name || body.chat?.name || body.name || body.pushName || 'Cliente';\n  \n  // Extração de Message ID para Uazapi download\n  let messageId = body.message?.id || body.message?.messageid || body.id || '';\n  \n  // Detecção de tipo de mensagem\n  let mediaType = (body.message?.mediaType || body.mediaType || body.message?.type || body.type || '').toLowerCase();\n  let messageType = (body.message?.messageType || body.messageType || '').toLowerCase();\n  \n  let isAudio = (mediaType === 'ptt' || mediaType === 'audio' || messageType.includes('audio'));\n  let isImage = (mediaType === 'image' || messageType.includes('image'));\n  \n  // Extração de texto\n  let messageText = '';\n  if (body.message?.content) {\n    if (typeof body.message.content === 'string') {\n      messageText = body.message.content;\n    } else if (body.message.content.text) {\n      messageText = body.message.content.text;\n    }\n  } else if (body.message?.text) {\n    messageText = body.message.text;\n  } else if (body.text) {\n    messageText = body.text;\n  } else if (body.message?.conversation) {\n    messageText = body.message.conversation;\n  } else if (body.message?.extendedTextMessage?.text) {\n    messageText = body.message.extendedTextMessage.text;\n  }\n  \n  if (!phone) {\n    continue;\n  }\n  \n  results.push({\n    json: {\n      phone: phone,\n      name: name,\n      messageId: messageId,\n      mediaType: mediaType,\n      messageType: messageType,\n      isAudio: isAudio,\n      isImage: isImage,\n      messageText: messageText,\n      sessionId: phone,\n      timestamp: new Date().toISOString()\n    }\n  });\n}\n\nreturn results;"
+      },
+      "id": "code-parser",
+      "name": "⚙️ Normalizar Mensagem",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1296,
+        208
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "is-audio-condition",
+              "leftValue": "={{ $json.isAudio }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-is-audio",
+      "name": "É Áudio de Voz?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1056,
+        208
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "is-image-condition",
+              "leftValue": "={{ $json.isImage }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-is-image",
+      "name": "É Imagem / Foto?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -816,
+        288
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://hubobra.uazapi.com/message/download",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "token",
+              "value": "2b8e068e-e174-4419-a64c-9b97f4760527"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { id: $json.messageId } }}",
+        "options": {
+          "timeout": 20000
+        }
+      },
+      "id": "download-uazapi-audio-url",
+      "name": "🔗 Obter URL do Áudio (Uazapi)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -800,
+        32
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.fileURL }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          },
+          "timeout": 30000
+        }
+      },
+      "id": "download-audio-binary",
+      "name": "⬇️ Baixar Arquivo MP3",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -544,
+        32
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "operation": "transcribe",
+        "options": {}
+      },
+      "id": "whisper-transcription",
+      "name": "🎙️ Transcrever Áudio (Whisper)",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        -304,
+        32
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "rLtb1nh0h3hKRbHC",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// 🔄 COMBINAR TRANSCRIÇÃO DE ÁUDIO COM DADOS DO CLIENTE\nconst items = $input.all();\nconst initialData = $('⚙️ Normalizar Mensagem').first().json;\n\nreturn items.map(item => ({\n  json: {\n    ...initialData,\n    messageText: item.json.text || item.json.transcription || \"Áudio recebido.\",\n    isTranscribedAudio: true\n  }\n}));"
+      },
+      "id": "code-merge-transcription",
+      "name": "🔄 Injetar Transcrição",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -48,
+        32
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://hubobra.uazapi.com/message/download",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "token",
+              "value": "2b8e068e-e174-4419-a64c-9b97f4760527"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { id: $json.messageId } }}",
+        "options": {
+          "timeout": 20000
+        }
+      },
+      "id": "download-uazapi-image-url",
+      "name": "🔗 Obter URL da Imagem (Uazapi)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -800,
+        576
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.fileURL }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          },
+          "timeout": 30000
+        }
+      },
+      "id": "download-image-binary",
+      "name": "⬇️ Baixar Arquivo Foto",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -560,
+        576
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "operation": "analyze",
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list"
+        },
+        "text": "Analise esta foto de material de construção ou obra. Identifique os produtos visíveis, marcas, medidas e o que o cliente provavelmente deseja orçar na HubObra.",
+        "inputType": "binary",
+        "options": {}
+      },
+      "id": "image-analyzer",
+      "name": "👁️ Analisar Imagem Material (GPT-4o)",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        -320,
+        576
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "rLtb1nh0h3hKRbHC",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// 🔄 COMBINAR ANÁLISE DE IMAGEM COM DADOS DO CLIENTE\nconst items = $input.all();\nconst initialData = $('⚙️ Normalizar Mensagem').first().json;\n\nreturn items.map(item => ({\n  json: {\n    ...initialData,\n    messageText: \"O cliente enviou uma foto de materiais/obra. Análise visual: \" + (item.json.text || item.json.content || \"Foto de material de construção recebida.\"),\n    isImageAnalysis: true\n  }\n}));"
+      },
+      "id": "code-merge-image",
+      "name": "🔄 Injetar Análise de Imagem",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -80,
+        576
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://api.hubobra.com.br/products",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "search",
+              "value": "={{ $json.textMessage || $json.text || $json.message || 'serra' }}"
+            },
+            {
+              "name": "limit",
+              "value": "5"
+            },
+            {
+              "name": "active",
+              "value": "true"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "id": "fetch-supabase-realtime-catalog",
+      "name": "📦 Buscar Estoque em Tempo Real (Supabase)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        160,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-flash-lite-latest",
+        "options": {
+          "temperature": 0.2
+        }
+      },
+      "id": "google-gemini-model",
+      "name": "Google Gemini Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        512,
+        560
+      ],
+      "credentials": {
+        "googlePalmApi": {
+          "id": "ReYrBIedAeEJeyLk",
+          "name": "Google Gemini Account New"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "contextWindowLength": 4
+      },
+      "id": "window-memory",
+      "name": "Memória da Conversa",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        704,
+        560
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// 🎯 PROCESSAR RESPOSTA DA IA (EXTRATOR MULTIMODAL + ALTERAÇÃO DE PREÇO + SUPABASE + UAZAPI)\nconst initialData = $('⚙️ Normalizar Mensagem').first().json;\nconst aiResult = $input.first().json;\n\nconst rawText = aiResult.output || aiResult.text || '';\nconst customerName = initialData.name || 'Cliente';\nconst userMessage = initialData.messageText || '';\n\nconst SUPABASE_URL = 'https://zeywqzkmevytzkdbzwni.supabase.co';\nconst SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpleXdxemttZXZ5dHprZGJ6d25pIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4OTY0ODA3MywiZXhwIjoyMTA1MjI0MDczfQ.H_DTlgqQ4_2pcOUujrh6-7d0vEy4D6CgduUi1rqdpy0';\n\nasync function httpReq(options) {\n  try {\n    if (typeof this !== 'undefined' && this && this.helpers && this.helpers.httpRequest) {\n      return await this.helpers.httpRequest(options);\n    }\n  } catch(_) {}\n  try {\n    const res = await fetch(options.url, {\n      method: options.method || 'GET',\n      headers: options.headers || {},\n      body: options.body ? JSON.stringify(options.body) : undefined\n    });\n    if (options.json) return await res.json();\n    return res;\n  } catch(err) {\n    console.warn('httpReq error:', err.message);\n    return null;\n  }\n}\n\nconst supaHeaders = {\n  'apikey': SUPABASE_KEY,\n  'Authorization': 'Bearer ' + SUPABASE_KEY,\n  'Content-Type': 'application/json',\n  'Prefer': 'return=representation'\n};\n\nreturn (async () => {\n  // 1. Processar tag UPDATE_PRICE (Alteração de Preço Solicitada pelo Treinador/Admin)\n  if (rawText.includes('<<<UPDATE_PRICE:')) {\n    const priceMatch = rawText.match(/<<<UPDATE_PRICE:\\s*([\\s\\S]*?)>>>/i);\n    if (priceMatch && priceMatch[1]) {\n      try {\n        const pData = JSON.parse(priceMatch[1].trim());\n        const newPrice = Number(pData.new_price);\n        if (!isNaN(newPrice) && newPrice > 0) {\n          let targetProd = null;\n\n          // Buscar por SKU\n          if (pData.sku) {\n            const skuRes = await httpReq({\n              url: SUPABASE_URL + '/rest/v1/products?sku=eq.' + encodeURIComponent(pData.sku) + '&select=id,name,sku,price',\n              method: 'GET',\n              headers: supaHeaders,\n              json: true\n            });\n            if (Array.isArray(skuRes) && skuRes.length > 0) targetProd = skuRes[0];\n          }\n\n          // Se não achou por SKU, busca por Nome\n          if (!targetProd && pData.product_name) {\n            const cleanSearch = pData.product_name.replace(/[^a-zA-Z0-9\\s]/g, '').trim();\n            const nameRes = await httpReq({\n              url: SUPABASE_URL + '/rest/v1/products?name=ilike.*' + encodeURIComponent(cleanSearch) + '*&select=id,name,sku,price&limit=1',\n              method: 'GET',\n              headers: supaHeaders,\n              json: true\n            });\n            if (Array.isArray(nameRes) && nameRes.length > 0) targetProd = nameRes[0];\n          }\n\n          if (targetProd) {\n            // Atualizar produto no banco\n            await httpReq({\n              url: SUPABASE_URL + '/rest/v1/products?id=eq.' + targetProd.id,\n              method: 'PATCH',\n              headers: supaHeaders,\n              body: {\n                price: newPrice,\n                updatedAt: new Date().toISOString()\n              }\n            });\n\n            // Gravar histórico de auditoria (price_history)\n            const adminUserRes = await httpReq({\n              url: SUPABASE_URL + '/rest/v1/users?role=in.(ADMIN,STORE_ADMIN,SUPER_ADMIN,MANAGER)&limit=1&select=id',\n              method: 'GET',\n              headers: supaHeaders,\n              json: true\n            });\n            const adminId = (Array.isArray(adminUserRes) && adminUserRes.length > 0) ? adminUserRes[0].id : null;\n\n            if (adminId) {\n              await httpReq({\n                url: SUPABASE_URL + '/rest/v1/price_history',\n                method: 'POST',\n                headers: supaHeaders,\n                body: {\n                  productId: targetProd.id,\n                  oldPrice: Number(pData.old_price || targetProd.price || 0),\n                  newPrice: newPrice,\n                  reason: 'Alteração solicitada via WhatsApp Lia por ' + (customerName || 'Treinador Master') + ' (' + (initialData.phone || '') + ')',\n                  userId: adminId,\n                  createdAt: new Date().toISOString()\n                }\n              });\n            }\n            console.log('🎉 Preço atualizado no Supabase com sucesso:', targetProd.name, '➔ R$', newPrice);\n          }\n        }\n      } catch(pErr) {\n        console.warn('Erro ao processar UPDATE_PRICE:', pErr.message);\n      }\n    }\n  }\n\n  // 2. Extração de Foto (caso o cliente tenha pedido foto)\n  const userAskedPhoto = /(?:foto|fotos|imagem|imagens|como\\s+ele\\s+(é|parece)|como\\s+ela\\s+(é|parece)|quero\\s+ver|manda\\s+ver)/i.test(userMessage);\n  let imageUrl = null;\n  const fotoTagMatch = rawText.match(/\\[FOTO:\\s*([^\\s\\]]+)\\]/i);\n  const mdImgMatch = rawText.match(/!\\[.*?\\]\\((https?:\\/\\/[^\\s\\)]+)\\)/i);\n  const rawImgMatch = rawText.match(/(https?:\\/\\/[^\\s\\(\\)\\[\\]\\\"\\'\\<\\>]+\\.(?:jpg|jpeg|png|webp)(?:\\?[^\\s\\(\\)\\[\\]\\\"\\'\\<\\>]*)?)/i);\n\n  if (userAskedPhoto || fotoTagMatch) {\n    if (fotoTagMatch && fotoTagMatch[1]) imageUrl = fotoTagMatch[1].trim();\n    else if (mdImgMatch && mdImgMatch[1]) imageUrl = mdImgMatch[1].trim();\n    else if (rawImgMatch && rawImgMatch[1]) imageUrl = rawImgMatch[1].trim();\n  }\n\n  const hasImage = Boolean(imageUrl && imageUrl.startsWith('http') && (userAskedPhoto || fotoTagMatch));\n\n  // 3. Extração da Fala de Áudio [FALA: ...]\n  let speechText = '';\n  let textBody = rawText;\n\n  const falaMatch = rawText.match(/\\[FALA:\\s*([\\s\\S]+?)\\]/i);\n  if (falaMatch && falaMatch[1]) {\n    const rawFala = falaMatch[1].trim();\n    if (rawFala.length > 280) {\n      speechText = 'Oi ' + customerName + '! Já levantei todos os detalhes e deixei por escrito aqui para você conferir!';\n    } else {\n      speechText = rawFala;\n    }\n  } else {\n    const firstSentence = rawText.split('\\n')[0].replace(/[*_~#\\x60\\[\\]!]/g, '').trim();\n    if (firstSentence && firstSentence.length > 10 && firstSentence.length < 160) {\n      speechText = firstSentence;\n    } else {\n      speechText = 'Oi ' + customerName + '! Já separei todas as informações da Hub, Obra para você!';\n    }\n  }\n\n  // 4. Limpeza do Texto Escrito\n  let respostaFormatada = textBody\n    .replace(/\\[FALA:\\s*[\\s\\S]+?\\]/gi, '')\n    .replace(/\\[FOTO:\\s*[^\\s\\]]+\\]/gi, '')\n    .replace(/\\[GERAR_PDF\\]/gi, '')\n    .replace(/!\\[.*?\\]\\((https?:\\/\\/[^\\)]+)\\)/gi, '')\n    .replace(/(https?:\\/\\/[^\\s\\(\\)\\[\\]\\\"\\'\\<\\>]+\\.(?:jpg|jpeg|png|webp)(?:\\?[^\\s\\(\\)\\[\\]\\\"\\'\\<\\>]*)?)/gi, '')\n    .replace(/<<<PEDIDO:[\\s\\S]*?>>>/gi, '')\n    .replace(/<<<ORCAMENTO:[\\s\\S]*?>>>/gi, '')\n    .replace(/<<<LEARN_TERM:[\\s\\S]*?>>>/gi, '')\n    .replace(/<<<LEARN_RULE:[\\s\\S]*?>>>/gi, '')\n    .replace(/<<<UPDATE_PRICE:[\\s\\S]*?>>>/gi, '')\n    .trim();\n\n  if (!respostaFormatada || respostaFormatada.length < 5) {\n    respostaFormatada = rawText\n      .replace(/\\[FALA:\\s*/gi, '')\n      .replace(/\\]/gi, '')\n      .replace(/<<<UPDATE_PRICE:[\\s\\S]*?>>>/gi, '')\n      .trim();\n  }\n\n  // 5. Normalização Fonética da Fala de Áudio\n  speechText = speechText\n    .replace(/<<<LEARN_TERM:[\\s\\S]*?>>>/gi, '')\n    .replace(/<<<LEARN_RULE:[\\s\\S]*?>>>/gi, '')\n    .replace(/<<<ORCAMENTO:[\\s\\S]*?>>>/gi, '')\n    .replace(/<<<PEDIDO:[\\s\\S]*?>>>/gi, '')\n    .replace(/<<<UPDATE_PRICE:[\\s\\S]*?>>>/gi, '')\n    .replace(/https?:\\/\\/\\S+/g, '')\n    .replace(/HubObra/gi, 'Hub, Obra')\n    .replace(/Hub\\s*Obra/gi, 'Hub, Obra')\n    .replace(/\\bPIX\\b/g, 'Pícs')\n    .replace(/\\bPix\\b/g, 'Pícs')\n    .replace(/\\bWhatsApp\\b/gi, 'Uatizap')\n    .replace(/[*_~#\\x60\\[\\]!]/g, '')\n    .replace(/R\\$\\s*([0-9]+)[,\\.]00\\b/gi, (m, reais) => (reais === '1' ? '1 real' : reais + ' reais'))\n    .replace(/R\\$\\s*([0-9]+)[,\\.]([0-9]{1,2})\\b/gi, (m, reais, cents) => {\n      const c = parseInt(cents, 10);\n      if (c === 0) return reais === '1' ? '1 real' : reais + ' reais';\n      if (reais === '0') return c + ' centavos';\n      const unit = reais === '1' ? 'real' : 'reais';\n      return reais + ' ' + unit + ' e ' + cents + ' centavos';\n    })\n    .replace(/R\\$\\s*([0-9]+)/gi, (m, reais) => (reais === '1' ? '1 real' : reais + ' reais'))\n    .replace(/\\b([0-9]+)[,\\.]00\\s*reais\\b/gi, (m, reais) => (reais === '1' ? '1 real' : reais + ' reais'))\n    .replace(/\\b([0-9]+)[,\\.]00\\b/g, '$1')\n    .replace(/\\s+e\\s+(?:00|zero|0)\\s+centavos\\b/gi, '')\n    .replace(/\\s+(?:00|zero|0)\\s+centavos\\b/gi, '')\n    .replace(/\\s+vírgula\\s+zero\\s+zero\\b/gi, '')\n    .replace(/\\s+virgula\\s+zero\\s+zero\\b/gi, '')\n    .replace(/m²/g, 'metros quadrados')\n    .replace(/m³/g, 'metros cúbicos')\n    .replace(/kg/g, 'quilos')\n    .replace(/\\s+/g, ' ')\n    .trim();\n\n  const isZe = rawText.includes('Zé da Obra') || rawText.includes('👷‍♂️');\n\n  return [{\n    json: {\n      ...initialData,\n      rawAiOutput: rawText,\n      respostaFormatada: respostaFormatada,\n      speechText: speechText,\n      voiceId: isZe ? 'Charon' : 'Aoede',\n      isZePersona: isZe,\n      imageUrl: imageUrl,\n      hasImage: hasImage,\n      hasPdf: false,\n      hasMedia: hasImage,\n      mediaUrl: imageUrl,\n      mediaType: hasImage ? 'image' : null,\n      docName: null,\n      isAudioInput: Boolean(initialData.isAudio),\n      hasText: Boolean(respostaFormatada && respostaFormatada.length > 0)\n    }\n  }];\n})();\n"
+      },
+      "id": "code-format-response",
+      "name": "📝 Formatar Resposta WhatsApp",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        960,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "cond-has-media",
+              "leftValue": "={{ $('📝 Formatar Resposta WhatsApp').first().json.hasMedia }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-has-image",
+      "name": "Tem Foto para Enviar?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1600,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://hubobra.uazapi.com/send/media",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "token",
+              "value": "2b8e068e-e174-4419-a64c-9b97f4760527"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { number: $('⚙️ Normalizar Mensagem').first().json.phone, file: $('📝 Formatar Resposta WhatsApp').first().json.mediaUrl, text: $('📝 Formatar Resposta WhatsApp').first().json.respostaFormatada, type: $('📝 Formatar Resposta WhatsApp').first().json.mediaType || 'image', docName: $('📝 Formatar Resposta WhatsApp').first().json.docName || 'documento.pdf' } }}",
+        "options": {
+          "timeout": 20000
+        }
+      },
+      "id": "send-uazapi-media",
+      "name": "📤 Enviar Foto + Legenda",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1920,
+        288
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://hubobra.uazapi.com/send/text",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "token",
+              "value": "2b8e068e-e174-4419-a64c-9b97f4760527"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { number: $('⚙️ Normalizar Mensagem').first().json.phone, text: $('📝 Formatar Resposta WhatsApp').first().json.respostaFormatada } }}",
+        "options": {
+          "timeout": 20000
+        }
+      },
+      "id": "send-uazapi-text",
+      "name": "📤 Enviar Texto",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1920,
+        512
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://atendimento-chatwoot.q6zw3x.easypanel.host/api/v1/accounts/1/contacts",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "api_access_token",
+              "value": "EE8HZn79o6Hdp5h2gAcqbFgu"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { inbox_id: 1, name: $json.name, phone_number: '+' + $json.phone } }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "chatwoot-contact-http",
+      "name": "💬 Chatwoot: Criar/Obter Contato",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1568,
+        736
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://atendimento-chatwoot.q6zw3x.easypanel.host/api/v1/accounts/1/conversations",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "api_access_token",
+              "value": "EE8HZn79o6Hdp5h2gAcqbFgu"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { source_id: $json.phone, inbox_id: 1, contact_id: $json.payload?.contact?.id || $json.id, status: 'open', assignee_id: 1 } }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "chatwoot-conversation-http",
+      "name": "💬 Chatwoot: Abrir Conversa",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1840,
+        736
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://atendimento-chatwoot.q6zw3x.easypanel.host/api/v1/accounts/1/conversations/{{ $json.id || $json.conversation?.id }}/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "api_access_token",
+              "value": "EE8HZn79o6Hdp5h2gAcqbFgu"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { content: $('📝 Formatar Resposta WhatsApp').first().json.clientText || 'Mensagem do cliente', message_type: 'incoming' } }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "chatwoot-client-msg-http",
+      "name": "💬 Chatwoot: Mensagem Cliente",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        2080,
+        736
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://gibson-screenshots-crew-ooo.trycloudflare.com/api/v1/webhooks/in/uBZ2YTx3UvOlTdwLQJ5u5tH8TjtZVoZd\n\n\n",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"name\": \"={{ $json.pushName || $json.name || $json.nome || 'Cliente WhatsApp' }}\",\n  \"phone\": \"={{ $json.from || $json.phone || $json.telefone }}\",\n  \"mensagem\": \"={{ $json.resposta || $json.output || $json.message || 'Mensagem da Lia' }}\"\n}\n",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "chatwoot-lia-msg-http",
+      "name": "💬 Chatwoot: Resposta Lia",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        2320,
+        736
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "cond-is-audio",
+              "leftValue": "={{ $json.isAudioInput }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-audio-input",
+      "name": "Cliente Mandou Áudio?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1184,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// 🗣️ GERAR ÁUDIO GEMINI 2.5 PRO TTS VIA KIE.AI (COM FALLBACK RESILIENTE E HIGIENIZAÇÃO DE PREÇOS)\nconst item = $input.first().json;\nlet text = item.speechText || '';\nconst isZe = Boolean(item.isZePersona);\nconst voiceName = isZe ? 'Charon' : 'Aoede';\nconst apiKey = 'b30b1489000ba908bd72cc04e0d6cc16';\n\nif (!text || text.trim().length === 0) {\n  return [{ json: { ...item, audioGeneratedUrl: null, hasAudioUrl: false } }];\n}\n\n// Sanitização final de segurança contra \"zero centavos\" e números formatados\ntext = text\n  .replace(/R\\$\\s*([0-9]+)[,\\.]00\\b/gi, '$1 reais')\n  .replace(/R\\$\\s*([0-9]+)[,\\.]([0-9]{1,2})\\b/gi, (m, r, c) => parseInt(c, 10) === 0 ? r + ' reais' : r + ' reais e ' + c + ' centavos')\n  .replace(/R\\$\\s*([0-9]+)/gi, '$1 reais')\n  .replace(/\\b([0-9]+)[,\\.]00\\s*reais\\b/gi, '$1 reais')\n  .replace(/\\b([0-9]+)[,\\.]00\\b/g, '$1')\n  .replace(/\\s+e\\s+(?:00|zero|0)\\s+centavos\\b/gi, '')\n  .replace(/\\s+(?:00|zero|0)\\s+centavos\\b/gi, '')\n  .replace(/\\s+vírgula\\s+zero\\s+zero\\b/gi, '')\n  .replace(/\\s+virgula\\s+zero\\s+zero\\b/gi, '')\n  .trim();\n\nreturn (async () => {\n  let audioUrl = null;\n\n  try {\n    // 1. Criar tarefa na Kie\n    const createRes = await this.helpers.httpRequest({\n      method: 'POST',\n      url: 'https://api.kie.ai/api/v1/jobs/createTask',\n      headers: {\n        'Authorization': 'Bearer ' + apiKey,\n        'Content-Type': 'application/json'\n      },\n      body: {\n        model: 'google/gemini-2-5-pro-tts',\n        input: {\n          speakers: [\n            {\n              speaker_id: 'Speaker 1',\n              voice_name: voiceName\n            }\n          ],\n          dialogue_turns: [\n            {\n              speaker_id: 'Speaker 1',\n              text: text\n            }\n          ]\n        }\n      },\n      json: true,\n      timeout: 15000\n    });\n\n    const taskId = createRes.data?.taskId || createRes.data?.recordId || createRes.taskId;\n    \n    if (taskId) {\n      // 2. Polling com até 40 tentativas de 1.2s (48 segundos)\n      for (let i = 0; i < 40; i++) {\n        await new Promise(r => setTimeout(r, 1200));\n        try {\n          const pollRes = await this.helpers.httpRequest({\n            method: 'GET',\n            url: 'https://api.kie.ai/api/v1/jobs/recordInfo?taskId=' + taskId,\n            headers: { 'Authorization': 'Bearer ' + apiKey },\n            json: true,\n            timeout: 10000\n          });\n\n          const d = pollRes?.data || pollRes;\n          if (d && (d.state === 'success' || d.status === 'success')) {\n            let urls = d.response?.resultUrls || d.resultUrls;\n            if (!urls && d.resultJson) {\n              try {\n                const parsed = typeof d.resultJson === 'string' ? JSON.parse(d.resultJson) : d.resultJson;\n                urls = parsed?.resultUrls;\n              } catch(_) {}\n            }\n            if (urls && urls[0]) {\n              audioUrl = urls[0];\n              console.log('✅ Áudio gerado com sucesso pela Kie:', audioUrl);\n              break;\n            }\n          }\n          if (d && (d.state === 'failed' || d.status === 'failed')) {\n            console.error('Falha na Kie:', d.failMsg || d.msg);\n            break;\n          }\n        } catch(pollErr) {\n          console.error('Erro no polling Kie:', pollErr.message);\n        }\n      }\n    }\n  } catch(err) {\n    console.error('Erro na criação de TTS Kie:', err.message);\n  }\n\n  // Retorna sempre com sucesso, garantindo que o fluxo prossiga mesmo se o áudio falhar\n  return [{\n    json: {\n      ...item,\n      speechText: text,\n      audioGeneratedUrl: audioUrl,\n      hasAudioUrl: Boolean(audioUrl),\n      voiceUsed: voiceName,\n      engine: 'Gemini-2.5-Pro-TTS'\n    }\n  }];\n})();\n"
+      },
+      "id": "openai-generate-tts",
+      "name": "🗣️ Gerar Áudio Humano (OpenAI TTS)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1520,
+        -32
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// 📦 PREPARAR ÁUDIO GEMINI PARA O UAZAPI WHATSAPP (COM FALLBACK)\nconst item = $input.first().json;\nconst initialData = $('⚙️ Normalizar Mensagem').first().json;\nconst phone = initialData.phone || initialData.from || '';\n\nconst audioUrl = item.audioGeneratedUrl || '';\n\nreturn [{\n  json: {\n    ...item,\n    phone: phone,\n    file: audioUrl,\n    type: 'audio',\n    ptt: true,\n    hasAudioUrl: Boolean(audioUrl)\n  }\n}];"
+      },
+      "id": "code-encode-audio-base64",
+      "name": "📦 Codificar Áudio em Base64",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1728,
+        -32
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://hubobra.uazapi.com/send/media",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "token",
+              "value": "2b8e068e-e174-4419-a64c-9b97f4760527"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { number: $json.phone, file: $json.file, type: 'audio', ptt: true } }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "send-uazapi-voice",
+      "name": "🎙️ Enviar Áudio Gravado (Uazapi)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        2096,
+        -48
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "url": "={{ 'https://zeywqzkmevytzkdbzwni.supabase.co/rest/v1/customer_ai_profiles?phone=eq.' + $('⚙�� Normalizar Mensagem').first().json.phone + '&select=*' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpleXdxemttZXZ5dHprZGJ6d25pIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4OTY0ODA3MywiZXhwIjoyMTA1MjI0MDczfQ.H_DTlgqQ4_2pcOUujrh6-7d0vEy4D6CgduUi1rqdpy0"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpleXdxemttZXZ5dHprZGJ6d25pIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4OTY0ODA3MywiZXhwIjoyMTA1MjI0MDczfQ.H_DTlgqQ4_2pcOUujrh6-7d0vEy4D6CgduUi1rqdpy0"
+            },
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "id": "fetch-customer-memory",
+      "name": "🧠 Buscar Memória do Cliente (Supabase)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        192,
+        576
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// 🔄 COMBINAR ESTOQUE EM TEMPO REAL + DICIONÁRIO CEARÊS + DIÁLOGOS + MEMÓRIA + ORÇAMENTOS + TREINADORES / ADMIN\nconst initialData = $('⚙️ Normalizar Mensagem').first().json;\n\nlet currentMessageText = initialData.messageText;\ntry {\n  const audioMerge = $('🔄 Injetar Transcrição').first();\n  if (audioMerge && audioMerge.json && audioMerge.json.messageText) {\n    currentMessageText = audioMerge.json.messageText;\n  }\n} catch(_) {}\n\ntry {\n  const imageMerge = $('🔄 Injetar Análise de Imagem').first();\n  if (imageMerge && imageMerge.json && imageMerge.json.messageText) {\n    currentMessageText = imageMerge.json.messageText;\n  }\n} catch(_) {}\n\n// 1. Recuperar Produtos Reais do Supabase buscando do nó de estoque\nlet stockItems = [];\ntry {\n  const stockNode = $('📦 Buscar Estoque em Tempo Real (Supabase)').all();\n  if (stockNode && stockNode.length > 0) {\n    stockItems = stockNode.map(i => i.json);\n  }\n} catch(err) {\n  console.error('Erro ao ler nó de estoque:', err);\n}\n\nconst catalogLines = [];\nfor (const p of stockItems) {\n  if (p && p.name && p.name !== 'Claudio sousa') {\n    const imgUrl = (p.images && p.images.length > 0) ? p.images[0].url : (p.image || p.imageUrl || '');\n    const brandStr = p.brand ? ' (' + p.brand + ')' : '';\n    const skuStr = p.sku ? ' [SKU: ' + p.sku + ']' : '';\n    const priceNum = Number(p.price || 0);\n    const priceStr = 'R$ ' + priceNum.toFixed(2).replace('.', ',');\n    const fotoTag = imgUrl ? ' | [FOTO: ' + imgUrl + ']' : '';\n    catalogLines.push('- ' + p.name + brandStr + skuStr + ': ' + priceStr + fotoTag);\n  }\n}\n\nif (catalogLines.length === 0) {\n  catalogLines.push('- Cimento Poty Todas as Obras 50kg (Votoran) [SKU: 7891234567890]: R$ 32,90');\n  catalogLines.push('- Caixa de Luz 4x2 Amarela (Tigre/Krona) [SKU: 7891234567891]: R$ 1,90');\n  catalogLines.push('- Tubo Esgoto 100mm 6m (Krona) [SKU: 7891234567892]: R$ 42,00');\n  catalogLines.push('- Lâmina de Serra Manual (Starrett) [SKU: 7891234567893]: R$ 13,00');\n  catalogLines.push('- Fita Isolante Imperial 5m (3M) [SKU: 7891234567894]: R$ 5,50');\n  catalogLines.push('- Fita Isolante Imperial 10m (3M) [SKU: 7891234567895]: R$ 8,00');\n}\n\nconst liveCatalog = catalogLines.join('\\n');\n\n// 2. Buscar Dados do Supabase\nconst SUPABASE_URL = 'https://zeywqzkmevytzkdbzwni.supabase.co';\nconst SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpleXdxemttZXZ5dHprZGJ6d25pIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4OTY0ODA3MywiZXhwIjoyMTA1MjI0MDczfQ.H_DTlgqQ4_2pcOUujrh6-7d0vEy4D6CgduUi1rqdpy0';\n\nconst supaHeaders = {\n  'apikey': SUPABASE_KEY,\n  'Authorization': 'Bearer ' + SUPABASE_KEY,\n  'Content-Type': 'application/json'\n};\n\nlet slangDictionaryText = 'Dicionário Padrão Ativo.';\nlet regionalCearesText = 'Tom caloroso e comercial cearense.';\nlet salesLearningsText = 'Regras práticas de quantitativos ativas.';\nlet openQuotesText = 'Nenhum orçamento aberto no momento.';\nlet isTrainer = false;\nlet trainerInfo = null;\n\nconst rawPhone = (initialData.phone || initialData.from || '').replace(/\\D/g, '');\n\ntry {\n  // 2.1. Checagem de Treinador / Administrador Autorizado (ai_trainers)\n  const last8 = rawPhone.slice(-8);\n  const trainerRes = await this.helpers.httpRequest({\n    url: SUPABASE_URL + '/rest/v1/ai_trainers?is_active=eq.true&select=phone,name,role',\n    method: 'GET',\n    headers: supaHeaders,\n    timeout: 3000\n  });\n\n  if (Array.isArray(trainerRes)) {\n    trainerInfo = trainerRes.find(t => {\n      const tDigits = (t.phone || '').replace(/\\D/g, '');\n      return rawPhone.includes(tDigits) || tDigits.includes(rawPhone) || (last8 && last8.length >= 8 && tDigits.endsWith(last8));\n    });\n    if (trainerInfo) {\n      isTrainer = true;\n    }\n  }\n\n  // 2.2. Gírias e Apelidos de Obra\n  const termsRes = await this.helpers.httpRequest({\n    url: SUPABASE_URL + '/rest/v1/ai_construction_terms?select=slang_term,official_term,category,explanation&order=slang_term.asc&limit=100',\n    method: 'GET',\n    headers: supaHeaders,\n    timeout: 3000\n  });\n\n  if (Array.isArray(termsRes) && termsRes.length > 0) {\n    slangDictionaryText = termsRes.map(t => '- \"' + t.slang_term + '\" (' + t.category + ') ➔ Termo Oficial: ' + t.official_term + (t.explanation ? ' | Obs: ' + t.explanation : '')).join('\\n');\n  }\n\n  // 2.3. Expressões Regionais\n  const exprRes = await this.helpers.httpRequest({\n    url: SUPABASE_URL + '/rest/v1/ai_regional_expressions?select=expression,usage_context,tone_impact,example_phrase&is_active=eq.true&order=created_at.desc&limit=30',\n    method: 'GET',\n    headers: supaHeaders,\n    timeout: 3000\n  });\n\n  if (Array.isArray(exprRes) && exprRes.length > 0) {\n    regionalCearesText = exprRes.map((e, idx) => {\n      let block = '【EXEMPLO ' + (idx + 1) + ' - ' + e.expression + ' (' + e.usage_context + ')】\\n';\n      if (e.example_phrase) block += e.example_phrase + '\\n';\n      if (e.tone_impact) block += '➔ Dica de Atendimento: ' + e.tone_impact;\n      return block;\n    }).join('\\n\\n');\n  }\n\n  // 2.4. Sabedoria de Balcão\n  const learnRes = await this.helpers.httpRequest({\n    url: SUPABASE_URL + '/rest/v1/ai_sales_learnings?select=topic,rule_content&is_active=eq.true&limit=10',\n    method: 'GET',\n    headers: supaHeaders,\n    timeout: 3000\n  });\n\n  if (Array.isArray(learnRes) && learnRes.length > 0) {\n    salesLearningsText = learnRes.map(l => '- ' + l.topic + ': ' + l.rule_content).join('\\n');\n  }\n\n  // 2.5. Buscar Orçamentos em Aberto\n  if (last8 && last8.length >= 8) {\n    const quotesRes = await this.helpers.httpRequest({\n      url: SUPABASE_URL + '/rest/v1/quotes?customerPhone=like.*' + last8 + '*&status=eq.OPEN&order=createdAt.desc&limit=3&select=quoteNumber,total,createdAt,validUntil,notes,items:quote_items(name,quantity,unitPrice,total)',\n      method: 'GET',\n      headers: supaHeaders,\n      timeout: 3000\n    });\n\n    if (Array.isArray(quotesRes) && quotesRes.length > 0) {\n      openQuotesText = quotesRes.map(q => {\n        const itemsList = (q.items || []).map(i => i.quantity + 'x ' + i.name).join(', ');\n        const totalStr = 'R$ ' + Number(q.total || 0).toFixed(2).replace('.', ',');\n        return '- Orçamento #' + q.quoteNumber + ' (' + totalStr + '): ' + itemsList;\n      }).join('\\n');\n    }\n  }\n} catch(err) {\n  console.warn('Erro ao carregar dados do Supabase:', err.message);\n}\n\n// 3. Recuperar Memória do Usuário\nlet customerMemoryText = 'Primeiro Atendimento - Cliente novo na loja.';\nlet customerProfile = null;\n\ntry {\n  const memoryNode = $('🧠 Buscar Memória do Cliente (Supabase)').first();\n  if (memoryNode && memoryNode.json && Array.isArray(memoryNode.json) && memoryNode.json.length > 0) {\n    customerProfile = memoryNode.json[0];\n  } else if (memoryNode && memoryNode.json && memoryNode.json.phone) {\n    customerProfile = memoryNode.json;\n  }\n} catch(_) {}\n\nif (isTrainer && trainerInfo) {\n  customerMemoryText = `👑 PERFIL DO USUÁRIO NA CONVERSA:\n- NOME: ${trainerInfo.name} (${trainerInfo.role || 'Treinador Master / Administrador da Loja'})\n- AUTORIDADE: TOTAL / ADMINISTRADOR DO SISTEMA\n- TELEFONE REGISTRADO: ${trainerInfo.phone}\n- CAPACIDADES ESPECIAIS DESTE USUÁRIO:\n  1. Pode pedir para você ALTERAR O PREÇO DE QUALQUER PRODUTO DO CATÁLOGO (Ex: \"Lia, altera o preço do cimento para 34,90\", \"ajusta o vedatop para 95,00\", \"#preco SKU 34.90\").\n  2. Pode te ENSINAR novas regras de vendas, termos de construção e gírias.\n  3. Pode simular compras normais e orçamentos em testes.\n- INSTRUÇÃO OBRIGATÓRIA PARA A LIA:\n  * NUNCA diga a ele que você não consegue alterar valores ou que é apenas uma IA de vendas!\n  * Atenda com prontidão: localize o produto no catálogo, confirme o preço atual e novo, e aplique a alteração.`;\n} else if (customerProfile && customerProfile.phone) {\n  const stage = customerProfile.current_construction_stage || 'alvenaria';\n  const type = customerProfile.client_type || 'proprietario';\n  const neigh = customerProfile.delivery_neighborhood || 'Messejana';\n  const notes = customerProfile.ai_notes || 'Cliente focado em materiais de qualidade';\n  \n  customerMemoryText = `CLIENTE RECORRENTE:\n- Nome Registrado: ${customerProfile.name || initialData.name}\n- Tipo de Cliente: ${type}\n- Local/Bairro da Obra: ${neigh}\n- Fase Atual da Obra: ${stage}\n- Forma de Pagamento Preferida: ${customerProfile.preferred_payment || 'PIX'}\n- Notas da IA sobre a Obra: ${notes}`;\n}\n\nreturn [{\n  json: {\n    ...initialData,\n    messageText: currentMessageText,\n    liveCatalog: liveCatalog,\n    totalCatalogItems: catalogLines.length,\n    slangDictionaryText: slangDictionaryText,\n    regionalCearesText: regionalCearesText,\n    salesLearningsText: salesLearningsText,\n    openQuotesText: openQuotesText,\n    customerMemoryText: customerMemoryText,\n    isTrainer: isTrainer,\n    trainerName: trainerInfo ? trainerInfo.name : null,\n    hasProfile: Boolean(customerProfile)\n  }\n}];\n"
+      },
+      "id": "code-format-realtime-catalog",
+      "name": "🔄 Montar Catálogo Dinâmico & Memória",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        432,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://zeywqzkmevytzkdbzwni.supabase.co/rest/v1/customer_ai_profiles",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpleXdxemttZXZ5dHprZGJ6d25pIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4OTY0ODA3MywiZXhwIjoyMTA1MjI0MDczfQ.H_DTlgqQ4_2pcOUujrh6-7d0vEy4D6CgduUi1rqdpy0"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpleXdxemttZXZ5dHprZGJ6d25pIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4OTY0ODA3MywiZXhwIjoyMTA1MjI0MDczfQ.H_DTlgqQ4_2pcOUujrh6-7d0vEy4D6CgduUi1rqdpy0"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "resolution=merge-duplicates"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { phone: $('⚙️ Normalizar Mensagem').first().json.phone, name: $('⚙️ Normalizar Mensagem').first().json.name, last_interaction_at: new Date().toISOString() } }}",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "id": "update-customer-memory",
+      "name": "💾 Salvar/Atualizar Memória do Cliente (Supabase)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        2736,
+        400
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "cond-comp",
+              "leftValue": "={{ $('📝 Formatar Resposta WhatsApp').first().json.hasImage || $('📝 Formatar Resposta WhatsApp').first().json.isBudgetOrList }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-needs-complement",
+      "name": "Precisa de Texto ou Foto?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2384,
+        48
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "cond-audio-ok",
+              "leftValue": "={{ $json.hasAudioUrl }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-audio-success",
+      "name": "Áudio Gerado com Sucesso?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1872,
+        -32
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Cliente: {{ $json.name }} (Telefone: {{ $json.phone }})\n\nMensagem / Pedido do Cliente:\n\"{{ $json.messageText }}\"\n\n══════════════════════════════════════════════════════════════\n🎙️ REGRA DA TAG DE ÁUDIO:\n- Use EXATAMENTE a tag: [FALA: texto_aqui] no início da mensagem.\n- NUNCA use [FAÇA:], [ÁUDIO:] ou qualquer outra palavra!\n══════════════════════════════════════════════════════════════\n\n══════════════════════════════════════════════════════════════\n📋 ORÇAMENTOS RECENTES EM ABERTO DESTE CLIENTE (VALIDADE 7 DIAS):\n══════════════════════════════════════════════════════════════\n{{ $json.openQuotesText }}\n\n══════════════════════════════════════════════════════════════\n💬 DIÁLOGOS MODELO & EXEMPLOS DE ATENDIMENTO HUBOBRA:\n══════════════════════════════════════════════════════════════\n{{ $json.regionalCearesText }}\n\n══════════════════════════════════════════════════════════════\n🌵 DICIONÁRIO DE GÍRIAS & APELIDOS DE OBRA:\n══════════════════════════════════════════════════════════════\n{{ $json.slangDictionaryText }}\n\n══════════════════════════════════════════════════════════════\n🧠 SABEDORIA TÉCNICA DE BALCÃO & QUANTITATIVOS DE OBRA:\n══════════════════════════════════════════════════════════════\n{{ $json.salesLearningsText }}\n\n══════════════════════════════════════════════════════════════\n🧠 MEMÓRIA & HISTÓRICO DESTE CLIENTE NA HUBOBRA:\n══════════════════════════════════════════════════════════════\n{{ $json.customerMemoryText }}\n\n══════════════════════════════════════════════════════════════\n🛒 CATÁLOGO OFICIAL HUBOBRA DISPONÍVEL EM TEMPO REAL NO ESTOQUE ({{ $json.totalCatalogItems }} PRODUTOS CADASTRADOS):\n══════════════════════════════════════════════════════════════\n{{ $json.liveCatalog }}\n\nResponda ao cliente de forma natural, profissional e acolhedora, com dosagem leve e equilibrada de expressões (no máximo 1 expressão esporádica por mensagem), priorizando a clareza e o catálogo acima:",
+        "options": {
+          "systemMessage": "Você é a inteligência artificial oficial de atendimento, consultoria e vendas da HubObra (https://hubobra.com.br) - o marketplace de materiais de construção de Fortaleza e Ceará.\n\nVocê atua com duas personalidades altamente profissionais e humanizadas:\n🙋‍♀️ LIA: Consultora de Vendas da loja. Ágil, atenciosa, cordial e conhecedora profunda do catálogo e dos termos práticos de materiais de construção. Fala de preços de forma direta, clara e prestativa, com o ritmo acolhedor e simpático do comércio de Fortaleza.\n👷‍♂️ ZÉ DA OBRA: Mestre de obras veterano. Entra na conversa apenas para tirar dúvidas técnicas, cálculos de quantitativos (cimento por milheiro de tijolo, rendimento de telha, dimensionamento de fiação e encanamento) e dicas práticas de canteiro de obras.\n\n══════════════════════════════════════════════════════════════\n👑 REGRAS ESPECIAIS PARA TREINADORES MASTER & ADMINS:\n══════════════════════════════════════════════════════════════\n- Quando o usuário identificado como Treinador Master / Administrador (como o Claudio Sousa) falar com você, ELE POSSUI PERMISSÃO ADMINISTRATIVA TOTAL.\n- 🏷️ ALTERAÇÃO DE PREÇOS NO CATÁLOGO:\n  * Se ele pedir para alterar, atualizar, mudar ou ajustar o preço de qualquer produto (ex: \"Lia, altera o preço do cimento poty para 34,90\", \"mudar preço do vedatop para 95,00\", \"#preco SKU-1002 34.90\", \"o cimento agora custa 33,50\"):\n    1. ✅ VOCÊ CONSEGUE SIM ALTERAR! NUNCA diga que não consegue ou que é apenas uma IA de vendas.\n    2. Localize o produto no \"ESTOQUE E CATÁLOGO EM TEMPO REAL\" abaixo.\n    3. Responda com simpatia no áudio [FALA: ...] e no texto.\n    4. Apresente os dados com clareza: Produto, Preço Atual, Novo Preço e % de Variação.\n    5. Se ele já pediu a alteração diretamente (\"altera\", \"muda\", \"atualiza\") ou se respondeu \"SIM\" / \"CONFIRMO\", emita OBRIGATORIAMENTE no final da mensagem a tag:\n       <<<UPDATE_PRICE: {\"product_name\":\"Nome Exato do Produto\",\"sku\":\"SKU_SE_HOUVER\",\"new_price\":34.90,\"old_price\":32.90} >>>\n    6. Confirme com entusiasmo: \"✅ Preço do [Produto] atualizado com sucesso no catálogo para R$ XX,XX!\"\n\n══════════════════════════════════════════════════════════════\n🤖 REGRA DE IDENTIDADE & TRANSPARÊNCIA (SOU UMA IA):\n══════════════════════════════════════════════════════════════\n- Quando o cliente perguntar se você é uma pessoa, robô, humano ou inteligência artificial:\n  * 🚫 NUNCA minta dizendo \"Sou sim uma pessoa\" ou finja ser humana!\n  * 💡 Responda com transparência, simpatia e presteza:\n    1. Explique que você é a Lia, a Inteligência Artificial e Consultora Virtual oficial da HubObra.\n    2. Diga que você consegue fazer o atendimento completo (tirar dúvidas técnicas, consultar estoque em tempo real, passar preços, montar orçamentos oficiais com PDF e fechar pedidos).\n    3. Informe que se ele preferir falar com uma pessoa da equipe física, basta avisar que você transfere o atendimento para um humano na hora!\n  * 🎙️ NO ÁUDIO [FALA: ...]: Fale com clareza e acolhimento (ex: \"Oi, Claudio! Eu sou a Lia, a inteligência artificial oficial da HubObra! Consigo fazer seu atendimento completo por aqui, mas se preferir falar com um atendente humano da nossa equipe, é só me avisar que eu transfiro na hora pra você!\").\n\n══════════════════════════════════════════════════════════════\n⭐ REGRA DE DOSAGEM NATURAL DO SOTAQUE CEARENSE (JEITO LIA):\n══════════════════════════════════════════════════════════════\n1. 🌵 REALISMO & ZERO EXAGERO (NÃO SEJA UMA CARICATURA):\n   - O atendente cearense da vida real fala português correto, educado, ágil e acolhedor.\n   - 🚫 PROIBIDO EMPILHAR GÍRIAS: NUNCA use mais de 1 expressão ou gíria por mensagem. Na dúvida, use nenhuma!\n   - 🚫 NUNCA coloque 2 ou 3 expressões juntas na mesma frase.\n   - 💡 O sotaque e o jeito cearense devem ser SUTIS e ESPORÁDICOS.\n\n2. 🏗️ COMPREENSÃO PERFEITA DO DICIONÁRIO DE OBRA:\n   - Use o dicionário de termos de obra para entender o que o cliente quer quando ele usar apelidos regionais (\"rabicho\", \"fita de isolar\", \"boca de lobo\", \"pescoço de ganso\", \"esquadro\").\n   - Ao responder, confirme com o nome comercial claro e passe o valor exato.\n\n3. 📸 REGRA RIGOROSA DE FOTOS NO WHATSAPP:\n   - ⚠️ SÓ ENVIE FOTO SE O CLIENTE PEDIR EXPLICITAMENTE (\"tem foto?\", \"manda a foto\", \"como ele é?\").\n   - 🚫 NUNCA envie foto se o cliente apenas perguntou o preço ou pediu orçamento.\n   - Quando pedirem foto, inclua a tag [FOTO: url_da_imagem].\n\n4. 🎯 PREÇO DIRETO & ZERO SPAM DE PIX:\n   - Fale o preço unitário direto. Guarde condições de pagamento para o fechamento ou quando o cliente perguntar.\n\n5. 🎙️ REGRA DE ÁUDIO (Tag [FALA: ...]):\n   - Áudio curto (5-8s) para respostas simples ou saudações.\n   - O texto do áudio deve ser limpo, natural e sem gírias empilhadas.\n   - 💰 PREÇOS NO ÁUDIO: Fale valores de forma humana e direta (ex: \"está 379 reais\" ou \"sai por 34 reais e 90 centavos\"). NUNCA diga \"zero centavos\" ou \"vírgula zero zero\"!\n   - Listas e orçamentos múltiplos SEMPRE por escrito no corpo da mensagem.\n\n══════════════════════════════════════════════════════════════\n📋 GESTÃO DE ORÇAMENTOS & PDF (SOB DEMANDA):\n══════════════════════════════════════════════════════════════\n1. 📝 EMISSÃO DE ORÇAMENTO:\n   - Quando o cliente pedir preço de vários itens ou um orçamento completo, calcule e liste todos os itens com valores unitários e total por escrito na mensagem.\n   - Emita no final a tag:\n   <<<ORCAMENTO: {\"customerName\":\"Nome\",\"items\":[{\"name\":\"Cimento Poty 50kg\",\"brand\":\"Votoran\",\"unit\":\"SC\",\"quantity\":10,\"unitPrice\":32.90}],\"discount\":0,\"shipping\":0,\"notes\":\"Orçamento para obra\"} >>>\n\n2. 📄 ENVIO DE PDF:\n   - Se o cliente pedir em PDF (\"tem como mandar em PDF?\", \"manda o arquivo\"), o sistema enviará o arquivo PDF anexado automaticamente.\n\n3. 🔄 CONVERSÃO DE ORÇAMENTO EM PEDIDO:\n   - Se o cliente pedir para fechar o pedido, confirme itens, endereço e emita a tag:\n   <<<PEDIDO: {\"customerName\":\"Nome\",\"items\":[{\"name\":\"Cimento Poty 50kg\",\"quantity\":10,\"price\":32.90}],\"paymentMethod\":\"PIX\",\"deliveryType\":\"DELIVERY\",\"street\":\"Rua\",\"number\":\"123\",\"neighborhood\":\"Bairro\",\"referencePoint\":\"Ref\",\"deliveryFee\":0} >>>\n"
+        }
+      },
+      "id": "ai-agent-hubobra",
+      "name": "Agente IA Lia e Zé da Obra",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 1000,
+      "position": [
+        624,
+        304
+      ]
+    }
+  ],
+  "connections": {
+    "📥 Entrada WhatsApp (HubObra)": {
+      "main": [
+        [
+          {
+            "node": "⚙️ Normalizar Mensagem",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "⚙️ Normalizar Mensagem": {
+      "main": [
+        [
+          {
+            "node": "É Áudio de Voz?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "É Áudio de Voz?": {
+      "main": [
+        [
+          {
+            "node": "🔗 Obter URL do Áudio (Uazapi)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "É Imagem / Foto?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "É Imagem / Foto?": {
+      "main": [
+        [
+          {
+            "node": "🔗 Obter URL da Imagem (Uazapi)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "📦 Buscar Estoque em Tempo Real (Supabase)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔗 Obter URL do Áudio (Uazapi)": {
+      "main": [
+        [
+          {
+            "node": "⬇️ Baixar Arquivo MP3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "⬇️ Baixar Arquivo MP3": {
+      "main": [
+        [
+          {
+            "node": "🎙️ Transcrever Áudio (Whisper)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🎙️ Transcrever Áudio (Whisper)": {
+      "main": [
+        [
+          {
+            "node": "🔄 Injetar Transcrição",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔄 Injetar Transcrição": {
+      "main": [
+        [
+          {
+            "node": "📦 Buscar Estoque em Tempo Real (Supabase)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔗 Obter URL da Imagem (Uazapi)": {
+      "main": [
+        [
+          {
+            "node": "⬇️ Baixar Arquivo Foto",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "⬇️ Baixar Arquivo Foto": {
+      "main": [
+        [
+          {
+            "node": "👁️ Analisar Imagem Material (GPT-4o)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "👁️ Analisar Imagem Material (GPT-4o)": {
+      "main": [
+        [
+          {
+            "node": "🔄 Injetar Análise de Imagem",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔄 Injetar Análise de Imagem": {
+      "main": [
+        [
+          {
+            "node": "📦 Buscar Estoque em Tempo Real (Supabase)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📦 Buscar Estoque em Tempo Real (Supabase)": {
+      "main": [
+        [
+          {
+            "node": "🧠 Buscar Memória do Cliente (Supabase)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Memória da Conversa": {
+      "ai_memory": [
+        [
+          {
+            "node": "Agente IA Lia e Zé da Obra",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📝 Formatar Resposta WhatsApp": {
+      "main": [
+        [
+          {
+            "node": "Cliente Mandou Áudio?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tem Foto para Enviar?": {
+      "main": [
+        [
+          {
+            "node": "📤 Enviar Foto + Legenda",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "📤 Enviar Texto",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "💬 Chatwoot: Criar/Obter Contato": {
+      "main": [
+        [
+          {
+            "node": "💬 Chatwoot: Abrir Conversa",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "💬 Chatwoot: Abrir Conversa": {
+      "main": [
+        [
+          {
+            "node": "💬 Chatwoot: Mensagem Cliente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "💬 Chatwoot: Mensagem Cliente": {
+      "main": [
+        [
+          {
+            "node": "💬 Chatwoot: Resposta Lia",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cliente Mandou Áudio?": {
+      "main": [
+        [
+          {
+            "node": "🗣️ Gerar Áudio Humano (OpenAI TTS)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Tem Foto para Enviar?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🗣️ Gerar Áudio Humano (OpenAI TTS)": {
+      "main": [
+        [
+          {
+            "node": "📦 Codificar Áudio em Base64",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🎙️ Enviar Áudio Gravado (Uazapi)": {
+      "main": [
+        [
+          {
+            "node": "Precisa de Texto ou Foto?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📦 Codificar Áudio em Base64": {
+      "main": [
+        [
+          {
+            "node": "Áudio Gerado com Sucesso?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📤 Enviar Foto + Legenda": {
+      "main": [
+        [
+          {
+            "node": "💬 Chatwoot: Criar/Obter Contato",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📤 Enviar Texto": {
+      "main": [
+        [
+          {
+            "node": "💬 Chatwoot: Criar/Obter Contato",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🧠 Buscar Memória do Cliente (Supabase)": {
+      "main": [
+        [
+          {
+            "node": "🔄 Montar Catálogo Dinâmico & Memória",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔄 Montar Catálogo Dinâmico & Memória": {
+      "main": [
+        [
+          {
+            "node": "Agente IA Lia e Zé da Obra",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "💬 Chatwoot: Resposta Lia": {
+      "main": [
+        [
+          {
+            "node": "💾 Salvar/Atualizar Memória do Cliente (Supabase)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Precisa de Texto ou Foto?": {
+      "main": [
+        [
+          {
+            "node": "Tem Foto para Enviar?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "💬 Chatwoot: Criar/Obter Contato",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Áudio Gerado com Sucesso?": {
+      "main": [
+        [
+          {
+            "node": "🎙️ Enviar Áudio Gravado (Uazapi)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Tem Foto para Enviar?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Agente IA Lia e Zé da Obra",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agente IA Lia e Zé da Obra": {
+      "main": [
+        [
+          {
+            "node": "📝 Formatar Resposta WhatsApp",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "nodeGroups": [],
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "staticData": null,
+  "pinData": {
+    "📥 Entrada WhatsApp (HubObra)": [
+      {
+        "json": {
+          "headers": {
+            "host": "n8n-n8n.q6zw3x.easypanel.host",
+            "user-agent": "uazapiGO-Webhook/1.0",
+            "content-length": "3434",
+            "accept-encoding": "gzip",
+            "content-type": "application/json",
+            "x-forwarded-for": "49.12.82.97",
+            "x-forwarded-host": "n8n-n8n.q6zw3x.easypanel.host",
+            "x-forwarded-port": "443",
+            "x-forwarded-proto": "https",
+            "x-forwarded-server": "d6c11412ab16",
+            "x-real-ip": "49.12.82.97"
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "BaseUrl": "https://hubobra.uazapi.com",
+            "EventType": "messages",
+            "chat": {
+              "chatbot_agentResetMemoryAt": 0,
+              "chatbot_disableUntil": 0,
+              "chatbot_lastTriggerAt": 0,
+              "chatbot_lastTrigger_id": "",
+              "id": "r91d4460504fb60",
+              "image": "",
+              "imagePreview": "https://pps.whatsapp.net/v/t61.24694-24/538479289_1707488460207818_4926257239719653385_n.jpg?stp=dst-jpg_s96x96_tt6&ccb=11-4&oh=01_Q5Aa5wF3-lvtKvhYMgXTWU_SQQvKlLeZIISrqJVcsGiesmr5uw&oe=6ACFC137&_nc_sid=5e03e0&_nc_cat=104",
+              "lead_assignedAttendant_id": "",
+              "lead_email": "",
+              "lead_field01": "",
+              "lead_field02": "",
+              "lead_field03": "",
+              "lead_field04": "",
+              "lead_field05": "",
+              "lead_field06": "",
+              "lead_field07": "",
+              "lead_field08": "",
+              "lead_field09": "",
+              "lead_field10": "",
+              "lead_field11": "",
+              "lead_field12": "",
+              "lead_field13": "",
+              "lead_field14": "",
+              "lead_field15": "",
+              "lead_field16": "",
+              "lead_field17": "",
+              "lead_field18": "",
+              "lead_field19": "",
+              "lead_field20": "",
+              "lead_fullName": "",
+              "lead_isTicketOpen": false,
+              "lead_kanbanOrder": 0,
+              "lead_name": "",
+              "lead_notes": "",
+              "lead_personalid": "",
+              "lead_status": "",
+              "lead_tags": [],
+              "name": "Claudio",
+              "owner": "558587129529",
+              "phone": "+55 85 8921-9126",
+              "wa_archived": false,
+              "wa_chatid": "558589219126@s.whatsapp.net",
+              "wa_chatlid": "271171417313404@lid",
+              "wa_contactName": "Claudio",
+              "wa_ephemeralExpiration": 0,
+              "wa_fastid": "558587129529:558589219126",
+              "wa_isBlocked": false,
+              "wa_isGroup": false,
+              "wa_isGroup_admin": false,
+              "wa_isGroup_announce": false,
+              "wa_isGroup_community": false,
+              "wa_isGroup_member": false,
+              "wa_isPinned": false,
+              "wa_label": [],
+              "wa_lastMessageSender": "271171417313404@lid",
+              "wa_lastMessageTextVote": "",
+              "wa_lastMessageType": "AudioMessage",
+              "wa_lastMsgTimestamp": 1791143072000,
+              "wa_muteEndTime": 0,
+              "wa_name": "Claudio sousa",
+              "wa_notes": "",
+              "wa_unreadCount": 136
+            },
+            "chatSource": "updated",
+            "instanceName": "hubobra",
+            "message": {
+              "buttonOrListid": "",
+              "chatid": "558589219126@s.whatsapp.net",
+              "chatlid": "271171417313404@lid",
+              "content": {
+                "URL": "https://mmg.whatsapp.net/v/t62.7117-24/833345365_1680406596832223_2806435284835916671_n.enc?ccb=11-4&oh=01_Q5Aa5wHAopBPz45FUxeDwoGUVJ5l1dP9YQTOUCsvA5ItvPlzxA&oe=6AEA38DF&_nc_sid=5e03e0&mms3=true",
+                "mimetype": "audio/ogg; codecs=opus",
+                "fileSHA256": "7L9o6c9uqrwpQ6rJDcn8/8+Dx90xqAts8kc5STMAByM=",
+                "fileLength": 4768,
+                "seconds": 2,
+                "PTT": true,
+                "mediaKey": "UqZqNmcyGsNzBo46IjwiCOIHtkggJUJ7cBSR9Nj7nGw=",
+                "fileEncSHA256": "9gPk6HYr1gwlw7KQkLpWIjiHph28L9mvfwTe3PotY+U=",
+                "directPath": "/v/t62.7117-24/833345365_1680406596832223_2806435284835916671_n.enc?ccb=11-4&oh=01_Q5Aa5wHAopBPz45FUxeDwoGUVJ5l1dP9YQTOUCsvA5ItvPlzxA&oe=6AEA38DF&_nc_sid=5e03e0",
+                "mediaKeyTimestamp": 1791143071,
+                "contextInfo": {
+                  "mediaDomainInfo": {
+                    "mediaKeyDomain": 1,
+                    "e2EeMediaKey": "UqZqNmcyGsNzBo46IjwiCOIHtkggJUJ7cBSR9Nj7nGw="
+                  }
+                },
+                "waveform": "AAAAAAAAAAAAAAAAAAAAGUVKT1FPQhMAADBIPT9DQ0E8QENDOjI3QExKSUpLSTo3Pjw+Q0ZIR0M+NCUQBgAAAA=="
+              },
+              "convertOptions": "",
+              "edited": "",
+              "fromMe": false,
+              "groupName": "",
+              "id": "558587129529:AC29596BEBF5FF7FFBFF31AFC296A758",
+              "isGroup": false,
+              "mediaType": "ptt",
+              "messageTimestamp": 1791143072000,
+              "messageType": "AudioMessage",
+              "messageid": "AC29596BEBF5FF7FFBFF31AFC296A758",
+              "owner": "558587129529",
+              "pinned": false,
+              "quoted": "",
+              "reaction": "",
+              "sender": "271171417313404@lid",
+              "senderName": "Claudio sousa",
+              "sender_lid": "271171417313404@lid",
+              "sender_pn": "558589219126@s.whatsapp.net",
+              "source": "android",
+              "status": "",
+              "text": "",
+              "track_id": "",
+              "track_source": "",
+              "type": "media",
+              "vote": "",
+              "wasSentByApi": false
+            },
+            "owner": "558587129529",
+            "token": "2b8e068e-e174-4419-a64c-9b97f4760527"
+          },
+          "webhookUrl": "https://n8n-n8n.q6zw3x.easypanel.host/webhook/hubobra-whatsapp",
+          "executionMode": "production"
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ]
+  },
+  "meta": null,
+  "tags": [],
+  "shared": [
+    {
+      "role": "workflow:owner",
+      "workflowId": "IL2N96Rp8RSv6Hyz",
+      "projectId": "AFiUF0TWujz8t9YR",
+      "project": {
+        "id": "AFiUF0TWujz8t9YR",
+        "name": "manoel claudio de sousa <mclaudioms@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "customTelemetryTags": [],
+        "creatorId": "c21dbce8-3732-45a2-89a7-8a42913dd8c7",
+        "createdAt": "2025-10-28T05:06:27.784Z",
+        "updatedAt": "2025-10-28T05:12:53.322Z"
+      },
+      "createdAt": "2026-09-22T15:10:35.887Z",
+      "updatedAt": "2026-09-22T15:10:35.887Z"
+    }
+  ],
+  "activeVersion": {
+    "versionId": "4b256746-5547-4dd6-8000-41c55136d1be",
+    "workflowId": "IL2N96Rp8RSv6Hyz",
+    "nodes": [
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "hubobra-whatsapp",
+          "options": {}
+        },
+        "id": "webhook-inbound",
+        "name": "📥 Entrada WhatsApp (HubObra)",
+        "webhookId": "e862a32c-8bbf-4bed-8970-6161f7d6cd0c",
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2,
+        "position": [
+          -1536,
+          208
+        ]
+      },
+      {
+        "parameters": {
+          "jsCode": "// ⚙️ NORMALIZADOR DE EVENTOS DA UAZAPI\nconst items = $input.all();\nconst results = [];\n\nfor (const item of items) {\n  const body = item.json.body || item.json;\n  \n  // Ignorar mensagens enviadas pelo próprio robô/atendente (fromMe = true ou wasSentByApi = true)\n  if (body.message?.fromMe === true || body.fromMe === true || body.message?.wasSentByApi === true) {\n    continue;\n  }\n  \n  // Extração de telefone do cliente\n  let rawPhone = body.chat?.phone || body.message?.sender_pn || body.phone || body.from || body.client_phone || body.remoteJid || body.sender || '';\n  let phone = rawPhone.replace(/[^0-9]/g, '');\n  \n  // Extração de nome\n  let name = body.message?.senderName || body.chat?.wa_name || body.chat?.name || body.name || body.pushName || 'Cliente';\n  \n  // Extração de Message ID para Uazapi download\n  let messageId = body.message?.id || body.message?.messageid || body.id || '';\n  \n  // Detecção de tipo de mensagem\n  let mediaType = (body.message?.mediaType || body.mediaType || body.message?.type || body.type || '').toLowerCase();\n  let messageType = (body.message?.messageType || body.messageType || '').toLowerCase();\n  \n  let isAudio = (mediaType === 'ptt' || mediaType === 'audio' || messageType.includes('audio'));\n  let isImage = (mediaType === 'image' || messageType.includes('image'));\n  \n  // Extração de texto\n  let messageText = '';\n  if (body.message?.content) {\n    if (typeof body.message.content === 'string') {\n      messageText = body.message.content;\n    } else if (body.message.content.text) {\n      messageText = body.message.content.text;\n    }\n  } else if (body.message?.text) {\n    messageText = body.message.text;\n  } else if (body.text) {\n    messageText = body.text;\n  } else if (body.message?.conversation) {\n    messageText = body.message.conversation;\n  } else if (body.message?.extendedTextMessage?.text) {\n    messageText = body.message.extendedTextMessage.text;\n  }\n  \n  if (!phone) {\n    continue;\n  }\n  \n  results.push({\n    json: {\n      phone: phone,\n      name: name,\n      messageId: messageId,\n      mediaType: mediaType,\n      messageType: messageType,\n      isAudio: isAudio,\n      isImage: isImage,\n      messageText: messageText,\n      sessionId: phone,\n      timestamp: new Date().toISOString()\n    }\n  });\n}\n\nreturn results;"
+        },
+        "id": "code-parser",
+        "name": "⚙️ Normalizar Mensagem",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          -1296,
+          208
+        ]
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 2
+            },
+            "conditions": [
+              {
+                "id": "is-audio-condition",
+                "leftValue": "={{ $json.isAudio }}",
+                "rightValue": true,
+                "operator": {
+                  "type": "boolean",
+                  "operation": "equals"
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "id": "if-is-audio",
+        "name": "É Áudio de Voz?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.2,
+        "position": [
+          -1056,
+          208
+        ]
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 2
+            },
+            "conditions": [
+              {
+                "id": "is-image-condition",
+                "leftValue": "={{ $json.isImage }}",
+                "rightValue": true,
+                "operator": {
+                  "type": "boolean",
+                  "operation": "equals"
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "id": "if-is-image",
+        "name": "É Imagem / Foto?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.2,
+        "position": [
+          -816,
+          288
+        ]
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "https://hubobra.uazapi.com/message/download",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "name": "token",
+                "value": "2b8e068e-e174-4419-a64c-9b97f4760527"
+              }
+            ]
+          },
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={{ { id: $json.messageId } }}",
+          "options": {
+            "timeout": 20000
+          }
+        },
+        "id": "download-uazapi-audio-url",
+        "name": "🔗 Obter URL do Áudio (Uazapi)",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.3,
+        "position": [
+          -800,
+          32
+        ]
+      },
+      {
+        "parameters": {
+          "url": "={{ $json.fileURL }}",
+          "options": {
+            "response": {
+              "response": {
+                "responseFormat": "file"
+              }
+            },
+            "timeout": 30000
+          }
+        },
+        "id": "download-audio-binary",
+        "name": "⬇️ Baixar Arquivo MP3",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.3,
+        "position": [
+          -544,
+          32
+        ]
+      },
+      {
+        "parameters": {
+          "resource": "audio",
+          "operation": "transcribe",
+          "options": {}
+        },
+        "id": "whisper-transcription",
+        "name": "🎙️ Transcrever Áudio (Whisper)",
+        "type": "@n8n/n8n-nodes-langchain.openAi",
+        "typeVersion": 1.8,
+        "position": [
+          -304,
+          32
+        ],
+        "credentials": {
+          "openAiApi": {
+            "id": "rLtb1nh0h3hKRbHC",
+            "name": "OpenAi account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "jsCode": "// 🔄 COMBINAR TRANSCRIÇÃO DE ÁUDIO COM DADOS DO CLIENTE\nconst items = $input.all();\nconst initialData = $('⚙️ Normalizar Mensagem').first().json;\n\nreturn items.map(item => ({\n  json: {\n    ...initialData,\n    messageText: item.json.text || item.json.transcription || \"Áudio recebido.\",\n    isTranscribedAudio: true\n  }\n}));"
+        },
+        "id": "code-merge-transcription",
+        "name": "🔄 Injetar Transcrição",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          -48,
+          32
+        ]
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "https://hubobra.uazapi.com/message/download",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "name": "token",
+                "value": "2b8e068e-e174-4419-a64c-9b97f4760527"
+              }
+            ]
+          },
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={{ { id: $json.messageId } }}",
+          "options": {
+            "timeout": 20000
+          }
+        },
+        "id": "download-uazapi-image-url",
+        "name": "🔗 Obter URL da Imagem (Uazapi)",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.3,
+        "position": [
+          -800,
+          576
+        ]
+      },
+      {
+        "parameters": {
+          "url": "={{ $json.fileURL }}",
+          "options": {
+            "response": {
+              "response": {
+                "responseFormat": "file"
+              }
+            },
+            "timeout": 30000
+          }
+        },
+        "id": "download-image-binary",
+        "name": "⬇️ Baixar Arquivo Foto",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.3,
+        "position": [
+          -560,
+          576
+        ]
+      },
+      {
+        "parameters": {
+          "resource": "image",
+          "operation": "analyze",
+          "modelId": {
+            "__rl": true,
+            "value": "gpt-4o-mini",
+            "mode": "list"
+          },
+          "text": "Analise esta foto de material de construção ou obra. Identifique os produtos visíveis, marcas, medidas e o que o cliente provavelmente deseja orçar na HubObra.",
+          "inputType": "binary",
+          "options": {}
+        },
+        "id": "image-analyzer",
+        "name": "👁️ Analisar Imagem Material (GPT-4o)",
+        "type": "@n8n/n8n-nodes-langchain.openAi",
+        "typeVersion": 1.8,
+        "position": [
+          -320,
+          576
+        ],
+        "credentials": {
+          "openAiApi": {
+            "id": "rLtb1nh0h3hKRbHC",
+            "name": "OpenAi account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "jsCode": "// 🔄 COMBINAR ANÁLISE DE IMAGEM COM DADOS DO CLIENTE\nconst items = $input.all();\nconst initialData = $('⚙️ Normalizar Mensagem').first().json;\n\nreturn items.map(item => ({\n  json: {\n    ...initialData,\n    messageText: \"O cliente enviou uma foto de materiais/obra. Análise visual: \" + (item.json.text || item.json.content || \"Foto de material de construção recebida.\"),\n    isImageAnalysis: true\n  }\n}));"
+        },
+        "id": "code-merge-image",
+        "name": "🔄 Injetar Análise de Imagem",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          -80,
+          576
+        ]
+      },
+      {
+        "parameters": {
+          "url": "https://api.hubobra.com.br/products",
+          "sendQuery": true,
+          "queryParameters": {
+            "parameters": [
+              {
+                "name": "search",
+                "value": "={{ $json.textMessage || $json.text || $json.message || 'serra' }}"
+              },
+              {
+                "name": "limit",
+                "value": "5"
+              },
+              {
+                "name": "active",
+                "value": "true"
+              }
+            ]
+          },
+          "options": {
+            "timeout": 10000
+          }
+        },
+        "id": "fetch-supabase-realtime-catalog",
+        "name": "📦 Buscar Estoque em Tempo Real (Supabase)",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.3,
+        "position": [
+          160,
+          304
+        ]
+      },
+      {
+        "parameters": {
+          "modelName": "models/gemini-flash-lite-latest",
+          "options": {
+            "temperature": 0.2
+          }
+        },
+        "id": "google-gemini-model",
+        "name": "Google Gemini Chat Model",
+        "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+        "typeVersion": 1,
+        "position": [
+          512,
+          560
+        ],
+        "credentials": {
+          "googlePalmApi": {
+            "id": "ReYrBIedAeEJeyLk",
+            "name": "Google Gemini Account New"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "contextWindowLength": 4
+        },
+        "id": "window-memory",
+        "name": "Memória da Conversa",
+        "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+        "typeVersion": 1.3,
+        "position": [
+          704,
+          560
+        ]
+      },
+      {
+        "parameters": {
+          "jsCode": "// 🎯 PROCESSAR RESPOSTA DA IA (EXTRATOR MULTIMODAL + ALTERAÇÃO DE PREÇO + SUPABASE + UAZAPI)\nconst initialData = $('⚙️ Normalizar Mensagem').first().json;\nconst aiResult = $input.first().json;\n\nconst rawText = aiResult.output || aiResult.text || '';\nconst customerName = initialData.name || 'Cliente';\nconst userMessage = initialData.messageText || '';\n\nconst SUPABASE_URL = 'https://zeywqzkmevytzkdbzwni.supabase.co';\nconst SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpleXdxemttZXZ5dHprZGJ6d25pIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4OTY0ODA3MywiZXhwIjoyMTA1MjI0MDczfQ.H_DTlgqQ4_2pcOUujrh6-7d0vEy4D6CgduUi1rqdpy0';\n\nasync function httpReq(options) {\n  try {\n    if (typeof this !== 'undefined' && this && this.helpers && this.helpers.httpRequest) {\n      return await this.helpers.httpRequest(options);\n    }\n  } catch(_) {}\n  try {\n    const res = await fetch(options.url, {\n      method: options.method || 'GET',\n      headers: options.headers || {},\n      body: options.body ? JSON.stringify(options.body) : undefined\n    });\n    if (options.json) return await res.json();\n    return res;\n  } catch(err) {\n    console.warn('httpReq error:', err.message);\n    return null;\n  }\n}\n\nconst supaHeaders = {\n  'apikey': SUPABASE_KEY,\n  'Authorization': 'Bearer ' + SUPABASE_KEY,\n  'Content-Type': 'application/json',\n  'Prefer': 'return=representation'\n};\n\nreturn (async () => {\n  // 1. Processar tag UPDATE_PRICE (Alteração de Preço Solicitada pelo Treinador/Admin)\n  if (rawText.includes('<<<UPDATE_PRICE:')) {\n    const priceMatch = rawText.match(/<<<UPDATE_PRICE:\\s*([\\s\\S]*?)>>>/i);\n    if (priceMatch && priceMatch[1]) {\n      try {\n        const pData = JSON.parse(priceMatch[1].trim());\n        const newPrice = Number(pData.new_price);\n        if (!isNaN(newPrice) && newPrice > 0) {\n          let targetProd = null;\n\n          // Buscar por SKU\n          if (pData.sku) {\n            const skuRes = await httpReq({\n              url: SUPABASE_URL + '/rest/v1/products?sku=eq.' + encodeURIComponent(pData.sku) + '&select=id,name,sku,price',\n              method: 'GET',\n              headers: supaHeaders,\n              json: true\n            });\n            if (Array.isArray(skuRes) && skuRes.length > 0) targetProd = skuRes[0];\n          }\n\n          // Se não achou por SKU, busca por Nome\n          if (!targetProd && pData.product_name) {\n            const cleanSearch = pData.product_name.replace(/[^a-zA-Z0-9\\s]/g, '').trim();\n            const nameRes = await httpReq({\n              url: SUPABASE_URL + '/rest/v1/products?name=ilike.*' + encodeURIComponent(cleanSearch) + '*&select=id,name,sku,price&limit=1',\n              method: 'GET',\n              headers: supaHeaders,\n              json: true\n            });\n            if (Array.isArray(nameRes) && nameRes.length > 0) targetProd = nameRes[0];\n          }\n\n          if (targetProd) {\n            // Atualizar produto no banco\n            await httpReq({\n              url: SUPABASE_URL + '/rest/v1/products?id=eq.' + targetProd.id,\n              method: 'PATCH',\n              headers: supaHeaders,\n              body: {\n                price: newPrice,\n                updatedAt: new Date().toISOString()\n              }\n            });\n\n            // Gravar histórico de auditoria (price_history)\n            const adminUserRes = await httpReq({\n              url: SUPABASE_URL + '/rest/v1/users?role=in.(ADMIN,STORE_ADMIN,SUPER_ADMIN,MANAGER)&limit=1&select=id',\n              method: 'GET',\n              headers: supaHeaders,\n              json: true\n            });\n            const adminId = (Array.isArray(adminUserRes) && adminUserRes.length > 0) ? adminUserRes[0].id : null;\n\n            if (adminId) {\n              await httpReq({\n                url: SUPABASE_URL + '/rest/v1/price_history',\n                method: 'POST',\n                headers: supaHeaders,\n                body: {\n                  productId: targetProd.id,\n                  oldPrice: Number(pData.old_price || targetProd.price || 0),\n                  newPrice: newPrice,\n                  reason: 'Alteração solicitada via WhatsApp Lia por ' + (customerName || 'Treinador Master') + ' (' + (initialData.phone || '') + ')',\n                  userId: adminId,\n                  createdAt: new Date().toISOString()\n                }\n              });\n            }\n            console.log('🎉 Preço atualizado no Supabase com sucesso:', targetProd.name, '➔ R$', newPrice);\n          }\n        }\n      } catch(pErr) {\n        console.warn('Erro ao processar UPDATE_PRICE:', pErr.message);\n      }\n    }\n  }\n\n  // 2. Extração de Foto (caso o cliente tenha pedido foto)\n  const userAskedPhoto = /(?:foto|fotos|imagem|imagens|como\\s+ele\\s+(é|parece)|como\\s+ela\\s+(é|parece)|quero\\s+ver|manda\\s+ver)/i.test(userMessage);\n  let imageUrl = null;\n  const fotoTagMatch = rawText.match(/\\[FOTO:\\s*([^\\s\\]]+)\\]/i);\n  const mdImgMatch = rawText.match(/!\\[.*?\\]\\((https?:\\/\\/[^\\s\\)]+)\\)/i);\n  const rawImgMatch = rawText.match(/(https?:\\/\\/[^\\s\\(\\)\\[\\]\\\"\\'\\<\\>]+\\.(?:jpg|jpeg|png|webp)(?:\\?[^\\s\\(\\)\\[\\]\\\"\\'\\<\\>]*)?)/i);\n\n  if (userAskedPhoto || fotoTagMatch) {\n    if (fotoTagMatch && fotoTagMatch[1]) imageUrl = fotoTagMatch[1].trim();\n    else if (mdImgMatch && mdImgMatch[1]) imageUrl = mdImgMatch[1].trim();\n    else if (rawImgMatch && rawImgMatch[1]) imageUrl = rawImgMatch[1].trim();\n  }\n\n  const hasImage = Boolean(imageUrl && imageUrl.startsWith('http') && (userAskedPhoto || fotoTagMatch));\n\n  // 3. Extração da Fala de Áudio [FALA: ...]\n  let speechText = '';\n  let textBody = rawText;\n\n  const falaMatch = rawText.match(/\\[FALA:\\s*([\\s\\S]+?)\\]/i);\n  if (falaMatch && falaMatch[1]) {\n    const rawFala = falaMatch[1].trim();\n    if (rawFala.length > 280) {\n      speechText = 'Oi ' + customerName + '! Já levantei todos os detalhes e deixei por escrito aqui para você conferir!';\n    } else {\n      speechText = rawFala;\n    }\n  } else {\n    const firstSentence = rawText.split('\\n')[0].replace(/[*_~#\\x60\\[\\]!]/g, '').trim();\n    if (firstSentence && firstSentence.length > 10 && firstSentence.length < 160) {\n      speechText = firstSentence;\n    } else {\n      speechText = 'Oi ' + customerName + '! Já separei todas as informações da Hub, Obra para você!';\n    }\n  }\n\n  // 4. Limpeza do Texto Escrito\n  let respostaFormatada = textBody\n    .replace(/\\[FALA:\\s*[\\s\\S]+?\\]/gi, '')\n    .replace(/\\[FOTO:\\s*[^\\s\\]]+\\]/gi, '')\n    .replace(/\\[GERAR_PDF\\]/gi, '')\n    .replace(/!\\[.*?\\]\\((https?:\\/\\/[^\\)]+)\\)/gi, '')\n    .replace(/(https?:\\/\\/[^\\s\\(\\)\\[\\]\\\"\\'\\<\\>]+\\.(?:jpg|jpeg|png|webp)(?:\\?[^\\s\\(\\)\\[\\]\\\"\\'\\<\\>]*)?)/gi, '')\n    .replace(/<<<PEDIDO:[\\s\\S]*?>>>/gi, '')\n    .replace(/<<<ORCAMENTO:[\\s\\S]*?>>>/gi, '')\n    .replace(/<<<LEARN_TERM:[\\s\\S]*?>>>/gi, '')\n    .replace(/<<<LEARN_RULE:[\\s\\S]*?>>>/gi, '')\n    .replace(/<<<UPDATE_PRICE:[\\s\\S]*?>>>/gi, '')\n    .trim();\n\n  if (!respostaFormatada || respostaFormatada.length < 5) {\n    respostaFormatada = rawText\n      .replace(/\\[FALA:\\s*/gi, '')\n      .replace(/\\]/gi, '')\n      .replace(/<<<UPDATE_PRICE:[\\s\\S]*?>>>/gi, '')\n      .trim();\n  }\n\n  // 5. Normalização Fonética da Fala de Áudio\n  speechText = speechText\n    .replace(/<<<LEARN_TERM:[\\s\\S]*?>>>/gi, '')\n    .replace(/<<<LEARN_RULE:[\\s\\S]*?>>>/gi, '')\n    .replace(/<<<ORCAMENTO:[\\s\\S]*?>>>/gi, '')\n    .replace(/<<<PEDIDO:[\\s\\S]*?>>>/gi, '')\n    .replace(/<<<UPDATE_PRICE:[\\s\\S]*?>>>/gi, '')\n    .replace(/https?:\\/\\/\\S+/g, '')\n    .replace(/HubObra/gi, 'Hub, Obra')\n    .replace(/Hub\\s*Obra/gi, 'Hub, Obra')\n    .replace(/\\bPIX\\b/g, 'Pícs')\n    .replace(/\\bPix\\b/g, 'Pícs')\n    .replace(/\\bWhatsApp\\b/gi, 'Uatizap')\n    .replace(/[*_~#\\x60\\[\\]!]/g, '')\n    .replace(/R\\$\\s*([0-9]+)[,\\.]00\\b/gi, (m, reais) => (reais === '1' ? '1 real' : reais + ' reais'))\n    .replace(/R\\$\\s*([0-9]+)[,\\.]([0-9]{1,2})\\b/gi, (m, reais, cents) => {\n      const c = parseInt(cents, 10);\n      if (c === 0) return reais === '1' ? '1 real' : reais + ' reais';\n      if (reais === '0') return c + ' centavos';\n      const unit = reais === '1' ? 'real' : 'reais';\n      return reais + ' ' + unit + ' e ' + cents + ' centavos';\n    })\n    .replace(/R\\$\\s*([0-9]+)/gi, (m, reais) => (reais === '1' ? '1 real' : reais + ' reais'))\n    .replace(/\\b([0-9]+)[,\\.]00\\s*reais\\b/gi, (m, reais) => (reais === '1' ? '1 real' : reais + ' reais'))\n    .replace(/\\b([0-9]+)[,\\.]00\\b/g, '$1')\n    .replace(/\\s+e\\s+(?:00|zero|0)\\s+centavos\\b/gi, '')\n    .replace(/\\s+(?:00|zero|0)\\s+centavos\\b/gi, '')\n    .replace(/\\s+vírgula\\s+zero\\s+zero\\b/gi, '')\n    .replace(/\\s+virgula\\s+zero\\s+zero\\b/gi, '')\n    .replace(/m²/g, 'metros quadrados')\n    .replace(/m³/g, 'metros cúbicos')\n    .replace(/kg/g, 'quilos')\n    .replace(/\\s+/g, ' ')\n    .trim();\n\n  const isZe = rawText.includes('Zé da Obra') || rawText.includes('👷‍♂️');\n\n  return [{\n    json: {\n      ...initialData,\n      rawAiOutput: rawText,\n      respostaFormatada: respostaFormatada,\n      speechText: speechText,\n      voiceId: isZe ? 'Charon' : 'Aoede',\n      isZePersona: isZe,\n      imageUrl: imageUrl,\n      hasImage: hasImage,\n      hasPdf: false,\n      hasMedia: hasImage,\n      mediaUrl: imageUrl,\n      mediaType: hasImage ? 'image' : null,\n      docName: null,\n      isAudioInput: Boolean(initialData.isAudio),\n      hasText: Boolean(respostaFormatada && respostaFormatada.length > 0)\n    }\n  }];\n})();\n"
+        },
+        "id": "code-format-response",
+        "name": "📝 Formatar Resposta WhatsApp",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          960,
+          304
+        ]
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 2
+            },
+            "conditions": [
+              {
+                "id": "cond-has-media",
+                "leftValue": "={{ $('📝 Formatar Resposta WhatsApp').first().json.hasMedia }}",
+                "rightValue": true,
+                "operator": {
+                  "type": "boolean",
+                  "operation": "equals"
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "id": "if-has-image",
+        "name": "Tem Foto para Enviar?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.2,
+        "position": [
+          1600,
+          320
+        ]
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "https://hubobra.uazapi.com/send/media",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "name": "token",
+                "value": "2b8e068e-e174-4419-a64c-9b97f4760527"
+              }
+            ]
+          },
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={{ { number: $('⚙️ Normalizar Mensagem').first().json.phone, file: $('📝 Formatar Resposta WhatsApp').first().json.mediaUrl, text: $('📝 Formatar Resposta WhatsApp').first().json.respostaFormatada, type: $('📝 Formatar Resposta WhatsApp').first().json.mediaType || 'image', docName: $('📝 Formatar Resposta WhatsApp').first().json.docName || 'documento.pdf' } }}",
+          "options": {
+            "timeout": 20000
+          }
+        },
+        "id": "send-uazapi-media",
+        "name": "📤 Enviar Foto + Legenda",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.3,
+        "position": [
+          1920,
+          288
+        ]
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "https://hubobra.uazapi.com/send/text",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "name": "token",
+                "value": "2b8e068e-e174-4419-a64c-9b97f4760527"
+              }
+            ]
+          },
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={{ { number: $('⚙️ Normalizar Mensagem').first().json.phone, text: $('📝 Formatar Resposta WhatsApp').first().json.respostaFormatada } }}",
+          "options": {
+            "timeout": 20000
+          }
+        },
+        "id": "send-uazapi-text",
+        "name": "📤 Enviar Texto",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.3,
+        "position": [
+          1920,
+          512
+        ]
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "https://atendimento-chatwoot.q6zw3x.easypanel.host/api/v1/accounts/1/contacts",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "api_access_token",
+                "value": "EE8HZn79o6Hdp5h2gAcqbFgu"
+              },
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={{ { inbox_id: 1, name: $json.name, phone_number: '+' + $json.phone } }}",
+          "options": {
+            "response": {
+              "response": {
+                "neverError": true
+              }
+            }
+          }
+        },
+        "id": "chatwoot-contact-http",
+        "name": "💬 Chatwoot: Criar/Obter Contato",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.3,
+        "position": [
+          1568,
+          736
+        ]
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "https://atendimento-chatwoot.q6zw3x.easypanel.host/api/v1/accounts/1/conversations",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "api_access_token",
+                "value": "EE8HZn79o6Hdp5h2gAcqbFgu"
+              },
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={{ { source_id: $json.phone, inbox_id: 1, contact_id: $json.payload?.contact?.id || $json.id, status: 'open', assignee_id: 1 } }}",
+          "options": {
+            "response": {
+              "response": {
+                "neverError": true
+              }
+            }
+          }
+        },
+        "id": "chatwoot-conversation-http",
+        "name": "💬 Chatwoot: Abrir Conversa",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.3,
+        "position": [
+          1840,
+          736
+        ]
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "=https://atendimento-chatwoot.q6zw3x.easypanel.host/api/v1/accounts/1/conversations/{{ $json.id || $json.conversation?.id }}/messages",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "api_access_token",
+                "value": "EE8HZn79o6Hdp5h2gAcqbFgu"
+              },
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={{ { content: $('📝 Formatar Resposta WhatsApp').first().json.clientText || 'Mensagem do cliente', message_type: 'incoming' } }}",
+          "options": {
+            "response": {
+              "response": {
+                "neverError": true
+              }
+            }
+          }
+        },
+        "id": "chatwoot-client-msg-http",
+        "name": "💬 Chatwoot: Mensagem Cliente",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.3,
+        "position": [
+          2080,
+          736
+        ]
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "=https://gibson-screenshots-crew-ooo.trycloudflare.com/api/v1/webhooks/in/uBZ2YTx3UvOlTdwLQJ5u5tH8TjtZVoZd\n\n\n",
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={\n  \"name\": \"={{ $json.pushName || $json.name || $json.nome || 'Cliente WhatsApp' }}\",\n  \"phone\": \"={{ $json.from || $json.phone || $json.telefone }}\",\n  \"mensagem\": \"={{ $json.resposta || $json.output || $json.message || 'Mensagem da Lia' }}\"\n}\n",
+          "options": {
+            "response": {
+              "response": {
+                "neverError": true
+              }
+            }
+          }
+        },
+        "id": "chatwoot-lia-msg-http",
+        "name": "💬 Chatwoot: Resposta Lia",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.3,
+        "position": [
+          2320,
+          736
+        ]
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 2
+            },
+            "conditions": [
+              {
+                "id": "cond-is-audio",
+                "leftValue": "={{ $json.isAudioInput }}",
+                "rightValue": true,
+                "operator": {
+                  "type": "boolean",
+                  "operation": "equals"
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "id": "if-audio-input",
+        "name": "Cliente Mandou Áudio?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.2,
+        "position": [
+          1184,
+          304
+        ]
+      },
+      {
+        "parameters": {
+          "jsCode": "// 🗣️ GERAR ÁUDIO GEMINI 2.5 PRO TTS VIA KIE.AI (COM FALLBACK RESILIENTE E HIGIENIZAÇÃO DE PREÇOS)\nconst item = $input.first().json;\nlet text = item.speechText || '';\nconst isZe = Boolean(item.isZePersona);\nconst voiceName = isZe ? 'Charon' : 'Aoede';\nconst apiKey = 'b30b1489000ba908bd72cc04e0d6cc16';\n\nif (!text || text.trim().length === 0) {\n  return [{ json: { ...item, audioGeneratedUrl: null, hasAudioUrl: false } }];\n}\n\n// Sanitização final de segurança contra \"zero centavos\" e números formatados\ntext = text\n  .replace(/R\\$\\s*([0-9]+)[,\\.]00\\b/gi, '$1 reais')\n  .replace(/R\\$\\s*([0-9]+)[,\\.]([0-9]{1,2})\\b/gi, (m, r, c) => parseInt(c, 10) === 0 ? r + ' reais' : r + ' reais e ' + c + ' centavos')\n  .replace(/R\\$\\s*([0-9]+)/gi, '$1 reais')\n  .replace(/\\b([0-9]+)[,\\.]00\\s*reais\\b/gi, '$1 reais')\n  .replace(/\\b([0-9]+)[,\\.]00\\b/g, '$1')\n  .replace(/\\s+e\\s+(?:00|zero|0)\\s+centavos\\b/gi, '')\n  .replace(/\\s+(?:00|zero|0)\\s+centavos\\b/gi, '')\n  .replace(/\\s+vírgula\\s+zero\\s+zero\\b/gi, '')\n  .replace(/\\s+virgula\\s+zero\\s+zero\\b/gi, '')\n  .trim();\n\nreturn (async () => {\n  let audioUrl = null;\n\n  try {\n    // 1. Criar tarefa na Kie\n    const createRes = await this.helpers.httpRequest({\n      method: 'POST',\n      url: 'https://api.kie.ai/api/v1/jobs/createTask',\n      headers: {\n        'Authorization': 'Bearer ' + apiKey,\n        'Content-Type': 'application/json'\n      },\n      body: {\n        model: 'google/gemini-2-5-pro-tts',\n        input: {\n          speakers: [\n            {\n              speaker_id: 'Speaker 1',\n              voice_name: voiceName\n            }\n          ],\n          dialogue_turns: [\n            {\n              speaker_id: 'Speaker 1',\n              text: text\n            }\n          ]\n        }\n      },\n      json: true,\n      timeout: 15000\n    });\n\n    const taskId = createRes.data?.taskId || createRes.data?.recordId || createRes.taskId;\n    \n    if (taskId) {\n      // 2. Polling com até 40 tentativas de 1.2s (48 segundos)\n      for (let i = 0; i < 40; i++) {\n        await new Promise(r => setTimeout(r, 1200));\n        try {\n          const pollRes = await this.helpers.httpRequest({\n            method: 'GET',\n            url: 'https://api.kie.ai/api/v1/jobs/recordInfo?taskId=' + taskId,\n            headers: { 'Authorization': 'Bearer ' + apiKey },\n            json: true,\n            timeout: 10000\n          });\n\n          const d = pollRes?.data || pollRes;\n          if (d && (d.state === 'success' || d.status === 'success')) {\n            let urls = d.response?.resultUrls || d.resultUrls;\n            if (!urls && d.resultJson) {\n              try {\n                const parsed = typeof d.resultJson === 'string' ? JSON.parse(d.resultJson) : d.resultJson;\n                urls = parsed?.resultUrls;\n              } catch(_) {}\n            }\n            if (urls && urls[0]) {\n              audioUrl = urls[0];\n              console.log('✅ Áudio gerado com sucesso pela Kie:', audioUrl);\n              break;\n            }\n          }\n          if (d && (d.state === 'failed' || d.status === 'failed')) {\n            console.error('Falha na Kie:', d.failMsg || d.msg);\n            break;\n          }\n        } catch(pollErr) {\n          console.error('Erro no polling Kie:', pollErr.message);\n        }\n      }\n    }\n  } catch(err) {\n    console.error('Erro na criação de TTS Kie:', err.message);\n  }\n\n  // Retorna sempre com sucesso, garantindo que o fluxo prossiga mesmo se o áudio falhar\n  return [{\n    json: {\n      ...item,\n      speechText: text,\n      audioGeneratedUrl: audioUrl,\n      hasAudioUrl: Boolean(audioUrl),\n      voiceUsed: voiceName,\n      engine: 'Gemini-2.5-Pro-TTS'\n    }\n  }];\n})();\n"
+        },
+        "id": "openai-generate-tts",
+        "name": "🗣️ Gerar Áudio Humano (OpenAI TTS)",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1520,
+          -32
+        ],
+        "continueOnFail": true
+      },
+      {
+        "parameters": {
+          "jsCode": "// 📦 PREPARAR ÁUDIO GEMINI PARA O UAZAPI WHATSAPP (COM FALLBACK)\nconst item = $input.first().json;\nconst initialData = $('⚙️ Normalizar Mensagem').first().json;\nconst phone = initialData.phone || initialData.from || '';\n\nconst audioUrl = item.audioGeneratedUrl || '';\n\nreturn [{\n  json: {\n    ...item,\n    phone: phone,\n    file: audioUrl,\n    type: 'audio',\n    ptt: true,\n    hasAudioUrl: Boolean(audioUrl)\n  }\n}];"
+        },
+        "id": "code-encode-audio-base64",
+        "name": "📦 Codificar Áudio em Base64",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1728,
+          -32
+        ],
+        "continueOnFail": true
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "https://hubobra.uazapi.com/send/media",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "name": "token",
+                "value": "2b8e068e-e174-4419-a64c-9b97f4760527"
+              }
+            ]
+          },
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={{ { number: $json.phone, file: $json.file, type: 'audio', ptt: true } }}",
+          "options": {
+            "timeout": 30000
+          }
+        },
+        "id": "send-uazapi-voice",
+        "name": "🎙️ Enviar Áudio Gravado (Uazapi)",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.3,
+        "position": [
+          2096,
+          -48
+        ],
+        "continueOnFail": true
+      },
+      {
+        "parameters": {
+          "url": "={{ 'https://zeywqzkmevytzkdbzwni.supabase.co/rest/v1/customer_ai_profiles?phone=eq.' + $('⚙�� Normalizar Mensagem').first().json.phone + '&select=*' }}",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "apikey",
+                "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpleXdxemttZXZ5dHprZGJ6d25pIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4OTY0ODA3MywiZXhwIjoyMTA1MjI0MDczfQ.H_DTlgqQ4_2pcOUujrh6-7d0vEy4D6CgduUi1rqdpy0"
+              },
+              {
+                "name": "Authorization",
+                "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpleXdxemttZXZ5dHprZGJ6d25pIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4OTY0ODA3MywiZXhwIjoyMTA1MjI0MDczfQ.H_DTlgqQ4_2pcOUujrh6-7d0vEy4D6CgduUi1rqdpy0"
+              },
+              {
+                "name": "Accept",
+                "value": "application/json"
+              }
+            ]
+          },
+          "options": {
+            "timeout": 10000
+          }
+        },
+        "id": "fetch-customer-memory",
+        "name": "🧠 Buscar Memória do Cliente (Supabase)",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.3,
+        "position": [
+          192,
+          576
+        ],
+        "continueOnFail": true
+      },
+      {
+        "parameters": {
+          "jsCode": "// 🔄 COMBINAR ESTOQUE EM TEMPO REAL + DICIONÁRIO CEARÊS + DIÁLOGOS + MEMÓRIA + ORÇAMENTOS + TREINADORES / ADMIN\nconst initialData = $('⚙️ Normalizar Mensagem').first().json;\n\nlet currentMessageText = initialData.messageText;\ntry {\n  const audioMerge = $('🔄 Injetar Transcrição').first();\n  if (audioMerge && audioMerge.json && audioMerge.json.messageText) {\n    currentMessageText = audioMerge.json.messageText;\n  }\n} catch(_) {}\n\ntry {\n  const imageMerge = $('🔄 Injetar Análise de Imagem').first();\n  if (imageMerge && imageMerge.json && imageMerge.json.messageText) {\n    currentMessageText = imageMerge.json.messageText;\n  }\n} catch(_) {}\n\n// 1. Recuperar Produtos Reais do Supabase buscando do nó de estoque\nlet stockItems = [];\ntry {\n  const stockNode = $('📦 Buscar Estoque em Tempo Real (Supabase)').all();\n  if (stockNode && stockNode.length > 0) {\n    stockItems = stockNode.map(i => i.json);\n  }\n} catch(err) {\n  console.error('Erro ao ler nó de estoque:', err);\n}\n\nconst catalogLines = [];\nfor (const p of stockItems) {\n  if (p && p.name && p.name !== 'Claudio sousa') {\n    const imgUrl = (p.images && p.images.length > 0) ? p.images[0].url : (p.image || p.imageUrl || '');\n    const brandStr = p.brand ? ' (' + p.brand + ')' : '';\n    const skuStr = p.sku ? ' [SKU: ' + p.sku + ']' : '';\n    const priceNum = Number(p.price || 0);\n    const priceStr = 'R$ ' + priceNum.toFixed(2).replace('.', ',');\n    const fotoTag = imgUrl ? ' | [FOTO: ' + imgUrl + ']' : '';\n    catalogLines.push('- ' + p.name + brandStr + skuStr + ': ' + priceStr + fotoTag);\n  }\n}\n\nif (catalogLines.length === 0) {\n  catalogLines.push('- Cimento Poty Todas as Obras 50kg (Votoran) [SKU: 7891234567890]: R$ 32,90');\n  catalogLines.push('- Caixa de Luz 4x2 Amarela (Tigre/Krona) [SKU: 7891234567891]: R$ 1,90');\n  catalogLines.push('- Tubo Esgoto 100mm 6m (Krona) [SKU: 7891234567892]: R$ 42,00');\n  catalogLines.push('- Lâmina de Serra Manual (Starrett) [SKU: 7891234567893]: R$ 13,00');\n  catalogLines.push('- Fita Isolante Imperial 5m (3M) [SKU: 7891234567894]: R$ 5,50');\n  catalogLines.push('- Fita Isolante Imperial 10m (3M) [SKU: 7891234567895]: R$ 8,00');\n}\n\nconst liveCatalog = catalogLines.join('\\n');\n\n// 2. Buscar Dados do Supabase\nconst SUPABASE_URL = 'https://zeywqzkmevytzkdbzwni.supabase.co';\nconst SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpleXdxemttZXZ5dHprZGJ6d25pIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4OTY0ODA3MywiZXhwIjoyMTA1MjI0MDczfQ.H_DTlgqQ4_2pcOUujrh6-7d0vEy4D6CgduUi1rqdpy0';\n\nconst supaHeaders = {\n  'apikey': SUPABASE_KEY,\n  'Authorization': 'Bearer ' + SUPABASE_KEY,\n  'Content-Type': 'application/json'\n};\n\nlet slangDictionaryText = 'Dicionário Padrão Ativo.';\nlet regionalCearesText = 'Tom caloroso e comercial cearense.';\nlet salesLearningsText = 'Regras práticas de quantitativos ativas.';\nlet openQuotesText = 'Nenhum orçamento aberto no momento.';\nlet isTrainer = false;\nlet trainerInfo = null;\n\nconst rawPhone = (initialData.phone || initialData.from || '').replace(/\\D/g, '');\n\ntry {\n  // 2.1. Checagem de Treinador / Administrador Autorizado (ai_trainers)\n  const last8 = rawPhone.slice(-8);\n  const trainerRes = await this.helpers.httpRequest({\n    url: SUPABASE_URL + '/rest/v1/ai_trainers?is_active=eq.true&select=phone,name,role',\n    method: 'GET',\n    headers: supaHeaders,\n    timeout: 3000\n  });\n\n  if (Array.isArray(trainerRes)) {\n    trainerInfo = trainerRes.find(t => {\n      const tDigits = (t.phone || '').replace(/\\D/g, '');\n      return rawPhone.includes(tDigits) || tDigits.includes(rawPhone) || (last8 && last8.length >= 8 && tDigits.endsWith(last8));\n    });\n    if (trainerInfo) {\n      isTrainer = true;\n    }\n  }\n\n  // 2.2. Gírias e Apelidos de Obra\n  const termsRes = await this.helpers.httpRequest({\n    url: SUPABASE_URL + '/rest/v1/ai_construction_terms?select=slang_term,official_term,category,explanation&order=slang_term.asc&limit=100',\n    method: 'GET',\n    headers: supaHeaders,\n    timeout: 3000\n  });\n\n  if (Array.isArray(termsRes) && termsRes.length > 0) {\n    slangDictionaryText = termsRes.map(t => '- \"' + t.slang_term + '\" (' + t.category + ') ➔ Termo Oficial: ' + t.official_term + (t.explanation ? ' | Obs: ' + t.explanation : '')).join('\\n');\n  }\n\n  // 2.3. Expressões Regionais\n  const exprRes = await this.helpers.httpRequest({\n    url: SUPABASE_URL + '/rest/v1/ai_regional_expressions?select=expression,usage_context,tone_impact,example_phrase&is_active=eq.true&order=created_at.desc&limit=30',\n    method: 'GET',\n    headers: supaHeaders,\n    timeout: 3000\n  });\n\n  if (Array.isArray(exprRes) && exprRes.length > 0) {\n    regionalCearesText = exprRes.map((e, idx) => {\n      let block = '【EXEMPLO ' + (idx + 1) + ' - ' + e.expression + ' (' + e.usage_context + ')】\\n';\n      if (e.example_phrase) block += e.example_phrase + '\\n';\n      if (e.tone_impact) block += '➔ Dica de Atendimento: ' + e.tone_impact;\n      return block;\n    }).join('\\n\\n');\n  }\n\n  // 2.4. Sabedoria de Balcão\n  const learnRes = await this.helpers.httpRequest({\n    url: SUPABASE_URL + '/rest/v1/ai_sales_learnings?select=topic,rule_content&is_active=eq.true&limit=10',\n    method: 'GET',\n    headers: supaHeaders,\n    timeout: 3000\n  });\n\n  if (Array.isArray(learnRes) && learnRes.length > 0) {\n    salesLearningsText = learnRes.map(l => '- ' + l.topic + ': ' + l.rule_content).join('\\n');\n  }\n\n  // 2.5. Buscar Orçamentos em Aberto\n  if (last8 && last8.length >= 8) {\n    const quotesRes = await this.helpers.httpRequest({\n      url: SUPABASE_URL + '/rest/v1/quotes?customerPhone=like.*' + last8 + '*&status=eq.OPEN&order=createdAt.desc&limit=3&select=quoteNumber,total,createdAt,validUntil,notes,items:quote_items(name,quantity,unitPrice,total)',\n      method: 'GET',\n      headers: supaHeaders,\n      timeout: 3000\n    });\n\n    if (Array.isArray(quotesRes) && quotesRes.length > 0) {\n      openQuotesText = quotesRes.map(q => {\n        const itemsList = (q.items || []).map(i => i.quantity + 'x ' + i.name).join(', ');\n        const totalStr = 'R$ ' + Number(q.total || 0).toFixed(2).replace('.', ',');\n        return '- Orçamento #' + q.quoteNumber + ' (' + totalStr + '): ' + itemsList;\n      }).join('\\n');\n    }\n  }\n} catch(err) {\n  console.warn('Erro ao carregar dados do Supabase:', err.message);\n}\n\n// 3. Recuperar Memória do Usuário\nlet customerMemoryText = 'Primeiro Atendimento - Cliente novo na loja.';\nlet customerProfile = null;\n\ntry {\n  const memoryNode = $('🧠 Buscar Memória do Cliente (Supabase)').first();\n  if (memoryNode && memoryNode.json && Array.isArray(memoryNode.json) && memoryNode.json.length > 0) {\n    customerProfile = memoryNode.json[0];\n  } else if (memoryNode && memoryNode.json && memoryNode.json.phone) {\n    customerProfile = memoryNode.json;\n  }\n} catch(_) {}\n\nif (isTrainer && trainerInfo) {\n  customerMemoryText = `👑 PERFIL DO USUÁRIO NA CONVERSA:\n- NOME: ${trainerInfo.name} (${trainerInfo.role || 'Treinador Master / Administrador da Loja'})\n- AUTORIDADE: TOTAL / ADMINISTRADOR DO SISTEMA\n- TELEFONE REGISTRADO: ${trainerInfo.phone}\n- CAPACIDADES ESPECIAIS DESTE USUÁRIO:\n  1. Pode pedir para você ALTERAR O PREÇO DE QUALQUER PRODUTO DO CATÁLOGO (Ex: \"Lia, altera o preço do cimento para 34,90\", \"ajusta o vedatop para 95,00\", \"#preco SKU 34.90\").\n  2. Pode te ENSINAR novas regras de vendas, termos de construção e gírias.\n  3. Pode simular compras normais e orçamentos em testes.\n- INSTRUÇÃO OBRIGATÓRIA PARA A LIA:\n  * NUNCA diga a ele que você não consegue alterar valores ou que é apenas uma IA de vendas!\n  * Atenda com prontidão: localize o produto no catálogo, confirme o preço atual e novo, e aplique a alteração.`;\n} else if (customerProfile && customerProfile.phone) {\n  const stage = customerProfile.current_construction_stage || 'alvenaria';\n  const type = customerProfile.client_type || 'proprietario';\n  const neigh = customerProfile.delivery_neighborhood || 'Messejana';\n  const notes = customerProfile.ai_notes || 'Cliente focado em materiais de qualidade';\n  \n  customerMemoryText = `CLIENTE RECORRENTE:\n- Nome Registrado: ${customerProfile.name || initialData.name}\n- Tipo de Cliente: ${type}\n- Local/Bairro da Obra: ${neigh}\n- Fase Atual da Obra: ${stage}\n- Forma de Pagamento Preferida: ${customerProfile.preferred_payment || 'PIX'}\n- Notas da IA sobre a Obra: ${notes}`;\n}\n\nreturn [{\n  json: {\n    ...initialData,\n    messageText: currentMessageText,\n    liveCatalog: liveCatalog,\n    totalCatalogItems: catalogLines.length,\n    slangDictionaryText: slangDictionaryText,\n    regionalCearesText: regionalCearesText,\n    salesLearningsText: salesLearningsText,\n    openQuotesText: openQuotesText,\n    customerMemoryText: customerMemoryText,\n    isTrainer: isTrainer,\n    trainerName: trainerInfo ? trainerInfo.name : null,\n    hasProfile: Boolean(customerProfile)\n  }\n}];\n"
+        },
+        "id": "code-format-realtime-catalog",
+        "name": "🔄 Montar Catálogo Dinâmico & Memória",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          432,
+          304
+        ]
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "https://zeywqzkmevytzkdbzwni.supabase.co/rest/v1/customer_ai_profiles",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "apikey",
+                "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpleXdxemttZXZ5dHprZGJ6d25pIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4OTY0ODA3MywiZXhwIjoyMTA1MjI0MDczfQ.H_DTlgqQ4_2pcOUujrh6-7d0vEy4D6CgduUi1rqdpy0"
+              },
+              {
+                "name": "Authorization",
+                "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpleXdxemttZXZ5dHprZGJ6d25pIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4OTY0ODA3MywiZXhwIjoyMTA1MjI0MDczfQ.H_DTlgqQ4_2pcOUujrh6-7d0vEy4D6CgduUi1rqdpy0"
+              },
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "name": "Prefer",
+                "value": "resolution=merge-duplicates"
+              }
+            ]
+          },
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={{ { phone: $('⚙️ Normalizar Mensagem').first().json.phone, name: $('⚙️ Normalizar Mensagem').first().json.name, last_interaction_at: new Date().toISOString() } }}",
+          "options": {
+            "timeout": 10000
+          }
+        },
+        "id": "update-customer-memory",
+        "name": "💾 Salvar/Atualizar Memória do Cliente (Supabase)",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.3,
+        "position": [
+          2736,
+          400
+        ],
+        "continueOnFail": true
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 2
+            },
+            "conditions": [
+              {
+                "id": "cond-comp",
+                "leftValue": "={{ $('📝 Formatar Resposta WhatsApp').first().json.hasImage || $('📝 Formatar Resposta WhatsApp').first().json.isBudgetOrList }}",
+                "rightValue": true,
+                "operator": {
+                  "type": "boolean",
+                  "operation": "equals"
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "id": "if-needs-complement",
+        "name": "Precisa de Texto ou Foto?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.2,
+        "position": [
+          2384,
+          48
+        ]
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 2
+            },
+            "conditions": [
+              {
+                "id": "cond-audio-ok",
+                "leftValue": "={{ $json.hasAudioUrl }}",
+                "rightValue": true,
+                "operator": {
+                  "type": "boolean",
+                  "operation": "equals"
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "id": "if-audio-success",
+        "name": "Áudio Gerado com Sucesso?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.2,
+        "position": [
+          1872,
+          -32
+        ]
+      },
+      {
+        "parameters": {
+          "promptType": "define",
+          "text": "=Cliente: {{ $json.name }} (Telefone: {{ $json.phone }})\n\nMensagem / Pedido do Cliente:\n\"{{ $json.messageText }}\"\n\n══════════════════════════════════════════════════════════════\n🎙️ REGRA DA TAG DE ÁUDIO:\n- Use EXATAMENTE a tag: [FALA: texto_aqui] no início da mensagem.\n- NUNCA use [FAÇA:], [ÁUDIO:] ou qualquer outra palavra!\n══════════════════════════════════════════════════════════════\n\n══════════════════════════════════════════════════════════════\n📋 ORÇAMENTOS RECENTES EM ABERTO DESTE CLIENTE (VALIDADE 7 DIAS):\n══════════════════════════════════════════════════════════════\n{{ $json.openQuotesText }}\n\n══════════════════════════════════════════════════════════════\n💬 DIÁLOGOS MODELO & EXEMPLOS DE ATENDIMENTO HUBOBRA:\n══════════════════════════════════════════════════════════════\n{{ $json.regionalCearesText }}\n\n══════════════════════════════════════════════════════════════\n🌵 DICIONÁRIO DE GÍRIAS & APELIDOS DE OBRA:\n══════════════════════════════════════════════════════════════\n{{ $json.slangDictionaryText }}\n\n══════════════════════════════════════════════════════════════\n🧠 SABEDORIA TÉCNICA DE BALCÃO & QUANTITATIVOS DE OBRA:\n══════════════════════════════════════════════════════════════\n{{ $json.salesLearningsText }}\n\n══════════════════════════════════════════════════════════════\n🧠 MEMÓRIA & HISTÓRICO DESTE CLIENTE NA HUBOBRA:\n══════════════════════════════════════════════════════════════\n{{ $json.customerMemoryText }}\n\n══════════════════════════════════════════════════════════════\n🛒 CATÁLOGO OFICIAL HUBOBRA DISPONÍVEL EM TEMPO REAL NO ESTOQUE ({{ $json.totalCatalogItems }} PRODUTOS CADASTRADOS):\n══════════════════════════════════════════════════════════════\n{{ $json.liveCatalog }}\n\nResponda ao cliente de forma natural, profissional e acolhedora, com dosagem leve e equilibrada de expressões (no máximo 1 expressão esporádica por mensagem), priorizando a clareza e o catálogo acima:",
+          "options": {
+            "systemMessage": "Você é a inteligência artificial oficial de atendimento, consultoria e vendas da HubObra (https://hubobra.com.br) - o marketplace de materiais de construção de Fortaleza e Ceará.\n\nVocê atua com duas personalidades altamente profissionais e humanizadas:\n🙋‍♀️ LIA: Consultora de Vendas da loja. Ágil, atenciosa, cordial e conhecedora profunda do catálogo e dos termos práticos de materiais de construção. Fala de preços de forma direta, clara e prestativa, com o ritmo acolhedor e simpático do comércio de Fortaleza.\n👷‍♂️ ZÉ DA OBRA: Mestre de obras veterano. Entra na conversa apenas para tirar dúvidas técnicas, cálculos de quantitativos (cimento por milheiro de tijolo, rendimento de telha, dimensionamento de fiação e encanamento) e dicas práticas de canteiro de obras.\n\n══════════════════════════════════════════════════════════════\n👑 REGRAS ESPECIAIS PARA TREINADORES MASTER & ADMINS:\n══════════════════════════════════════════════════════════════\n- Quando o usuário identificado como Treinador Master / Administrador (como o Claudio Sousa) falar com você, ELE POSSUI PERMISSÃO ADMINISTRATIVA TOTAL.\n- 🏷️ ALTERAÇÃO DE PREÇOS NO CATÁLOGO:\n  * Se ele pedir para alterar, atualizar, mudar ou ajustar o preço de qualquer produto (ex: \"Lia, altera o preço do cimento poty para 34,90\", \"mudar preço do vedatop para 95,00\", \"#preco SKU-1002 34.90\", \"o cimento agora custa 33,50\"):\n    1. ✅ VOCÊ CONSEGUE SIM ALTERAR! NUNCA diga que não consegue ou que é apenas uma IA de vendas.\n    2. Localize o produto no \"ESTOQUE E CATÁLOGO EM TEMPO REAL\" abaixo.\n    3. Responda com simpatia no áudio [FALA: ...] e no texto.\n    4. Apresente os dados com clareza: Produto, Preço Atual, Novo Preço e % de Variação.\n    5. Se ele já pediu a alteração diretamente (\"altera\", \"muda\", \"atualiza\") ou se respondeu \"SIM\" / \"CONFIRMO\", emita OBRIGATORIAMENTE no final da mensagem a tag:\n       <<<UPDATE_PRICE: {\"product_name\":\"Nome Exato do Produto\",\"sku\":\"SKU_SE_HOUVER\",\"new_price\":34.90,\"old_price\":32.90} >>>\n    6. Confirme com entusiasmo: \"✅ Preço do [Produto] atualizado com sucesso no catálogo para R$ XX,XX!\"\n\n══════════════════════════════════════════════════════════════\n🤖 REGRA DE IDENTIDADE & TRANSPARÊNCIA (SOU UMA IA):\n══════════════════════════════════════════════════════════════\n- Quando o cliente perguntar se você é uma pessoa, robô, humano ou inteligência artificial:\n  * 🚫 NUNCA minta dizendo \"Sou sim uma pessoa\" ou finja ser humana!\n  * 💡 Responda com transparência, simpatia e presteza:\n    1. Explique que você é a Lia, a Inteligência Artificial e Consultora Virtual oficial da HubObra.\n    2. Diga que você consegue fazer o atendimento completo (tirar dúvidas técnicas, consultar estoque em tempo real, passar preços, montar orçamentos oficiais com PDF e fechar pedidos).\n    3. Informe que se ele preferir falar com uma pessoa da equipe física, basta avisar que você transfere o atendimento para um humano na hora!\n  * 🎙️ NO ÁUDIO [FALA: ...]: Fale com clareza e acolhimento (ex: \"Oi, Claudio! Eu sou a Lia, a inteligência artificial oficial da HubObra! Consigo fazer seu atendimento completo por aqui, mas se preferir falar com um atendente humano da nossa equipe, é só me avisar que eu transfiro na hora pra você!\").\n\n══════════════════════════════════════════════════════════════\n⭐ REGRA DE DOSAGEM NATURAL DO SOTAQUE CEARENSE (JEITO LIA):\n══════════════════════════════════════════════════════════════\n1. 🌵 REALISMO & ZERO EXAGERO (NÃO SEJA UMA CARICATURA):\n   - O atendente cearense da vida real fala português correto, educado, ágil e acolhedor.\n   - 🚫 PROIBIDO EMPILHAR GÍRIAS: NUNCA use mais de 1 expressão ou gíria por mensagem. Na dúvida, use nenhuma!\n   - 🚫 NUNCA coloque 2 ou 3 expressões juntas na mesma frase.\n   - 💡 O sotaque e o jeito cearense devem ser SUTIS e ESPORÁDICOS.\n\n2. 🏗️ COMPREENSÃO PERFEITA DO DICIONÁRIO DE OBRA:\n   - Use o dicionário de termos de obra para entender o que o cliente quer quando ele usar apelidos regionais (\"rabicho\", \"fita de isolar\", \"boca de lobo\", \"pescoço de ganso\", \"esquadro\").\n   - Ao responder, confirme com o nome comercial claro e passe o valor exato.\n\n3. 📸 REGRA RIGOROSA DE FOTOS NO WHATSAPP:\n   - ⚠️ SÓ ENVIE FOTO SE O CLIENTE PEDIR EXPLICITAMENTE (\"tem foto?\", \"manda a foto\", \"como ele é?\").\n   - 🚫 NUNCA envie foto se o cliente apenas perguntou o preço ou pediu orçamento.\n   - Quando pedirem foto, inclua a tag [FOTO: url_da_imagem].\n\n4. 🎯 PREÇO DIRETO & ZERO SPAM DE PIX:\n   - Fale o preço unitário direto. Guarde condições de pagamento para o fechamento ou quando o cliente perguntar.\n\n5. 🎙️ REGRA DE ÁUDIO (Tag [FALA: ...]):\n   - Áudio curto (5-8s) para respostas simples ou saudações.\n   - O texto do áudio deve ser limpo, natural e sem gírias empilhadas.\n   - 💰 PREÇOS NO ÁUDIO: Fale valores de forma humana e direta (ex: \"está 379 reais\" ou \"sai por 34 reais e 90 centavos\"). NUNCA diga \"zero centavos\" ou \"vírgula zero zero\"!\n   - Listas e orçamentos múltiplos SEMPRE por escrito no corpo da mensagem.\n\n══════════════════════════════════════════════════════════════\n📋 GESTÃO DE ORÇAMENTOS & PDF (SOB DEMANDA):\n══════════════════════════════════════════════════════════════\n1. 📝 EMISSÃO DE ORÇAMENTO:\n   - Quando o cliente pedir preço de vários itens ou um orçamento completo, calcule e liste todos os itens com valores unitários e total por escrito na mensagem.\n   - Emita no final a tag:\n   <<<ORCAMENTO: {\"customerName\":\"Nome\",\"items\":[{\"name\":\"Cimento Poty 50kg\",\"brand\":\"Votoran\",\"unit\":\"SC\",\"quantity\":10,\"unitPrice\":32.90}],\"discount\":0,\"shipping\":0,\"notes\":\"Orçamento para obra\"} >>>\n\n2. 📄 ENVIO DE PDF:\n   - Se o cliente pedir em PDF (\"tem como mandar em PDF?\", \"manda o arquivo\"), o sistema enviará o arquivo PDF anexado automaticamente.\n\n3. 🔄 CONVERSÃO DE ORÇAMENTO EM PEDIDO:\n   - Se o cliente pedir para fechar o pedido, confirme itens, endereço e emita a tag:\n   <<<PEDIDO: {\"customerName\":\"Nome\",\"items\":[{\"name\":\"Cimento Poty 50kg\",\"quantity\":10,\"price\":32.90}],\"paymentMethod\":\"PIX\",\"deliveryType\":\"DELIVERY\",\"street\":\"Rua\",\"number\":\"123\",\"neighborhood\":\"Bairro\",\"referencePoint\":\"Ref\",\"deliveryFee\":0} >>>\n"
+          }
+        },
+        "id": "ai-agent-hubobra",
+        "name": "Agente IA Lia e Zé da Obra",
+        "type": "@n8n/n8n-nodes-langchain.agent",
+        "typeVersion": 3,
+        "retryOnFail": true,
+        "maxTries": 3,
+        "waitBetweenTries": 1000,
+        "position": [
+          624,
+          304
+        ]
+      }
+    ],
+    "connections": {
+      "📥 Entrada WhatsApp (HubObra)": {
+        "main": [
+          [
+            {
+              "node": "⚙️ Normalizar Mensagem",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "⚙️ Normalizar Mensagem": {
+        "main": [
+          [
+            {
+              "node": "É Áudio de Voz?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "É Áudio de Voz?": {
+        "main": [
+          [
+            {
+              "node": "🔗 Obter URL do Áudio (Uazapi)",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "É Imagem / Foto?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "É Imagem / Foto?": {
+        "main": [
+          [
+            {
+              "node": "🔗 Obter URL da Imagem (Uazapi)",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "📦 Buscar Estoque em Tempo Real (Supabase)",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "🔗 Obter URL do Áudio (Uazapi)": {
+        "main": [
+          [
+            {
+              "node": "⬇️ Baixar Arquivo MP3",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "⬇️ Baixar Arquivo MP3": {
+        "main": [
+          [
+            {
+              "node": "🎙️ Transcrever Áudio (Whisper)",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "🎙️ Transcrever Áudio (Whisper)": {
+        "main": [
+          [
+            {
+              "node": "🔄 Injetar Transcrição",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "🔄 Injetar Transcrição": {
+        "main": [
+          [
+            {
+              "node": "📦 Buscar Estoque em Tempo Real (Supabase)",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "🔗 Obter URL da Imagem (Uazapi)": {
+        "main": [
+          [
+            {
+              "node": "⬇️ Baixar Arquivo Foto",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "⬇️ Baixar Arquivo Foto": {
+        "main": [
+          [
+            {
+              "node": "👁️ Analisar Imagem Material (GPT-4o)",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "👁️ Analisar Imagem Material (GPT-4o)": {
+        "main": [
+          [
+            {
+              "node": "🔄 Injetar Análise de Imagem",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "🔄 Injetar Análise de Imagem": {
+        "main": [
+          [
+            {
+              "node": "📦 Buscar Estoque em Tempo Real (Supabase)",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "📦 Buscar Estoque em Tempo Real (Supabase)": {
+        "main": [
+          [
+            {
+              "node": "🧠 Buscar Memória do Cliente (Supabase)",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Memória da Conversa": {
+        "ai_memory": [
+          [
+            {
+              "node": "Agente IA Lia e Zé da Obra",
+              "type": "ai_memory",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "📝 Formatar Resposta WhatsApp": {
+        "main": [
+          [
+            {
+              "node": "Cliente Mandou Áudio?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Tem Foto para Enviar?": {
+        "main": [
+          [
+            {
+              "node": "📤 Enviar Foto + Legenda",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "📤 Enviar Texto",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "💬 Chatwoot: Criar/Obter Contato": {
+        "main": [
+          [
+            {
+              "node": "💬 Chatwoot: Abrir Conversa",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "💬 Chatwoot: Abrir Conversa": {
+        "main": [
+          [
+            {
+              "node": "💬 Chatwoot: Mensagem Cliente",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "💬 Chatwoot: Mensagem Cliente": {
+        "main": [
+          [
+            {
+              "node": "💬 Chatwoot: Resposta Lia",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Cliente Mandou Áudio?": {
+        "main": [
+          [
+            {
+              "node": "🗣️ Gerar Áudio Humano (OpenAI TTS)",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Tem Foto para Enviar?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "🗣️ Gerar Áudio Humano (OpenAI TTS)": {
+        "main": [
+          [
+            {
+              "node": "📦 Codificar Áudio em Base64",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "🎙️ Enviar Áudio Gravado (Uazapi)": {
+        "main": [
+          [
+            {
+              "node": "Precisa de Texto ou Foto?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "📦 Codificar Áudio em Base64": {
+        "main": [
+          [
+            {
+              "node": "Áudio Gerado com Sucesso?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "📤 Enviar Foto + Legenda": {
+        "main": [
+          [
+            {
+              "node": "💬 Chatwoot: Criar/Obter Contato",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "📤 Enviar Texto": {
+        "main": [
+          [
+            {
+              "node": "💬 Chatwoot: Criar/Obter Contato",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "🧠 Buscar Memória do Cliente (Supabase)": {
+        "main": [
+          [
+            {
+              "node": "🔄 Montar Catálogo Dinâmico & Memória",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "🔄 Montar Catálogo Dinâmico & Memória": {
+        "main": [
+          [
+            {
+              "node": "Agente IA Lia e Zé da Obra",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "💬 Chatwoot: Resposta Lia": {
+        "main": [
+          [
+            {
+              "node": "💾 Salvar/Atualizar Memória do Cliente (Supabase)",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Precisa de Texto ou Foto?": {
+        "main": [
+          [
+            {
+              "node": "Tem Foto para Enviar?",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "💬 Chatwoot: Criar/Obter Contato",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Áudio Gerado com Sucesso?": {
+        "main": [
+          [
+            {
+              "node": "🎙️ Enviar Áudio Gravado (Uazapi)",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Tem Foto para Enviar?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Google Gemini Chat Model": {
+        "ai_languageModel": [
+          [
+            {
+              "node": "Agente IA Lia e Zé da Obra",
+              "type": "ai_languageModel",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Agente IA Lia e Zé da Obra": {
+        "main": [
+          [
+            {
+              "node": "📝 Formatar Resposta WhatsApp",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "nodeGroups": [],
+    "authors": "manoel claudio de sousa",
+    "name": "Version 4b256746",
+    "description": "",
+    "autosaved": true,
+    "createdAt": "2026-10-04T22:50:52.966Z",
+    "updatedAt": "2026-10-04T22:50:57.000Z",
+    "workflowPublishHistory": [
+      {
+        "id": 318,
+        "workflowId": "IL2N96Rp8RSv6Hyz",
+        "versionId": "4b256746-5547-4dd6-8000-41c55136d1be",
+        "event": "activated",
+        "userId": "c21dbce8-3732-45a2-89a7-8a42913dd8c7",
+        "createdAt": "2026-10-04T22:50:57.241Z"
+      }
+    ]
+  }
+}

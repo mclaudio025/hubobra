@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   FileText,
   ShoppingCart,
@@ -21,6 +21,8 @@ import {
   LogOut,
   User,
   TrendingUp,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { syncService, SyncStatus } from '../services/syncService';
 import { SystemUser } from './UserManagementView';
@@ -53,6 +55,17 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   const [currentTime, setCurrentTime] = useState<string>('');
 
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+
+  const checkScroll = useCallback(() => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    setCanScrollLeft(el.scrollLeft > 6);
+    setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 6);
+  }, []);
+
   useEffect(() => {
     const unsub = syncService.subscribe(setSyncStatus);
     const interval = setInterval(() => {
@@ -63,6 +76,54 @@ export const Navbar: React.FC<NavbarProps> = ({
       clearInterval(interval);
     };
   }, []);
+
+  useEffect(() => {
+    checkScroll();
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    el.addEventListener('scroll', checkScroll, { passive: true });
+    window.addEventListener('resize', checkScroll);
+    return () => {
+      el.removeEventListener('scroll', checkScroll);
+      window.removeEventListener('resize', checkScroll);
+    };
+  }, [checkScroll]);
+
+  // Recalcula o scroll se o usuário ou quantidade de abas mudar
+  useEffect(() => {
+    const timer = setTimeout(checkScroll, 120);
+    return () => clearTimeout(timer);
+  }, [currentUser, checkScroll]);
+
+  // Garante que a aba ativa fique visível ao ser selecionada
+  useEffect(() => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    const activeBtn = el.querySelector(`[data-tab-id="${currentTab}"]`) as HTMLElement | null;
+    if (activeBtn) {
+      activeBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+    }
+  }, [currentTab]);
+
+  const handleScroll = (direction: 'left' | 'right') => {
+    if (scrollContainerRef.current) {
+      const scrollAmount = 280;
+      scrollContainerRef.current.scrollBy({
+        left: direction === 'left' ? -scrollAmount : scrollAmount,
+        behavior: 'smooth',
+      });
+      setTimeout(checkScroll, 320);
+    }
+  };
+
+  const handleWheel = (e: React.WheelEvent) => {
+    if (scrollContainerRef.current) {
+      if (e.deltaY !== 0) {
+        scrollContainerRef.current.scrollLeft += e.deltaY;
+        checkScroll();
+      }
+    }
+  };
 
   const handleSyncNow = async () => {
     await syncService.triggerSync();
@@ -184,15 +245,40 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
       </div>
 
-      {/* Main Nav Tabs filtradas dinamicamente */}
-      <div className="px-3 flex items-center justify-between overflow-x-auto py-1.5 scrollbar-none">
-        <div className="flex items-center gap-1">
+      {/* Main Nav Tabs filtradas dinamicamente com suporte a rolagem */}
+      <div className="relative flex items-center bg-slate-900 border-t border-slate-800/60 px-2 py-1">
+        {/* Botão Rolar para Esquerda */}
+        <button
+          type="button"
+          onClick={() => handleScroll('left')}
+          disabled={!canScrollLeft}
+          className={`shrink-0 mr-1.5 h-8 w-7 flex items-center justify-center rounded-lg border transition-all ${
+            canScrollLeft
+              ? 'bg-slate-800 hover:bg-amber-500 hover:text-slate-950 text-amber-400 border-slate-700 shadow-md cursor-pointer active:scale-95'
+              : 'opacity-25 bg-slate-950/40 border-transparent text-slate-600 cursor-not-allowed'
+          }`}
+          title="Rolar abas para a esquerda (ou gire a rodinha do mouse)"
+        >
+          <ChevronLeft className="w-4 h-4" />
+        </button>
+
+        {/* Container rolável com suporte a rodinha do mouse e scroll suave */}
+        <div
+          ref={scrollContainerRef}
+          onWheel={handleWheel}
+          className="flex-1 flex items-center gap-1.5 overflow-x-auto py-1 scroll-smooth select-none"
+          style={{
+            scrollbarWidth: 'thin',
+            scrollbarColor: '#475569 transparent',
+          }}
+        >
           {allowedNavItems.map((item) => {
             const Icon = item.icon;
             const isActive = currentTab === item.id;
             return (
               <button
                 key={item.id}
+                data-tab-id={item.id}
                 type="button"
                 onClick={() => onSelectTab(item.id)}
                 className={`px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shrink-0 relative ${
@@ -219,6 +305,21 @@ export const Navbar: React.FC<NavbarProps> = ({
             );
           })}
         </div>
+
+        {/* Botão Rolar para Direita */}
+        <button
+          type="button"
+          onClick={() => handleScroll('right')}
+          disabled={!canScrollRight}
+          className={`shrink-0 ml-1.5 h-8 w-7 flex items-center justify-center rounded-lg border transition-all ${
+            canScrollRight
+              ? 'bg-slate-800 hover:bg-amber-500 hover:text-slate-950 text-amber-400 border-slate-700 shadow-md cursor-pointer active:scale-95'
+              : 'opacity-25 bg-slate-950/40 border-transparent text-slate-600 cursor-not-allowed'
+          }`}
+          title="Rolar abas para a direita (ou gire a rodinha do mouse)"
+        >
+          <ChevronRight className="w-4 h-4" />
+        </button>
       </div>
     </header>
   );

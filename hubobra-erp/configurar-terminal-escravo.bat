@@ -37,8 +37,12 @@ if exist "C:\Program Files\Google\Chrome\Application\chrome.exe" (
 )
 
 echo oLink.Description = "Sistema HubObra ERP - Frente de Caixa e Balcao" >> %SCRIPT%
+if exist "%~dp0public\app.ico" (
+    echo oLink.IconLocation = "%~dp0public\app.ico,0" >> %SCRIPT%
+) else if exist "%~dp0installer\app.ico" (
+    echo oLink.IconLocation = "%~dp0installer\app.ico,0" >> %SCRIPT%
+)
 echo oLink.Save >> %SCRIPT%
-
 cscript /nologo %SCRIPT%
 del %SCRIPT%
 

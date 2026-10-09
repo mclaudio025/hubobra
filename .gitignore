@@ -116,6 +116,13 @@ Thumbs.db
 # Database
 *.sqlite
 *.db
+*.db-shm
+*.db-wal
+
+# Temporary run artifacts
+last_exec_id.txt
+scripts/import-b64.txt
+test_generated_pure.pdf
 
 # Python specific
 *.pyc

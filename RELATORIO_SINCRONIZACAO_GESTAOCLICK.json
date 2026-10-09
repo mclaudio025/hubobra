@@ -1,0 +1,1303 @@
+{
+  "total": 162,
+  "sucessos": [
+    {
+      "localId": "c44574f3-5db7-4ba1-9c19-5e0d08345e8c",
+      "nome": "Cimento Poty 50KG",
+      "sku": "001100",
+      "gestaoClickId": "99067779",
+      "precoVenda": "53.90",
+      "estoque": 97
+    },
+    {
+      "localId": "4394b0c1-ca98-4683-bd1c-8430f7492e1b",
+      "nome": "Tijolo Cerâmico 8 Furos",
+      "sku": "TIJ001",
+      "gestaoClickId": "99067780",
+      "precoVenda": "0.45",
+      "estoque": 5000
+    },
+    {
+      "localId": "6b2c175d-84d2-4fc5-8702-13436b7fa065",
+      "nome": "Tinta Acrílica Standard Fosco Rende Muito Branco Neve 20L - Coral",
+      "sku": "TIN001",
+      "gestaoClickId": "99067781",
+      "precoVenda": "299.90",
+      "estoque": 47
+    },
+    {
+      "localId": "dd5c4558-1f4f-4888-9b6d-e6412a63ee34",
+      "nome": "Joelho 90° Soldável 25mm Tigre",
+      "sku": "002321",
+      "gestaoClickId": "99067783",
+      "precoVenda": "1.46",
+      "estoque": 150
+    },
+    {
+      "localId": "c06e57d4-c4c4-419c-9256-87865c475e17",
+      "nome": "Joelho 45° Soldável 25mm Tigre",
+      "sku": "002332",
+      "gestaoClickId": "99067784",
+      "precoVenda": "1.46",
+      "estoque": 148
+    },
+    {
+      "localId": "8a39b6f8-e28d-4acb-9872-f36c10d3497b",
+      "nome": "Cola PVC Polytubes 17G",
+      "sku": "001157",
+      "gestaoClickId": "99067785",
+      "precoVenda": "3.00",
+      "estoque": 27
+    },
+    {
+      "localId": "b160d866-9164-46cd-93d2-867b09d21c7e",
+      "nome": "Cola PVC Polytubes 75G",
+      "sku": "001156",
+      "gestaoClickId": "99067786",
+      "precoVenda": "7.90",
+      "estoque": 60
+    },
+    {
+      "localId": "7a816181-8638-4c0a-b268-9de3858f4138",
+      "nome": "Cabo Flexivel 6MM Cobrecom Amarelo 100mt",
+      "sku": "980458",
+      "gestaoClickId": "99067788",
+      "precoVenda": "799.00",
+      "estoque": 10
+    },
+    {
+      "localId": "5ba76a78-3da8-4d81-8b21-d5393fdf5626",
+      "nome": "Cabo Flexivel 6MM Cobrecom Azul 100mt",
+      "sku": "006110",
+      "gestaoClickId": "99067789",
+      "precoVenda": "799.00",
+      "estoque": 15
+    },
+    {
+      "localId": "8bfb92d9-4ed5-46d4-a511-b93725eb342e",
+      "nome": "Cabo Flexivel 6MM Cobrecom Preto 100mt",
+      "sku": "979678",
+      "gestaoClickId": "99067790",
+      "precoVenda": "799.00",
+      "estoque": 12
+    },
+    {
+      "localId": "f4cad90b-8831-43b1-9e99-9d2997fab256",
+      "nome": "Cabo Flexivel 6MM Cobrecom Verde 100mt",
+      "sku": "001669",
+      "gestaoClickId": "99067791",
+      "precoVenda": "799.00",
+      "estoque": 10
+    },
+    {
+      "localId": "c377aee7-75b8-42e7-9abc-c48f30f014bc",
+      "nome": "Cabo Flexivel 6MM Cobrecom Vermelho 100mt",
+      "sku": "980446",
+      "gestaoClickId": "99067792",
+      "precoVenda": "799.00",
+      "estoque": 10
+    },
+    {
+      "localId": "407a352c-92e6-4b6f-87d2-312b0251c494",
+      "nome": "Cabo Flexivel 6MM Cobrecom Branco 100mt",
+      "sku": "979107",
+      "gestaoClickId": "99067793",
+      "precoVenda": "799.00",
+      "estoque": 10
+    },
+    {
+      "localId": "34b4a5e6-caa3-4561-81f1-88a0f46cc40e",
+      "nome": "Colher de Pedreiro 06 Pacetta",
+      "sku": "000680",
+      "gestaoClickId": "99067795",
+      "precoVenda": "49.90",
+      "estoque": 12
+    },
+    {
+      "localId": "bf9bf840-e377-4c74-8203-1d1d1f00a144",
+      "nome": "Limpa-Contato Spray Mundial Prime Mp80 Frasco 300ML",
+      "sku": "SKU-527774",
+      "gestaoClickId": "99067796",
+      "precoVenda": "18.90",
+      "estoque": 60
+    },
+    {
+      "localId": "e6e7973a-960e-4c1f-84dd-9009aa001ad6",
+      "nome": "Spray Desengripante Lubrificante Wd40 300ml",
+      "sku": "SKU-140435",
+      "gestaoClickId": "99067797",
+      "precoVenda": "43.70",
+      "estoque": 10
+    },
+    {
+      "localId": "4325e1aa-c6f1-47fb-8f95-45ad9ed883ee",
+      "nome": "Wmax Silicone Spray 300ml",
+      "sku": "SKU-528980",
+      "gestaoClickId": "99067799",
+      "precoVenda": "30.80",
+      "estoque": 10
+    },
+    {
+      "localId": "65f9ec10-7078-4ae0-b7fd-761e5ebcdd5f",
+      "nome": "Desengripante em Spray Rost Off 300ml",
+      "sku": "SKU-965998",
+      "gestaoClickId": "99067801",
+      "precoVenda": "25.00",
+      "estoque": 10
+    },
+    {
+      "localId": "c53c2dda-58ef-4a4b-86fd-28f976808337",
+      "nome": "Caixa Dagua Polietileno Fortlev 1000 Lt",
+      "sku": "000746",
+      "gestaoClickId": "99067802",
+      "precoVenda": "599.00",
+      "estoque": 3
+    },
+    {
+      "localId": "aca5c1bd-2817-4110-be59-9c51461a6ffa",
+      "nome": "Caixa Dagua Polietileno Fortlev 500 Lt",
+      "sku": "005416",
+      "gestaoClickId": "99067803",
+      "precoVenda": "379.00",
+      "estoque": 2
+    },
+    {
+      "localId": "5a78fc99-c868-4049-a96b-ef6609a18f00",
+      "nome": "Cap Soldavel 25MM Krona",
+      "sku": "000806",
+      "gestaoClickId": "99067804",
+      "precoVenda": "1.90",
+      "estoque": 40
+    },
+    {
+      "localId": "4352458d-ece5-44ad-8e6c-0afae06a21ee",
+      "nome": "Joelho 45 Esgoto 50MM Krona",
+      "sku": "000812",
+      "gestaoClickId": "99067805",
+      "precoVenda": "6.90",
+      "estoque": 60
+    },
+    {
+      "localId": "cda34840-cb41-4ed1-8fcb-b83c7eabbb34",
+      "nome": "Linha Massaranduba 11X4,5 2,00 Mt",
+      "sku": "860322",
+      "gestaoClickId": "99067807",
+      "precoVenda": "91.80",
+      "estoque": 60
+    },
+    {
+      "localId": "292d1acb-5130-48ee-af22-993b532fe477",
+      "nome": "Disco de Corte Diamantado Turbo Porcelanato 110mm - Cortag",
+      "sku": "SKU-468632",
+      "gestaoClickId": "99067809",
+      "precoVenda": "54.90",
+      "estoque": 10
+    },
+    {
+      "localId": "df7e3811-c939-4c96-8d36-cbcfb6c5079d",
+      "nome": "Sika 1 Aditivo 1l",
+      "sku": "SKU-303800",
+      "gestaoClickId": "99067810",
+      "precoVenda": "21.90",
+      "estoque": 10
+    },
+    {
+      "localId": "476fe07a-fef7-48c6-8c6f-8fee047fabad",
+      "nome": "Fita Manta Asfáltica Autoadesiva Flexível Alumínio 10cmx10m Kala Oferta!",
+      "sku": "SKU-614453",
+      "gestaoClickId": "99067812",
+      "precoVenda": "39.90",
+      "estoque": 10
+    },
+    {
+      "localId": "5267f631-e014-4770-8f0e-b6d9e23605c0",
+      "nome": "Lâmina de Serra Bi-Metal 12x18 - Starrett",
+      "sku": "SKU-403308",
+      "gestaoClickId": "99067813",
+      "precoVenda": "13.00",
+      "estoque": 10
+    },
+    {
+      "localId": "9f3f55a4-24c3-42cb-974f-1be6949b973c",
+      "nome": "Óleo Lubrificante Multiuso Singer Squeeze 100ML",
+      "sku": "SKU-450788",
+      "gestaoClickId": "99067815",
+      "precoVenda": "15.90",
+      "estoque": 10
+    },
+    {
+      "localId": "3add5604-a546-40f8-aaa0-a4be89c098cf",
+      "nome": "Adesivo Instantâneo 793 20g - Tekbond",
+      "sku": "SKU-955144",
+      "gestaoClickId": "99067816",
+      "precoVenda": "18.90",
+      "estoque": 10
+    },
+    {
+      "localId": "5f2d8dfb-1aee-4b13-9305-7655048bbfda",
+      "nome": "Suporte para Tv Universal 10-90\\",
+      "sku": "SKU-119422",
+      "gestaoClickId": "99067818",
+      "precoVenda": "15.90",
+      "estoque": 10
+    },
+    {
+      "localId": "2e540fd9-de8b-4fbf-a55e-6a7650e17139",
+      "nome": "Suporte Universal para Televisao Tv Lcd e LED",
+      "sku": "SKU-024471",
+      "gestaoClickId": "99067819",
+      "precoVenda": "18.90",
+      "estoque": 10
+    },
+    {
+      "localId": "ad4359a8-eb3b-43dc-8370-375241a93737",
+      "nome": "Antena Digital Atn 150 Hd",
+      "sku": "SKU-160243",
+      "gestaoClickId": "99067820",
+      "precoVenda": "18.90",
+      "estoque": 10
+    },
+    {
+      "localId": "2e1fa77c-6cce-4d9e-a159-33e7c4da8708",
+      "nome": "Cola Silicone Alta Temperatura Vermelho 50gr Orbi - Corremol",
+      "sku": "SKU-111207",
+      "gestaoClickId": "99067822",
+      "precoVenda": "10.90",
+      "estoque": 10
+    },
+    {
+      "localId": "d5ba5707-3bfb-40c9-ba04-78bb7c714457",
+      "nome": "Tinta Spray Cinza Escuro Chemicolor 400ml",
+      "sku": "SKU-146132",
+      "gestaoClickId": "99067823",
+      "precoVenda": "15.00",
+      "estoque": 10
+    },
+    {
+      "localId": "bc53ae8c-3b96-4801-8327-45a42a30beb8",
+      "nome": "Torneira para Jardim Alim Preta Krona",
+      "sku": "SKU-698193",
+      "gestaoClickId": "99067824",
+      "precoVenda": "4.50",
+      "estoque": 10
+    },
+    {
+      "localId": "9242ba38-d0b5-4034-89bf-00eeee2620b0",
+      "nome": "Torneira para Tanque Branca Slim",
+      "sku": "SKU-845478",
+      "gestaoClickId": "99067826",
+      "precoVenda": "6.00",
+      "estoque": 10
+    },
+    {
+      "localId": "fb0e8bb2-c3a9-4105-a20a-bdf5a71d694f",
+      "nome": "Fita Isolante Imperial 3M Preta 18mmx10 Metros",
+      "sku": "SKU-074001",
+      "gestaoClickId": "99067828",
+      "precoVenda": "9.19",
+      "estoque": 10
+    },
+    {
+      "localId": "c757641b-9e12-4534-bf7a-1c10f30a3fce",
+      "nome": "Fita Isolante Imperial 18 Mm X 20m",
+      "sku": "SKU-153083",
+      "gestaoClickId": "99067829",
+      "precoVenda": "11.99",
+      "estoque": 10
+    },
+    {
+      "localId": "783de878-a066-4412-8563-d782aa117cfd",
+      "nome": "Tubo PVC Soldavel 25mm 6m Krona",
+      "sku": "SKU-293712",
+      "gestaoClickId": "99067830",
+      "precoVenda": "24.99",
+      "estoque": 10
+    },
+    {
+      "localId": "9e3bdfad-5ae1-4128-a50c-0efa6f5946ce",
+      "nome": "Joelho 90° Soldável com Bucha de Latão",
+      "sku": "SKU-389883",
+      "gestaoClickId": "99067832",
+      "precoVenda": "7.99",
+      "estoque": 10
+    },
+    {
+      "localId": "3997ae0f-61c4-4ef4-aa4e-67dca9a2cfa6",
+      "nome": "Tê Soldável Bucha de Latão 25mm X 3/4 Krona",
+      "sku": "SKU-578466",
+      "gestaoClickId": "99067833",
+      "precoVenda": "9.90",
+      "estoque": 10
+    },
+    {
+      "localId": "f4a68651-8401-4527-9a00-9f5253d3ce44",
+      "nome": "Luva Soldavel 25MM",
+      "sku": "SKU-655456",
+      "gestaoClickId": "99067835",
+      "precoVenda": "1.99",
+      "estoque": 10
+    },
+    {
+      "localId": "39086f76-d6e3-4527-9e8a-5af6d3b08ded",
+      "nome": "Te Soldável 25MM 3/4",
+      "sku": "SKU-713572",
+      "gestaoClickId": "99067839",
+      "precoVenda": "1.99",
+      "estoque": 10
+    },
+    {
+      "localId": "cf97b9f8-ff05-4c1b-914a-821acd585dbd",
+      "nome": "Cap Soldável 25mm",
+      "sku": "SKU-897014",
+      "gestaoClickId": "99067840",
+      "precoVenda": "1.80",
+      "estoque": 10
+    },
+    {
+      "localId": "798d7c19-044c-421c-bb13-31cf2900c2ef",
+      "nome": "Adaptador Curto 25mm Soldável 3/4 Rosca",
+      "sku": "SKU-981106",
+      "gestaoClickId": "99067841",
+      "precoVenda": "1.99",
+      "estoque": 10
+    },
+    {
+      "localId": "7f2432bd-5461-4aab-b953-c83e47dfc304",
+      "nome": "União Soldável 50mm",
+      "sku": "SKU-064460",
+      "gestaoClickId": "99067842",
+      "precoVenda": "76.00",
+      "estoque": 10
+    },
+    {
+      "localId": "4c201d21-e807-483e-bcc9-08846778ff90",
+      "nome": "Bucha Reducao Longa Esgoto 50x40mm",
+      "sku": "SKU-263885",
+      "gestaoClickId": "99067843",
+      "precoVenda": "3.60",
+      "estoque": 10
+    },
+    {
+      "localId": "077b168e-6ed5-443d-af96-eca30b23ec9c",
+      "nome": "Joelho Esgoto 90° 40mm",
+      "sku": "SKU-741692",
+      "gestaoClickId": "99067845",
+      "precoVenda": "1.50",
+      "estoque": 10
+    },
+    {
+      "localId": "ea18f108-2b72-4385-846d-75fb74f2971a",
+      "nome": "Engate Plástico Branco 40cm",
+      "sku": "SKU-806321",
+      "gestaoClickId": "99067846",
+      "precoVenda": "7.99",
+      "estoque": 10
+    },
+    {
+      "localId": "457102d4-0198-42d8-91c0-5dd16986f7bd",
+      "nome": "Luva Soldável com Bucha de Latão 25 X 1/2",
+      "sku": "SKU-874314",
+      "gestaoClickId": "99067847",
+      "precoVenda": "9.90",
+      "estoque": 10
+    },
+    {
+      "localId": "050a91a3-6633-4e0f-8c03-739919ae76e2",
+      "nome": "Adaptador Curto Soldável 32 X 1 PVC",
+      "sku": "SKU-937937",
+      "gestaoClickId": "99067848",
+      "precoVenda": "3.10",
+      "estoque": 10
+    },
+    {
+      "localId": "d8be7349-f358-4cce-b069-290a0be492b5",
+      "nome": "Joelho de 45° Krona para Esgoto 40mm",
+      "sku": "SKU-146440",
+      "gestaoClickId": "99067849",
+      "precoVenda": "2.20",
+      "estoque": 10
+    },
+    {
+      "localId": "608d4d58-2d46-4a82-bcdc-30a508246715",
+      "nome": "Luva Soldável com Redução Ll 25x20mm",
+      "sku": "SKU-232045",
+      "gestaoClickId": "99067850",
+      "precoVenda": "3.00",
+      "estoque": 10
+    },
+    {
+      "localId": "036b22d1-92d4-4e41-bb14-f3d70b5df20f",
+      "nome": "Luva Soldavel com Rosca Krona 25mmx3/4 Lr",
+      "sku": "SKU-326969",
+      "gestaoClickId": "99067852",
+      "precoVenda": "1.99",
+      "estoque": 10
+    },
+    {
+      "localId": "10205078-fa2e-430e-adbd-565c0dab73b2",
+      "nome": "Bucha de Redução Soldável Curta 32mm X 25mm",
+      "sku": "SKU-384083",
+      "gestaoClickId": "99067853",
+      "precoVenda": "2.00",
+      "estoque": 10
+    },
+    {
+      "localId": "bbaef9c4-336d-4fb1-9258-267c20a2b5e7",
+      "nome": "Joelho 45° Soldável 32 Mm Krona",
+      "sku": "SKU-566070",
+      "gestaoClickId": "99067854",
+      "precoVenda": "6.99",
+      "estoque": 10
+    },
+    {
+      "localId": "2b258143-c304-4b6c-a871-769126d71152",
+      "nome": "Plug Roscavel PVC Branca 3/4",
+      "sku": "SKU-644599",
+      "gestaoClickId": "99067855",
+      "precoVenda": "2.80",
+      "estoque": 10
+    },
+    {
+      "localId": "1c189f65-1e6c-4b05-8af5-5180d54f76b8",
+      "nome": "Luva de Correr Soldável",
+      "sku": "SKU-786956",
+      "gestaoClickId": "99067856",
+      "precoVenda": "10.90",
+      "estoque": 10
+    },
+    {
+      "localId": "1d3c1185-ceab-4b99-b48f-22abafc4176b",
+      "nome": "Engate Flexível Branco 50cm X 1/2",
+      "sku": "SKU-876748",
+      "gestaoClickId": "99067857",
+      "precoVenda": "9.90",
+      "estoque": 10
+    },
+    {
+      "localId": "85582e22-a636-4a3d-bfb2-16bfdd444fec",
+      "nome": "Engate Plástico 30cm 1/2",
+      "sku": "SKU-161963",
+      "gestaoClickId": "99067858",
+      "precoVenda": "6.59",
+      "estoque": 10
+    },
+    {
+      "localId": "65de3b19-e55b-4445-87d4-2012440d86ef",
+      "nome": "Engate Plástico 60cm X 1/2",
+      "sku": "SKU-212613",
+      "gestaoClickId": "99067859",
+      "precoVenda": "10.90",
+      "estoque": 10
+    },
+    {
+      "localId": "40c5a4e5-86c3-427d-8069-d87dd09c0f99",
+      "nome": "Sifão Tubo Extensivo Duplo Universal 1.1M",
+      "sku": "SKU-386007",
+      "gestaoClickId": "99067860",
+      "precoVenda": "19.90",
+      "estoque": 10
+    },
+    {
+      "localId": "dbac7871-7b69-43f4-9239-2ad139d84526",
+      "nome": "Tampa para Válvula para Pia e Lavatório",
+      "sku": "SKU-638846",
+      "gestaoClickId": "99067861",
+      "precoVenda": "1.50",
+      "estoque": 10
+    },
+    {
+      "localId": "d065b969-2de9-4e40-9547-d7a4ad97fd31",
+      "nome": "Caixa de Embutir 4x2 Retangular Amarela",
+      "sku": "SKU-281538",
+      "gestaoClickId": "99067863",
+      "precoVenda": "1.99",
+      "estoque": 10
+    },
+    {
+      "localId": "0d782138-6961-43a0-b358-4afd62d3fb2c",
+      "nome": "Soquete Preto com Rabicho 2A 16101",
+      "sku": "SKU-416369",
+      "gestaoClickId": "99067865",
+      "precoVenda": "3.99",
+      "estoque": 10
+    },
+    {
+      "localId": "5cf14e1a-2c6e-4b21-b548-2ae501152a5b",
+      "nome": "Tubo de PVC para Esgoto 40mm X 6 Metros - Krona",
+      "sku": "SKU-117689",
+      "gestaoClickId": "99067866",
+      "precoVenda": "42.99",
+      "estoque": 10
+    },
+    {
+      "localId": "d700e212-2ca4-4b9c-9738-2300c76e2af2",
+      "nome": "Tubo Krona Soldável 32mm - 6m",
+      "sku": "SKU-278221",
+      "gestaoClickId": "99067867",
+      "precoVenda": "62.90",
+      "estoque": 10
+    },
+    {
+      "localId": "75be9e9a-c32d-48cb-a71f-dc8fa0771406",
+      "nome": "Espatula Aço Carbono Atlas 10cm Ref 175/10",
+      "sku": "SKU-943613",
+      "gestaoClickId": "99067868",
+      "precoVenda": "22.99",
+      "estoque": 10
+    },
+    {
+      "localId": "c242d629-3af2-4f3d-89ac-4d8319b96efa",
+      "nome": "Espatula de Plástico 13cm Atlas",
+      "sku": "SKU-232125",
+      "gestaoClickId": "99067869",
+      "precoVenda": "3.90",
+      "estoque": 10
+    },
+    {
+      "localId": "78ef5456-82bf-4144-bd97-8b0b637cfd5b",
+      "nome": "Telha Ecológica Clássica 200x95cm Vermelha Onduline - Normatel Home Center",
+      "sku": "SKU-538897",
+      "gestaoClickId": "99067871",
+      "precoVenda": "119.90",
+      "estoque": 10
+    },
+    {
+      "localId": "61300f21-a682-44df-a32b-23f1982c14e5",
+      "nome": "Caixa de Luz Tigre PVC 4x2 Preto",
+      "sku": "7899052567745",
+      "gestaoClickId": "99067873",
+      "precoVenda": "1.71",
+      "estoque": 50
+    },
+    {
+      "localId": "75878260-2030-423a-8b62-9ebecd534d8a",
+      "nome": "Joelho 90 Esgoto Série Normal PVC Fortlev",
+      "sku": "7898543591962",
+      "gestaoClickId": "99067874",
+      "precoVenda": "42.90",
+      "estoque": 50
+    },
+    {
+      "localId": "fe882844-0070-44ef-ab79-3000a8530ca8",
+      "nome": "Joelho 45° para Esgoto 100mm Tigre",
+      "sku": "7897613328279",
+      "gestaoClickId": "99067875",
+      "precoVenda": "13.99",
+      "estoque": 50
+    },
+    {
+      "localId": "41e9878f-db4d-4b4d-8fe2-f701348e4993",
+      "nome": "Joelho 90 Pvce 75Mm Tigre",
+      "sku": "SKU-328293",
+      "gestaoClickId": "99067876",
+      "precoVenda": "8.90",
+      "estoque": 20
+    },
+    {
+      "localId": "5b524796-6eb9-4768-b8b5-328d4045a672",
+      "nome": "Joelho 90 PVC 50Mm Tigre",
+      "sku": "SKU-328286",
+      "gestaoClickId": "99067877",
+      "precoVenda": "6.00",
+      "estoque": 10
+    },
+    {
+      "localId": "62b79088-3b79-4e5c-982b-bdd91771de5a",
+      "nome": "Tubo Esgoto Krona 200 Mm X 6 Metros",
+      "sku": "JC-0105",
+      "gestaoClickId": "99067878",
+      "precoVenda": "639.90",
+      "estoque": 1
+    },
+    {
+      "localId": "65ba3ac8-5355-4fd1-89f9-2e52b0652412",
+      "nome": "União Soldável 60 Mm Krona",
+      "sku": "JC-0479",
+      "gestaoClickId": "99067880",
+      "precoVenda": "89.90",
+      "estoque": 4
+    },
+    {
+      "localId": "6399328b-4035-4bae-86a7-d81fc90d0238",
+      "nome": "LIXA FERRO NORTON K-246 100",
+      "sku": "1232010000",
+      "gestaoClickId": "99067881",
+      "precoVenda": "3.50",
+      "estoque": 50
+    },
+    {
+      "localId": "3e4c157e-4726-4667-b59d-80de97f008c3",
+      "nome": "LIXA MADEIRA NORTON A-237 100",
+      "sku": "1233010000",
+      "gestaoClickId": "99067882",
+      "precoVenda": "0.90",
+      "estoque": 50
+    },
+    {
+      "localId": "ce0a810b-12ea-43e5-bdeb-28ef31a6aae2",
+      "nome": "LIXA MASSA NORTON A-257 100",
+      "sku": "1234010000",
+      "gestaoClickId": "99067884",
+      "precoVenda": "1.00",
+      "estoque": 50
+    },
+    {
+      "localId": "d4cbeedc-d413-4c5e-a1a8-c017c0c23a9b",
+      "nome": "LIXA FERRO NORTON K-246 036",
+      "sku": "1232003600",
+      "gestaoClickId": "99067887",
+      "precoVenda": "4.30",
+      "estoque": 50
+    },
+    {
+      "localId": "20f4f6e4-2401-48b9-89ad-44568d185576",
+      "nome": "LIXA FERRO NORTON K-246 040",
+      "sku": "1232004000",
+      "gestaoClickId": "99067888",
+      "precoVenda": "4.30",
+      "estoque": 50
+    },
+    {
+      "localId": "9a36ab3f-6b12-4964-9766-9710fda136b9",
+      "nome": "LIXA FERRO NORTON K-246 050",
+      "sku": "1232005000",
+      "gestaoClickId": "99067889",
+      "precoVenda": "3.50",
+      "estoque": 50
+    },
+    {
+      "localId": "a750ee5b-0b50-440c-9a8d-3338f94fdc3c",
+      "nome": "LIXA FERRO NORTON K-246 060",
+      "sku": "1232006000",
+      "gestaoClickId": "99067890",
+      "precoVenda": "3.50",
+      "estoque": 50
+    },
+    {
+      "localId": "7bf09235-122f-4818-9074-41144c4a50c1",
+      "nome": "LIXA FERRO NORTON K-246 080",
+      "sku": "1232008000",
+      "gestaoClickId": "99067891",
+      "precoVenda": "3.50",
+      "estoque": 50
+    },
+    {
+      "localId": "fe06c44a-ac28-41fe-b616-ac59c4861431",
+      "nome": "LIXA FERRO NORTON K-246 120",
+      "sku": "1232012000",
+      "gestaoClickId": "99067893",
+      "precoVenda": "3.50",
+      "estoque": 50
+    },
+    {
+      "localId": "1f79d3e9-8a30-44c0-aa15-bc0bacb00372",
+      "nome": "LIXA FERRO NORTON K-246 150",
+      "sku": "1232015000",
+      "gestaoClickId": "99067897",
+      "precoVenda": "3.50",
+      "estoque": 50
+    },
+    {
+      "localId": "dbc8671d-561b-471c-8804-762cf3249a44",
+      "nome": "LIXA FERRO NORTON K-246 180",
+      "sku": "1232018000",
+      "gestaoClickId": "99067898",
+      "precoVenda": "3.50",
+      "estoque": 50
+    },
+    {
+      "localId": "8b32a453-571b-4883-abb8-e3bb163bde21",
+      "nome": "LIXA FERRO NORTON K-246 220",
+      "sku": "1232022000",
+      "gestaoClickId": "99067899",
+      "precoVenda": "3.50",
+      "estoque": 50
+    },
+    {
+      "localId": "d933a568-d393-4e9f-b31c-bebc56436b20",
+      "nome": "LIXA MADEIRA NORTON A-237 050",
+      "sku": "1233005000",
+      "gestaoClickId": "99067900",
+      "precoVenda": "1.30",
+      "estoque": 50
+    },
+    {
+      "localId": "e40dfa9e-693e-46ae-a565-234de1934a7b",
+      "nome": "LIXA MADEIRA NORTON A-237 060",
+      "sku": "1233006000",
+      "gestaoClickId": "99067901",
+      "precoVenda": "1.30",
+      "estoque": 50
+    },
+    {
+      "localId": "8e03e6b1-882a-486f-8a23-abd0c571d91c",
+      "nome": "LIXA MADEIRA NORTON A-237 080",
+      "sku": "1233008000",
+      "gestaoClickId": "99067902",
+      "precoVenda": "1.30",
+      "estoque": 50
+    },
+    {
+      "localId": "97e75a68-aab5-4b1b-9a89-a074c81b570a",
+      "nome": "LIXA MADEIRA NORTON A-237 120",
+      "sku": "1233012000",
+      "gestaoClickId": "99067904",
+      "precoVenda": "0.90",
+      "estoque": 50
+    },
+    {
+      "localId": "b8da6b9e-3835-4d06-a33d-7345a2185310",
+      "nome": "LIXA MADEIRA NORTON A-237 150",
+      "sku": "1233015000",
+      "gestaoClickId": "99067905",
+      "precoVenda": "0.90",
+      "estoque": 50
+    },
+    {
+      "localId": "e4d7d7a9-ce6a-4d6d-812e-06f2d0d8db4f",
+      "nome": "LIXA MADEIRA NORTON A-237 180",
+      "sku": "1233018000",
+      "gestaoClickId": "99067906",
+      "precoVenda": "0.90",
+      "estoque": 50
+    },
+    {
+      "localId": "67969508-d2aa-4ed2-9794-ee8f06793b07",
+      "nome": "LIXA MADEIRA NORTON A-237 220",
+      "sku": "1233022000",
+      "gestaoClickId": "99067907",
+      "precoVenda": "0.90",
+      "estoque": 50
+    },
+    {
+      "localId": "9ed11b4a-ca6f-4dec-8b25-1a15b7772b75",
+      "nome": "LIXA MASSA NORTON A-257 050",
+      "sku": "1234005000",
+      "gestaoClickId": "99067908",
+      "precoVenda": "1.50",
+      "estoque": 50
+    },
+    {
+      "localId": "5a314bb4-4f1f-4a82-8d7c-efdc68b85ebb",
+      "nome": "LIXA MASSA NORTON A-257 060",
+      "sku": "1234006000",
+      "gestaoClickId": "99067909",
+      "precoVenda": "1.50",
+      "estoque": 50
+    },
+    {
+      "localId": "cd09e10d-9da3-4d7c-9cb1-a97b792713f5",
+      "nome": "LIXA MASSA NORTON A-257 080",
+      "sku": "1234008000",
+      "gestaoClickId": "99067910",
+      "precoVenda": "1.50",
+      "estoque": 50
+    },
+    {
+      "localId": "1bffe948-4a06-45b4-ba33-6ea3fbe98022",
+      "nome": "LIXA MASSA NORTON A-257 120",
+      "sku": "1234012000",
+      "gestaoClickId": "99067912",
+      "precoVenda": "1.00",
+      "estoque": 50
+    },
+    {
+      "localId": "6f540c73-d1af-4e4e-bce5-aabd7dc2dda2",
+      "nome": "LIXA MASSA NORTON A-257 150",
+      "sku": "1234015000",
+      "gestaoClickId": "99067914",
+      "precoVenda": "1.00",
+      "estoque": 50
+    },
+    {
+      "localId": "5210f379-cf89-4f1c-a30a-b389dfb7b9e1",
+      "nome": "LIXA MASSA NORTON A-257 180",
+      "sku": "1234018000",
+      "gestaoClickId": "99067917",
+      "precoVenda": "1.00",
+      "estoque": 50
+    },
+    {
+      "localId": "8132d5d6-e799-40f6-9b35-e499701a5b01",
+      "nome": "LIXA MASSA NORTON A-257 220",
+      "sku": "1234022000",
+      "gestaoClickId": "99067918",
+      "precoVenda": "1.00",
+      "estoque": 50
+    },
+    {
+      "localId": "ca220ad0-88b7-4506-91f3-aaa4db04e01e",
+      "nome": "LIXA D&#039;ÁGUA NORTON T-223 0080",
+      "sku": "1231008000",
+      "gestaoClickId": "99067919",
+      "precoVenda": "2.20",
+      "estoque": 50
+    },
+    {
+      "localId": "17631357-27f3-43e3-827d-89517ff51418",
+      "nome": "LIXA D&#039;ÁGUA NORTON T-223 0120",
+      "sku": "1231012000",
+      "gestaoClickId": "99067920",
+      "precoVenda": "2.20",
+      "estoque": 50
+    },
+    {
+      "localId": "58a26fd5-fbd0-4fdd-bb69-d607ed2b4761",
+      "nome": "LIXA D&#039;ÁGUA NORTON T-223 0150",
+      "sku": "1231015000",
+      "gestaoClickId": "99067921",
+      "precoVenda": "2.20",
+      "estoque": 50
+    },
+    {
+      "localId": "39f995d2-a6be-435d-8a8c-ec9baf701b05",
+      "nome": "LIXA D&#039;ÁGUA NORTON T-223 0180",
+      "sku": "1231018000",
+      "gestaoClickId": "99067922",
+      "precoVenda": "2.20",
+      "estoque": 50
+    },
+    {
+      "localId": "edf8a870-489d-4a25-bf12-016f662b38c6",
+      "nome": "LIXA D&#039;ÁGUA NORTON T-223 0220",
+      "sku": "1231022000",
+      "gestaoClickId": "99067923",
+      "precoVenda": "2.20",
+      "estoque": 50
+    },
+    {
+      "localId": "b442c9cf-37de-43d1-8db6-170572d01712",
+      "nome": "LIXA D&#039;ÁGUA NORTON T-223 0240",
+      "sku": "1231024000",
+      "gestaoClickId": "99067924",
+      "precoVenda": "1.70",
+      "estoque": 50
+    },
+    {
+      "localId": "993fc2fc-81a8-49d2-b7ea-ca8e7933abcc",
+      "nome": "LIXA D&#039;ÁGUA NORTON T-223 0280",
+      "sku": "1231028000",
+      "gestaoClickId": "99067925",
+      "precoVenda": "1.70",
+      "estoque": 50
+    },
+    {
+      "localId": "e4bb8da8-62e6-4e89-9acb-35807a717551",
+      "nome": "LIXA D&#039;ÁGUA NORTON T-223 0320",
+      "sku": "1231032000",
+      "gestaoClickId": "99067926",
+      "precoVenda": "1.70",
+      "estoque": 50
+    },
+    {
+      "localId": "9c5a2362-1fb3-4975-9ca0-8eec8526b097",
+      "nome": "LIXA D&#039;ÁGUA NORTON T-223 0360",
+      "sku": "1231036000",
+      "gestaoClickId": "99067927",
+      "precoVenda": "1.90",
+      "estoque": 50
+    },
+    {
+      "localId": "b2ee73e4-5237-4114-bb2e-aa340d35e22d",
+      "nome": "LIXA D&#039;ÁGUA NORTON T-223 0600",
+      "sku": "1231060000",
+      "gestaoClickId": "99067929",
+      "precoVenda": "2.20",
+      "estoque": 50
+    },
+    {
+      "localId": "af883256-c8be-4f84-8e5b-ecdedd2784c6",
+      "nome": "LIXA D&#039;ÁGUA NORTON T-223 0400",
+      "sku": "1231040000",
+      "gestaoClickId": "99067930",
+      "precoVenda": "1.90",
+      "estoque": 50
+    },
+    {
+      "localId": "4e2bde29-2d6b-4de1-9991-b4e86042d039",
+      "nome": "LIXA D&#039;ÁGUA NORTON T-401 2000",
+      "sku": "1257411120",
+      "gestaoClickId": "99067931",
+      "precoVenda": "10.90",
+      "estoque": 50
+    },
+    {
+      "localId": "4022cd75-45b0-41b3-901e-f289413e20f5",
+      "nome": "LIXA D&#039;ÁGUA NORTON T-401 2500",
+      "sku": "1257401025",
+      "gestaoClickId": "99067932",
+      "precoVenda": "11.90",
+      "estoque": 50
+    },
+    {
+      "localId": "bc455ff1-68e2-4c34-ab80-a3244d39e864",
+      "nome": "DISCO DE LIXA COM VELCRO 125MM X 150 VERMELHO",
+      "sku": "179234",
+      "gestaoClickId": "99067933",
+      "precoVenda": "1.50",
+      "estoque": 50
+    },
+    {
+      "localId": "df14af6b-0f02-41e7-b74e-c30a5bd7e9c3",
+      "nome": "DISCO DE LIXA COM VELCRO 125MM X 120 VERMELHO",
+      "sku": "179233",
+      "gestaoClickId": "99067934",
+      "precoVenda": "1.50",
+      "estoque": 50
+    },
+    {
+      "localId": "8f0f98c1-db47-43aa-b871-08605a47c99d",
+      "nome": "DISCO DE LIXA VONDER 180 MM G100 COM VELCRO CARTELA COM 10",
+      "sku": "1258180100",
+      "gestaoClickId": "99067936",
+      "precoVenda": "55.90",
+      "estoque": 50
+    },
+    {
+      "localId": "2628fecd-f295-46b3-94d4-0d8398c29b27",
+      "nome": "DISCO DE LIXA VONDER 225 MM G100 COM VELCRO CARTELA COM 10",
+      "sku": "1258225100",
+      "gestaoClickId": "99067937",
+      "precoVenda": "69.90",
+      "estoque": 50
+    },
+    {
+      "localId": "6f963d2e-84eb-4702-8b31-2b7ee7d383b8",
+      "nome": "DISCO DE LIXA COM VELCRO 125MM X 040 VERMELHO",
+      "sku": "179229",
+      "gestaoClickId": "99067938",
+      "precoVenda": "1.50",
+      "estoque": 50
+    },
+    {
+      "localId": "e7bd5cc3-7d23-47db-aafc-07d41e8f596b",
+      "nome": "DISCO DE LIXA COM VELCRO 125MM X 240 VERMELHO",
+      "sku": "PY125240",
+      "gestaoClickId": "99067939",
+      "precoVenda": "1.50",
+      "estoque": 50
+    },
+    {
+      "localId": "00d55f17-743a-4d05-96dc-520f2e1f4fc9",
+      "nome": "DISCO DE LIXA VONDER 180 MM G060 COM VELCRO CARTELA COM 10",
+      "sku": "1258180060",
+      "gestaoClickId": "99067941",
+      "precoVenda": "55.90",
+      "estoque": 50
+    },
+    {
+      "localId": "ebc088b1-00de-49cd-931b-159cd4ca595e",
+      "nome": "Disco de Lixa Vonder 180 Mm G120 com Velcro Cartela com 10",
+      "sku": "1258180120",
+      "gestaoClickId": "99067942",
+      "precoVenda": "55.90",
+      "estoque": 50
+    },
+    {
+      "localId": "e82a8791-bd17-4399-bebe-b7b65f37548e",
+      "nome": "Disco de Lixa Vonder 180 Mm G150 com Velcro Cartela com 10",
+      "sku": "1258180150",
+      "gestaoClickId": "99067943",
+      "precoVenda": "55.90",
+      "estoque": 50
+    },
+    {
+      "localId": "1143b6fd-b9d7-417f-ba8f-8194f09f008e",
+      "nome": "Disco de Lixa Vonder 225 Mm G060 com Velcro Cartela com 10",
+      "sku": "1258225060",
+      "gestaoClickId": "99067944",
+      "precoVenda": "69.90",
+      "estoque": 50
+    },
+    {
+      "localId": "7c03378a-9bf0-45d7-976a-e7d879fcb17f",
+      "nome": "DISCO DE LIXA VONDER 225 MM G080 COM VELCRO CARTELA COM 10",
+      "sku": "1258225080",
+      "gestaoClickId": "99067945",
+      "precoVenda": "69.90",
+      "estoque": 50
+    },
+    {
+      "localId": "5fc4fd26-1154-4ead-9f15-c372a45e055a",
+      "nome": "Disco de Lixa Vonder 225 Mm G120 com Velcro Cartela com 10",
+      "sku": "1258225120",
+      "gestaoClickId": "99067947",
+      "precoVenda": "69.90",
+      "estoque": 50
+    },
+    {
+      "localId": "5c6d33c3-e7a7-41ce-9bf5-e4a61351364d",
+      "nome": "Lixa para Ferro e Metal N.100 Norton",
+      "sku": "7891792133884",
+      "gestaoClickId": "99067948",
+      "precoVenda": "5.99",
+      "estoque": 50
+    },
+    {
+      "localId": "1c2009a2-a252-4d46-9e9f-974ebebd8b44",
+      "nome": "Lixa para Massa N.100 A-257 Norton",
+      "sku": "7891792022331",
+      "gestaoClickId": "99067949",
+      "precoVenda": "2.00",
+      "estoque": 50
+    },
+    {
+      "localId": "a7630972-626e-402c-8bdc-104012da22d6",
+      "nome": "CAIXA PVC EMBUTIR TRAMONTINA 4 X 2 AMARELA PARA DRYWALL 57500/071",
+      "sku": "57500/071",
+      "gestaoClickId": "99067950",
+      "precoVenda": "5.90",
+      "estoque": 50
+    },
+    {
+      "localId": "e6796ddd-a723-4304-8bfb-ab77b15bbabe",
+      "nome": "Cadeado 20mm LT Pado",
+      "sku": "7891065000264",
+      "gestaoClickId": "99067951",
+      "precoVenda": "27.99",
+      "estoque": 50
+    },
+    {
+      "localId": "9e1b4a51-0e0c-4d5a-baac-e2f6810d2519",
+      "nome": "Cadeado 25mm LT Pado",
+      "sku": "7891065000271",
+      "gestaoClickId": "99067953",
+      "precoVenda": "31.99",
+      "estoque": 50
+    },
+    {
+      "localId": "2a09ff1a-2670-42a2-b97c-bffac87e87d2",
+      "nome": "Cadeado 30mm LT Pado",
+      "sku": "7891065000288",
+      "gestaoClickId": "99067954",
+      "precoVenda": "35.99",
+      "estoque": 50
+    },
+    {
+      "localId": "82f3e47c-be5d-4529-9228-49338c484297",
+      "nome": "Cadeado 35mm LT Pado",
+      "sku": "7891065000295",
+      "gestaoClickId": "99067955",
+      "precoVenda": "49.99",
+      "estoque": 50
+    },
+    {
+      "localId": "15c8b977-2304-475f-baec-244c3f80e93b",
+      "nome": "Cadeado 40mm LT Pado",
+      "sku": "7891065011970",
+      "gestaoClickId": "99067956",
+      "precoVenda": "50.99",
+      "estoque": 50
+    },
+    {
+      "localId": "e3430ebd-7de2-4cff-9759-2f9e2b9bcab1",
+      "nome": "Cadeado 45mm LT Pado",
+      "sku": "7891065000301",
+      "gestaoClickId": "99067957",
+      "precoVenda": "62.99",
+      "estoque": 50
+    },
+    {
+      "localId": "44332890-7c2f-41d9-b9c7-07c03f742baa",
+      "nome": "Cadeado 50mm LT Pado",
+      "sku": "7891065000318",
+      "gestaoClickId": "99067958",
+      "precoVenda": "74.99",
+      "estoque": 50
+    },
+    {
+      "localId": "8d26c492-02cb-4c3e-97d6-78bfcb57625d",
+      "nome": "Cadeado em Blister Haste Longa LT-30 75mm com 02 chaves Latão",
+      "sku": "7891065006532",
+      "gestaoClickId": "99067959",
+      "precoVenda": "31.90",
+      "estoque": 50
+    },
+    {
+      "localId": "c075d0fa-fe80-4158-ae9a-78b7aee5f0cf",
+      "nome": "ROLO DE LÃ VELUDO 05 CM ATLAS 329/55",
+      "sku": "329/55",
+      "gestaoClickId": "99067960",
+      "precoVenda": "9.90",
+      "estoque": 50
+    },
+    {
+      "localId": "c6f2a8e4-cb3f-4686-9ed8-27e43db03bbd",
+      "nome": "ROLO DE LÃ VELUDO 09 CM ATLAS 329/9",
+      "sku": "329/9",
+      "gestaoClickId": "99067961",
+      "precoVenda": "15.90",
+      "estoque": 50
+    },
+    {
+      "localId": "7709e71a-3a6d-4378-a61b-b90c0781c863",
+      "nome": "ROLO DE LÃ VELUDO 15 CM ATLAS 329/15",
+      "sku": "329/15",
+      "gestaoClickId": "99067962",
+      "precoVenda": "24.90",
+      "estoque": 50
+    },
+    {
+      "localId": "d85b8005-1b4b-44c3-9fda-84c6781cb8a0",
+      "nome": "ROLO DE PINTURA LÃ SINTÉTICA RESIMAX 23 CM \"SEM\" CABO 339/5A SINTÉTICOS E EPÓXI",
+      "sku": "339/5A",
+      "gestaoClickId": "99067963",
+      "precoVenda": "28.90",
+      "estoque": 50
+    },
+    {
+      "localId": "f5754476-f9bd-4803-97f0-532d78eafa32",
+      "nome": "ROLO DE PINTURA LÃ SINTÉTICA RESIMAX 15 CM COM CABO 339/15A SINTÉTICOS E EPÓXI",
+      "sku": "339/15A",
+      "gestaoClickId": "99067964",
+      "precoVenda": "23.90",
+      "estoque": 50
+    },
+    {
+      "localId": "0cc291e2-2653-4bca-9311-88c53403510f",
+      "nome": "ROLO DE PINTURA LÃ SINTÉTICA RESIMAX 9 CM COM CABO 339/9A SINTÉTICOS E EPÓXI",
+      "sku": "339/9A",
+      "gestaoClickId": "99067965",
+      "precoVenda": "15.90",
+      "estoque": 50
+    },
+    {
+      "localId": "39b11b31-a9fb-4135-9bc0-77781f578738",
+      "nome": "ROLO ANTIGOTA POLIAMIDA PARA DRYWALL ATLAS 23 CM AT321/8",
+      "sku": "AT321/8",
+      "gestaoClickId": "99067966",
+      "precoVenda": "23.90",
+      "estoque": 50
+    },
+    {
+      "localId": "297f2285-b55d-4ecb-b0ea-25f377a5c2e5",
+      "nome": "ROLO DE PINTURA MICROFIBRA SEDA CASTOR 337 10MM X 15CM COM CABO",
+      "sku": "337",
+      "gestaoClickId": "99067968",
+      "precoVenda": "15.90",
+      "estoque": 50
+    },
+    {
+      "localId": "8e33bd46-240b-44f8-bfdc-286125740468",
+      "nome": "ROLO DE ESPUMA 15 CM POLYESTER ATLAS 406/15A",
+      "sku": "406/15A",
+      "gestaoClickId": "99067969",
+      "precoVenda": "11.50",
+      "estoque": 50
+    },
+    {
+      "localId": "89421ac1-cbc8-492e-a0c8-be5230503912",
+      "nome": "ROLO DE ESPUMA 23 CM POLYESTER ATLAS 406/23A",
+      "sku": "406/23A",
+      "gestaoClickId": "99067971",
+      "precoVenda": "19.90",
+      "estoque": 50
+    },
+    {
+      "localId": "fe8cb89d-f6e3-4c83-a068-4f0e793f072e",
+      "nome": "Gancho 7223 8mm com Bucha Bemfixa",
+      "sku": "7896689072239",
+      "gestaoClickId": "99067973",
+      "precoVenda": "21.00",
+      "estoque": 50
+    },
+    {
+      "localId": "8053ef6d-3dff-4aa0-9125-a649b2bce239",
+      "nome": "BUCHA REDUÇÃO SOLDÁVEL LONGA 40 X 25 MM",
+      "sku": "11542",
+      "gestaoClickId": "99067974",
+      "precoVenda": "6.20",
+      "estoque": 50
+    },
+    {
+      "localId": "83376b13-beae-4158-bca8-0b0071ce5b6d",
+      "nome": "BUCHA REDUÇÃO SOLDÁVEL LONGA 50 X 20 MM",
+      "sku": "11543",
+      "gestaoClickId": "99067976",
+      "precoVenda": "6.60",
+      "estoque": 50
+    },
+    {
+      "localId": "de539e5e-4554-42e0-8cbc-951307ac2e0a",
+      "nome": "BUCHA REDUÇÃO SOLDÁVEL LONGA 50 X 32 MM",
+      "sku": "11545",
+      "gestaoClickId": "99067977",
+      "precoVenda": "9.90",
+      "estoque": 50
+    },
+    {
+      "localId": "abbe0426-f92b-41ab-9f60-080293c83469",
+      "nome": "BUCHA REDUÇÃO ROSCÁVEL 2 X 1",
+      "sku": "0217",
+      "gestaoClickId": "99067978",
+      "precoVenda": "39.90",
+      "estoque": 50
+    },
+    {
+      "localId": "dd255a37-86ce-432d-9fbb-2dcde517a48b",
+      "nome": "DISCO DE LIXA COM VELCRO 125MM X 180 VERMELHO",
+      "sku": "179235",
+      "gestaoClickId": "99067979",
+      "precoVenda": "1.50",
+      "estoque": 50
+    },
+    {
+      "localId": "45e52858-c179-463c-a50f-25fc3ac10773",
+      "nome": "PLUG ROSCÁVEL 3/4",
+      "sku": "11764",
+      "gestaoClickId": "99067980",
+      "precoVenda": "2.20",
+      "estoque": 50
+    },
+    {
+      "localId": "d6e6ec8e-ac5e-4549-bf8f-c0a42efdfdd4",
+      "nome": "PLUG ROSCÁVEL 1/2",
+      "sku": "11763",
+      "gestaoClickId": "99067981",
+      "precoVenda": "1.40",
+      "estoque": 50
+    },
+    {
+      "localId": "16db73b5-bb48-4e5d-8a69-b9fcea3d9dcd",
+      "nome": "PLUG ROSCÁVEL 1",
+      "sku": "0295",
+      "gestaoClickId": "99067982",
+      "precoVenda": "10.00",
+      "estoque": 50
+    },
+    {
+      "localId": "1da83063-4d83-44dc-bdf3-43f897cacebf",
+      "nome": "Brita N01 M3",
+      "sku": "78 1002",
+      "gestaoClickId": "99067983",
+      "precoVenda": "250.00",
+      "estoque": 50
+    },
+    {
+      "localId": "8a4d101c-408c-4f16-b0ee-231a9538957f",
+      "nome": "Brita N01 Lata",
+      "sku": "78 1002-COPIA",
+      "gestaoClickId": "99067984",
+      "precoVenda": "7.50",
+      "estoque": 50
+    },
+    {
+      "localId": "31caee3f-0095-4777-a5c1-bbc21a3deded",
+      "nome": "Bianco Adesivo para Chapiscos e Argamassa 18 Kg",
+      "sku": "SKU-112341",
+      "gestaoClickId": "99067985",
+      "precoVenda": "529.90",
+      "estoque": 10
+    }
+  ],
+  "falhas": [
+    {
+      "localId": "d79f4f9b-f322-4c84-ac92-37a60099f8c0",
+      "nome": "Joelho 90° Soldável 25mm Tigre",
+      "sku": "002111",
+      "erro": "{\"code\":404,\"status\":\"error\",\"data\":{\"erro\":\"Not Found\",\"mensagem\":\"A URL do produto já está sendo utilizada!\"}}"
+    }
+  ],
+  "iniciadoEm": "2026-10-01T20:35:16.920Z",
+  "finalizadoEm": "2026-10-01T20:36:15.490Z"
+}
