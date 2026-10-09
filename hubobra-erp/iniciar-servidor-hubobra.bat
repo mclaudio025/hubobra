@@ -1,6 +1,18 @@
 @echo off
 setlocal EnableDelayedExpansion
-cd /d "%~dp0"
+
+:: 0. Deteccao automatica do diretorio raiz (funciona na raiz ou se executado dentro da pasta installer)
+if exist "%~dp0server\index.js" (
+    cd /d "%~dp0"
+) else if exist "%~dp0..\server\index.js" (
+    cd /d "%~dp0.."
+) else (
+    echo [ERRO] Nao foi possivel encontrar a pasta "server" do HubObra ERP!
+    echo Verifique se os arquivos foram copiados completos para esta pasta.
+    pause
+    exit /b 1
+)
+
 title HubObra ERP - Servidor Central da Loja
 color 0A
 cls

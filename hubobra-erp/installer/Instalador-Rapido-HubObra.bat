@@ -94,16 +94,17 @@ set "STARTUP_DIR=%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup"
 set "SCRIPT_VBS=%TEMP%\create_server_startup.vbs"
 set "ATALHO_DESTINO=%STARTUP_DIR%\HubObra Servidor Central.lnk"
 set "DESKTOP_DESTINO=%USERPROFILE%\Desktop\HubObra Servidor Central.lnk"
-set "CURRENT_DIR=%~dp0.."
+:: Normaliza o caminho absoluto da raiz do HubObra
+for %%I in ("%~dp0..") do set "ROOT_DIR=%%~fI"
 
 echo Set oWS = WScript.CreateObject("WScript.Shell") > "%SCRIPT_VBS%"
 echo sLinkFile = "%ATALHO_DESTINO%" >> "%SCRIPT_VBS%"
 echo Set oLink = oWS.CreateShortcut(sLinkFile) >> "%SCRIPT_VBS%"
-echo oLink.TargetPath = "%CURRENT_DIR%\iniciar-servidor-hubobra.bat" >> "%SCRIPT_VBS%"
-echo oLink.WorkingDirectory = "%CURRENT_DIR%" >> "%SCRIPT_VBS%"
+echo oLink.TargetPath = "%ROOT_DIR%\iniciar-servidor-hubobra.bat" >> "%SCRIPT_VBS%"
+echo oLink.WorkingDirectory = "%ROOT_DIR%" >> "%SCRIPT_VBS%"
 echo oLink.Description = "HubObra ERP - Servidor Central da Loja" >> "%SCRIPT_VBS%"
-if exist "%CURRENT_DIR%\installer\app.ico" (
-    echo oLink.IconLocation = "%CURRENT_DIR%\installer\app.ico,0" >> "%SCRIPT_VBS%"
+if exist "%ROOT_DIR%\installer\app.ico" (
+    echo oLink.IconLocation = "%ROOT_DIR%\installer\app.ico,0" >> "%SCRIPT_VBS%"
 )
 echo oLink.Save >> "%SCRIPT_VBS%"
 cscript /nologo "%SCRIPT_VBS%" >nul 2>&1
@@ -115,9 +116,9 @@ echo [OK] Atalho criado no Desktop e na Inicializacao do Windows!
 echo.
 
 echo [4/4] Verificando dependencias do banco e WebSockets...
-if not exist "%CURRENT_DIR%\server\node_modules\ws" (
+if not exist "%ROOT_DIR%\server\node_modules\ws" (
     echo Instalando modulos do servidor...
-    pushd "%CURRENT_DIR%\server"
+    pushd "%ROOT_DIR%\server"
     call npm install
     popd
 ) else (
@@ -135,7 +136,7 @@ echo.
 echo ================================================================
 set /p INICIAR="Deseja iniciar o servidor agora? [S/N]: "
 if /i "%INICIAR%"=="S" (
-    start "HubObra Servidor Central" /d "%CURRENT_DIR%" "%CURRENT_DIR%\iniciar-servidor-hubobra.bat"
+    start "HubObra Servidor Central" /d "%ROOT_DIR%" "%ROOT_DIR%\iniciar-servidor-hubobra.bat"
 )
 echo.
 echo Configuracao concluida. Pressione qualquer tecla para sair.
