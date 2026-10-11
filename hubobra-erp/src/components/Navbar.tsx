@@ -125,8 +125,32 @@ export const Navbar: React.FC<NavbarProps> = ({
     }
   };
 
+  const [syncToast, setSyncToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
+
   const handleSyncNow = async () => {
-    await syncService.triggerSync();
+    setSyncToast({ message: 'Conectando e sincronizando com o Supabase...', type: 'info' });
+    try {
+      const res = await syncService.triggerSync();
+      if (res.success) {
+        setSyncToast({
+          message: `🎉 Banco Sincronizado com Supabase! ${res.syncedProductsCount} produtos e estoques atualizados.`,
+          type: 'success',
+        });
+        setTimeout(() => setSyncToast(null), 5000);
+      } else {
+        setSyncToast({
+          message: `❌ Falha ao sincronizar: ${res.error || 'Erro desconhecido'}`,
+          type: 'error',
+        });
+        setTimeout(() => setSyncToast(null), 5000);
+      }
+    } catch (err: any) {
+      setSyncToast({
+        message: `❌ Erro de conexão com o Supabase: ${err.message}`,
+        type: 'error',
+      });
+      setTimeout(() => setSyncToast(null), 5000);
+    }
   };
 
   const allNavItems = [
@@ -237,13 +261,31 @@ export const Navbar: React.FC<NavbarProps> = ({
             type="button"
             onClick={handleSyncNow}
             disabled={syncStatus.isSyncing || !syncStatus.isOnline}
-            className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-white transition-colors disabled:opacity-40"
-            title="Sincronizar com Nuvem"
+            className={`p-1.5 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-amber-400 transition-colors disabled:opacity-40 relative group ${
+              syncStatus.isSyncing ? 'bg-amber-500/10 text-amber-400' : ''
+            }`}
+            title="Atualizar banco direto com o Supabase (Produtos, Estoque e Preços)"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${syncStatus.isSyncing ? 'animate-spin text-amber-400' : ''}`} />
           </button>
         </div>
       </div>
+
+      {/* Toast Flutuante de Sincronização Supabase */}
+      {syncToast && (
+        <div
+          className={`fixed top-14 right-4 z-50 flex items-center gap-2.5 px-4 py-2.5 rounded-xl shadow-2xl border text-xs font-bold backdrop-blur-md transition-all animate-bounce-short ${
+            syncToast.type === 'success'
+              ? 'bg-emerald-950/95 border-emerald-500/50 text-emerald-200 shadow-emerald-950/50'
+              : syncToast.type === 'error'
+              ? 'bg-rose-950/95 border-rose-500/50 text-rose-200 shadow-rose-950/50'
+              : 'bg-slate-900/95 border-amber-500/50 text-amber-300 shadow-slate-950/50'
+          }`}
+        >
+          {syncToast.type === 'info' && <RefreshCw className="w-3.5 h-3.5 animate-spin text-amber-400 shrink-0" />}
+          <span>{syncToast.message}</span>
+        </div>
+      )}
 
       {/* Main Nav Tabs filtradas dinamicamente com suporte a rolagem */}
       <div className="relative flex items-center bg-slate-900 border-t border-slate-800/60 px-2 py-1">
