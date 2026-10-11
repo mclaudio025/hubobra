@@ -32,7 +32,7 @@ export interface CategoryCardData {
 // 💎 AS 9 CATEGORIAS OFICIAIS COM FOTOS E DESCRIÇÕES APROVADAS
 export const MASTER_CATEGORIES_DATA: CategoryCardData[] = [
   {
-    id: 'db3d2816-192c-4021-ad4d-8a74c871ba49',
+    id: '2c245d58-e6d2-41b6-a756-7dd53715498d',
     name: 'Construção e Alvenaria',
     slug: 'construcao-e-alvenaria',
     tagline: 'Materiais brutos de fundação, elevação, vedação e cobertura para obras.',
@@ -40,7 +40,7 @@ export const MASTER_CATEGORIES_DATA: CategoryCardData[] = [
     image: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=600&auto=format&fit=crop&q=80',
   },
   {
-    id: 'afdf6873-1064-49bc-a3c3-add98d9ddf1b',
+    id: '3ac44b11-fd8e-4a95-968e-12b2972f8daf',
     name: 'Hidráulica e Encanamento',
     slug: 'hidraulica-e-encanamento',
     tagline: 'Tubulações, registros, conexões e reservatórios para instalações prediais de água e esgoto.',
@@ -48,7 +48,7 @@ export const MASTER_CATEGORIES_DATA: CategoryCardData[] = [
     image: 'https://images.unsplash.com/photo-1585704032915-c3400ca199e7?w=600&auto=format&fit=crop&q=80',
   },
   {
-    id: '3d18ccd4-f3fe-4123-bf23-3f1a0dd3e96f',
+    id: 'd4edbf01-2d38-40a5-985d-21593b8f67d3',
     name: 'Elétrica e Energia',
     slug: 'eletrica-e-energia',
     tagline: 'Condutores, proteção elétrica, acionamentos e cabeamento para instalações elétricas.',
@@ -56,7 +56,7 @@ export const MASTER_CATEGORIES_DATA: CategoryCardData[] = [
     image: 'https://images.unsplash.com/photo-1555664424-778a1e5e1b48?w=600&auto=format&fit=crop&q=80',
   },
   {
-    id: '196962dd-cecb-48ee-a653-8b8d92cc8771',
+    id: '6722e47f-e883-459e-93f1-025decf5de3a',
     name: 'Tintas e Pintura',
     slug: 'tintas-e-pintura',
     tagline: 'Tintas imobiliárias, esmaltes, vernizes e ferramentas de aplicação de pintura.',
@@ -64,7 +64,7 @@ export const MASTER_CATEGORIES_DATA: CategoryCardData[] = [
     image: 'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=600&auto=format&fit=crop&q=80',
   },
   {
-    id: 'b8418491-f74e-4ca0-a678-add8fc3d4039',
+    id: 'e2a77501-bedf-4193-8824-a210a60367a1',
     name: 'Ferramentas, Máquinas e Abrasivos',
     slug: 'ferramentas-maquinas-e-abrasivos',
     tagline: 'Equipamentos profissionais, manuais, corte, desbaste, lixamento e proteção.',
@@ -72,7 +72,7 @@ export const MASTER_CATEGORIES_DATA: CategoryCardData[] = [
     image: 'https://images.unsplash.com/photo-1504148455328-c376907d081c?w=600&auto=format&fit=crop&q=80',
   },
   {
-    id: '107aad0a-b7d5-412c-8a2b-27f406475e75',
+    id: '224ae6c0-6be4-4392-841c-f56ee381cf42',
     name: 'Pisos e Revestimentos',
     slug: 'pisos-revestimentos-e-acabamentos',
     tagline: 'Pisos cerâmicos, porcelanatos, revestimentos de parede, rejuntes e rodapés.',
@@ -80,15 +80,15 @@ export const MASTER_CATEGORIES_DATA: CategoryCardData[] = [
     image: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=600&auto=format&fit=crop&q=80',
   },
   {
-    id: '14ad9d59-0f62-45d2-b9f3-b76c466ecce0',
+    id: '9984a29a-2a47-41e7-a1bd-349e7a1f37f6',
     name: 'Portas e Janelas',
     slug: 'portas-janelas-e-ferragens',
     tagline: 'Esquadrias, fechaduras residenciais, cadeados, dobradiças e fixadores mecânicos.',
     iconType: 'portas',
-    image: 'https://images.unsplash.com/photo-1586864387967-d02ef85d93e8?w=600&auto=format&fit=crop&q=80',
+    image: 'https://images.unsplash.com/photo-1534237710431-e2fc698436d0?w=600&auto=format&fit=crop&q=80',
   },
   {
-    id: 'c2f76e94-68f9-40da-a3e0-c199a414c54c',
+    id: '39f7ecc1-90ec-4ca4-908b-6014b0365e22',
     name: 'Iluminação e Lustres',
     slug: 'iluminacao-e-lustres',
     tagline: 'Soluções de iluminação técnica e decorativa para ambientes internos e externos.',
@@ -96,7 +96,7 @@ export const MASTER_CATEGORIES_DATA: CategoryCardData[] = [
     image: 'https://images.unsplash.com/photo-1513506003901-1e6a229e2d15?w=600&auto=format&fit=crop&q=80',
   },
   {
-    id: '57560430-078f-4b84-950f-2481eb16f973',
+    id: '63c4869d-72e8-499e-8870-56a41992fc24',
     name: 'Utilidades, Casa e Jardim',
     slug: 'utilidades-casa-e-jardim',
     tagline: 'Suportes de TV e eletrodomésticos, mangueiras, escadas, organização e limpeza pós-obra.',
@@ -286,7 +286,7 @@ function normalizeKey(str: string): string {
     .replace(/[^a-z0-9]/g, '');
 }
 
-const CATEGORIES_CACHE_KEY = 'hubobra_cached_department_shortcuts_v3';
+const CATEGORIES_CACHE_KEY = 'hubobra_cached_department_shortcuts_v4';
 
 export default function DepartmentShortcuts() {
   const [categoriesList, setCategoriesList] = useState<CategoryCardData[]>(() => {
@@ -295,7 +295,7 @@ export default function DepartmentShortcuts() {
         const cached = localStorage.getItem(CATEGORIES_CACHE_KEY) || sessionStorage.getItem(CATEGORIES_CACHE_KEY);
         if (cached) {
           const parsed = JSON.parse(cached);
-          if (Array.isArray(parsed) && parsed.length > 0) {
+          if (Array.isArray(parsed) && parsed.length === MASTER_CATEGORIES_DATA.length) {
             return parsed;
           }
         }
@@ -346,6 +346,16 @@ export default function DepartmentShortcuts() {
 
   // Sincronizar dinamicamente categorias e imagens do banco de dados com persistência local
   useEffect(() => {
+    // Limpar chaves antigas de cache para evitar fotos desatualizadas
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.removeItem('hubobra_cached_department_shortcuts_v3');
+        localStorage.removeItem('hubobra_cached_department_shortcuts_v2');
+        sessionStorage.removeItem('hubobra_cached_department_shortcuts_v3');
+        sessionStorage.removeItem('hubobra_cached_department_shortcuts_v2');
+      } catch (e) {}
+    }
+
     const isValidImageUrl = (url?: string | null): boolean => {
       if (!url || typeof url !== 'string') return false;
       const clean = url.trim();
@@ -357,39 +367,34 @@ export default function DepartmentShortcuts() {
       try {
         const res = await categoriesApi.getCategories(true);
         if (res && Array.isArray(res) && res.length > 0) {
-          // Filtrar departamentos principais (raiz ou sem parentId)
-          const rootCategories = res.filter((c: any) => !c.parentId);
-          const sourceList = rootCategories.length > 0 ? rootCategories : res;
+          // Mapear precisamente os 9 Departamentos Mestres com seus dados do banco
+          const dynamicMapped: CategoryCardData[] = MASTER_CATEGORIES_DATA.map((master) => {
+            const normMasterSlug = normalizeKey(master.slug);
+            const normMasterName = normalizeKey(master.name);
 
-          const dynamicMapped: CategoryCardData[] = sourceList.map((dbCat: any) => {
-            const normDbSlug = normalizeKey(dbCat.slug);
-            const normDbName = normalizeKey(dbCat.name);
-
-            // Tenta encontrar dados de estilo padrão no catálogo mestre
-            const masterFallback = MASTER_CATEGORIES_DATA.find((m) => {
-              const normMasterSlug = normalizeKey(m.slug);
-              const normMasterName = normalizeKey(m.name);
+            const dbMatch = res.find((dbCat: any) => {
+              const normDbSlug = normalizeKey(dbCat.slug);
+              const normDbName = normalizeKey(dbCat.name);
               return (
-                m.id === dbCat.id ||
-                normMasterSlug === normDbSlug ||
-                normMasterName === normDbName ||
+                dbCat.id === master.id ||
+                normDbSlug === normMasterSlug ||
+                normDbName === normMasterName ||
                 normDbSlug.includes(normMasterSlug) ||
                 normMasterSlug.includes(normDbSlug)
               );
             });
 
-            const rawImage = dbCat.image;
-            const finalImage = (rawImage && isValidImageUrl(rawImage))
-              ? rawImage
-              : (masterFallback?.image || getCategoryFallbackImage(dbCat.name, dbCat.slug));
+            const finalImage = (dbMatch?.image && isValidImageUrl(dbMatch.image))
+              ? dbMatch.image
+              : master.image;
 
             return {
-              id: dbCat.id,
-              name: dbCat.name,
-              slug: dbCat.slug,
-              tagline: dbCat.description || masterFallback?.tagline || 'Tudo para sua construção e acabamento.',
+              id: dbMatch?.id || master.id,
+              name: master.name,
+              slug: dbMatch?.slug || master.slug,
+              tagline: dbMatch?.description || master.tagline,
               image: finalImage,
-              iconType: masterFallback?.iconType || getCategoryIconType(dbCat.name, dbCat.slug),
+              iconType: master.iconType,
             };
           });
 
