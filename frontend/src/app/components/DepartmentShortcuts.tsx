@@ -53,7 +53,7 @@ export const MASTER_CATEGORIES_DATA: CategoryCardData[] = [
     slug: 'eletrica-e-energia',
     tagline: 'Condutores, proteção elétrica, acionamentos e cabeamento para instalações elétricas.',
     iconType: 'eletrica',
-    image: 'https://images.unsplash.com/photo-1555664424-778a1e5e1b48?w=600&auto=format&fit=crop&q=80',
+    image: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=600&auto=format&fit=crop&q=80',
   },
   {
     id: '6722e47f-e883-459e-93f1-025decf5de3a',
@@ -77,7 +77,7 @@ export const MASTER_CATEGORIES_DATA: CategoryCardData[] = [
     slug: 'pisos-revestimentos-e-acabamentos',
     tagline: 'Pisos cerâmicos, porcelanatos, revestimentos de parede, rejuntes e rodapés.',
     iconType: 'pisos',
-    image: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=600&auto=format&fit=crop&q=80',
+    image: 'https://images.unsplash.com/photo-1581858726788-75bc0f6a952d?w=600&auto=format&fit=crop&q=80',
   },
   {
     id: '9984a29a-2a47-41e7-a1bd-349e7a1f37f6',
@@ -85,7 +85,7 @@ export const MASTER_CATEGORIES_DATA: CategoryCardData[] = [
     slug: 'portas-janelas-e-ferragens',
     tagline: 'Esquadrias, fechaduras residenciais, cadeados, dobradiças e fixadores mecânicos.',
     iconType: 'portas',
-    image: 'https://images.unsplash.com/photo-1534237710431-e2fc698436d0?w=600&auto=format&fit=crop&q=80',
+    image: 'https://images.unsplash.com/photo-1513694203232-719a280e022f?w=600&auto=format&fit=crop&q=80',
   },
   {
     id: '39f7ecc1-90ec-4ca4-908b-6014b0365e22',
@@ -264,15 +264,15 @@ function getCategoryFallbackImage(name: string, slug: string): string {
   if (s.includes('hidraul') || n.includes('hidráulica') || s.includes('encanamento') || n.includes('encanamento') || s.includes('tubo') || s.includes('esgoto')) 
     return 'https://images.unsplash.com/photo-1585704032915-c3400ca199e7?w=600&auto=format&fit=crop&q=80';
   if (s.includes('eletric') || n.includes('elétrica') || s.includes('energia') || n.includes('energia') || s.includes('fio') || s.includes('cabo')) 
-    return 'https://images.unsplash.com/photo-1555664424-778a1e5e1b48?w=600&auto=format&fit=crop&q=80';
+    return 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=600&auto=format&fit=crop&q=80';
   if (s.includes('tinta') || n.includes('tinta') || s.includes('pintura') || n.includes('pintura') || s.includes('verniz')) 
     return 'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=600&auto=format&fit=crop&q=80';
   if (s.includes('ferramenta') || n.includes('ferramenta') || s.includes('maquina') || s.includes('abrasivo') || s.includes('disco')) 
     return 'https://images.unsplash.com/photo-1504148455328-c376907d081c?w=600&auto=format&fit=crop&q=80';
   if (s.includes('piso') || n.includes('piso') || s.includes('revestimento') || n.includes('revestimento') || s.includes('ceramica') || n.includes('porcelanato')) 
-    return 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=600&auto=format&fit=crop&q=80';
+    return 'https://images.unsplash.com/photo-1581858726788-75bc0f6a952d?w=600&auto=format&fit=crop&q=80';
   if (s.includes('porta') || n.includes('porta') || s.includes('janela') || n.includes('janela') || s.includes('ferrag') || s.includes('fechadura')) 
-    return 'https://images.unsplash.com/photo-1586864387967-d02ef85d93e8?w=600&auto=format&fit=crop&q=80';
+    return 'https://images.unsplash.com/photo-1513694203232-719a280e022f?w=600&auto=format&fit=crop&q=80';
   if (s.includes('ilumina') || n.includes('iluminação') || s.includes('lustre') || n.includes('lustre') || s.includes('lampada') || s.includes('led')) 
     return 'https://images.unsplash.com/photo-1513506003901-1e6a229e2d15?w=600&auto=format&fit=crop&q=80';
   return 'https://images.unsplash.com/photo-1585338107529-13afc5f02586?w=600&auto=format&fit=crop&q=80';
@@ -286,7 +286,7 @@ function normalizeKey(str: string): string {
     .replace(/[^a-z0-9]/g, '');
 }
 
-const CATEGORIES_CACHE_KEY = 'hubobra_cached_department_shortcuts_v5';
+const CATEGORIES_CACHE_KEY = 'hubobra_cached_department_shortcuts_v7';
 
 export default function DepartmentShortcuts() {
   const [categoriesList, setCategoriesList] = useState<CategoryCardData[]>(() => {
@@ -349,9 +349,13 @@ export default function DepartmentShortcuts() {
     // Limpar chaves antigas de cache para evitar fotos desatualizadas
     if (typeof window !== 'undefined') {
       try {
+        localStorage.removeItem('hubobra_cached_department_shortcuts_v6');
+        localStorage.removeItem('hubobra_cached_department_shortcuts_v5');
         localStorage.removeItem('hubobra_cached_department_shortcuts_v4');
         localStorage.removeItem('hubobra_cached_department_shortcuts_v3');
         localStorage.removeItem('hubobra_cached_department_shortcuts_v2');
+        sessionStorage.removeItem('hubobra_cached_department_shortcuts_v6');
+        sessionStorage.removeItem('hubobra_cached_department_shortcuts_v5');
         sessionStorage.removeItem('hubobra_cached_department_shortcuts_v4');
         sessionStorage.removeItem('hubobra_cached_department_shortcuts_v3');
         sessionStorage.removeItem('hubobra_cached_department_shortcuts_v2');
@@ -369,18 +373,30 @@ export default function DepartmentShortcuts() {
       try {
         const res = await categoriesApi.getCategories(true);
         if (res && Array.isArray(res) && res.length > 0) {
+          const rootCategories = res.filter((c: any) => !c.parentId);
+          const allCategories = res;
+
           // Mapear precisamente os 9 Departamentos Mestres com seus dados do banco
           const dynamicMapped: CategoryCardData[] = MASTER_CATEGORIES_DATA.map((master) => {
             const normMasterSlug = normalizeKey(master.slug);
             const normMasterName = normalizeKey(master.name);
 
-            // 1º Prioridade: ID exato da categoria mestre
-            // 2º Prioridade: Slug exato
-            // 3º Prioridade: Nome exato normalizado
+            // 1º Prioridade: Categoria RAIZ (sem pai) por ID, slug ou nome
+            const rootMatch =
+              rootCategories.find((dbCat: any) => dbCat.id === master.id) ||
+              rootCategories.find((dbCat: any) => normalizeKey(dbCat.slug) === normMasterSlug) ||
+              rootCategories.find((dbCat: any) => normalizeKey(dbCat.name) === normMasterName) ||
+              rootCategories.find((dbCat: any) => {
+                const normDb = normalizeKey(dbCat.name);
+                return normDb.includes(normMasterName) || normMasterName.includes(normDb);
+              });
+
+            // 2º Prioridade: Qualquer categoria no banco
             const dbMatch =
-              res.find((dbCat: any) => dbCat.id === master.id) ||
-              res.find((dbCat: any) => normalizeKey(dbCat.slug) === normMasterSlug) ||
-              res.find((dbCat: any) => normalizeKey(dbCat.name) === normMasterName);
+              rootMatch ||
+              allCategories.find((dbCat: any) => dbCat.id === master.id) ||
+              allCategories.find((dbCat: any) => normalizeKey(dbCat.slug) === normMasterSlug) ||
+              allCategories.find((dbCat: any) => normalizeKey(dbCat.name) === normMasterName);
 
             const finalImage = (dbMatch?.image && isValidImageUrl(dbMatch.image))
               ? dbMatch.image

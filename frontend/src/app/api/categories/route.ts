@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { fetchBackend } from '@/lib/backend-client';
 
-// Cache em memória no servidor Next.js (TTL 120 segundos)
+// Cache em memória no servidor Next.js (TTL 10 segundos para refletir mudanças do banco rapidamente)
 const serverCategoriesCache = new Map<string, { data: any; expiresAt: number }>();
-const CATEGORIES_CACHE_TTL = 120 * 1000;
+const CATEGORIES_CACHE_TTL = 10 * 1000;
 
 let lastKnownGoodCategoriesSnapshot: any[] = [];
 
@@ -20,25 +20,25 @@ const SEED_FALLBACK_CATEGORIES = [
   {
     id: 'cat-pisos-revestimentos',
     name: 'Pisos e Revestimentos',
-    slug: 'pisos-e-revestimentos',
+    slug: 'pisos-revestimentos-e-acabamentos',
     description: 'Porcelanatos, cerâmicas, pisos vinílicos e laminados.',
-    image: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=600&auto=format&fit=crop&q=80',
+    image: 'https://images.unsplash.com/photo-1581858726788-75bc0f6a952d?w=600&auto=format&fit=crop&q=80',
     isActive: true,
     displayOrder: 2,
   },
   {
     id: 'cat-tintas-acessorios',
-    name: 'Tintas e Acessórios',
-    slug: 'tintas-e-acessorios',
-    description: 'Tintas acrílicas, esmaltes, vernizes, rolos e pincéis.',
+    name: 'Tintas e Pintura',
+    slug: 'tintas-e-pintura',
+    description: 'Tintas imobiliárias, esmaltes, vernizes, rolos e pincéis.',
     image: 'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=600&auto=format&fit=crop&q=80',
     isActive: true,
     displayOrder: 3,
   },
   {
     id: 'cat-material-eletrico',
-    name: 'Material Elétrico',
-    slug: 'material-eletrico',
+    name: 'Elétrica e Energia',
+    slug: 'eletrica-e-energia',
     description: 'Fios, cabos, disjuntores, interruptores e tomadas.',
     image: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=600&auto=format&fit=crop&q=80',
     isActive: true,
