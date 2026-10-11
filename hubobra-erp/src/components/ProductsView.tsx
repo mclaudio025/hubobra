@@ -55,14 +55,22 @@ export const ProductsView: React.FC = () => {
 
   const handleImportRemote = async () => {
     setIsImporting(true);
-    const res = await syncService.importCatalogFromNest();
-    if (res.success) {
-      showToast(`🎉 Catálogo atualizado com a nuvem! ${res.count} produtos sincronizados.`);
-      await loadProducts();
-    } else {
-      showToast('⚠️ Sincronizado com a base local.');
+    showToast('⏳ Conectando ao Supabase e baixando os 2.278 produtos...');
+    try {
+      const res = await syncService.importCatalogFromNest();
+      if (res.success && res.count > 0) {
+        showToast(`🎉 Catálogo atualizado com a nuvem! ${res.count} produtos sincronizados.`);
+        await loadProducts();
+      } else if (res.success && res.count === 0) {
+        showToast('⚠️ Nenhum produto retornado pelo Supabase.');
+      } else {
+        showToast(`⚠️ Falha na sincronização: ${res.error || 'Verifique sua conexão'}`);
+      }
+    } catch (err: any) {
+      showToast(`❌ Erro ao sincronizar catálogo: ${err.message}`);
+    } finally {
+      setIsImporting(false);
     }
-    setIsImporting(false);
   };
 
   const handleSaveProduct = async (e: React.FormEvent) => {
