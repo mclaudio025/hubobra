@@ -286,7 +286,7 @@ function normalizeKey(str: string): string {
     .replace(/[^a-z0-9]/g, '');
 }
 
-const CATEGORIES_CACHE_KEY = 'hubobra_cached_department_shortcuts_v4';
+const CATEGORIES_CACHE_KEY = 'hubobra_cached_department_shortcuts_v5';
 
 export default function DepartmentShortcuts() {
   const [categoriesList, setCategoriesList] = useState<CategoryCardData[]>(() => {
@@ -349,8 +349,10 @@ export default function DepartmentShortcuts() {
     // Limpar chaves antigas de cache para evitar fotos desatualizadas
     if (typeof window !== 'undefined') {
       try {
+        localStorage.removeItem('hubobra_cached_department_shortcuts_v4');
         localStorage.removeItem('hubobra_cached_department_shortcuts_v3');
         localStorage.removeItem('hubobra_cached_department_shortcuts_v2');
+        sessionStorage.removeItem('hubobra_cached_department_shortcuts_v4');
         sessionStorage.removeItem('hubobra_cached_department_shortcuts_v3');
         sessionStorage.removeItem('hubobra_cached_department_shortcuts_v2');
       } catch (e) {}
@@ -372,17 +374,13 @@ export default function DepartmentShortcuts() {
             const normMasterSlug = normalizeKey(master.slug);
             const normMasterName = normalizeKey(master.name);
 
-            const dbMatch = res.find((dbCat: any) => {
-              const normDbSlug = normalizeKey(dbCat.slug);
-              const normDbName = normalizeKey(dbCat.name);
-              return (
-                dbCat.id === master.id ||
-                normDbSlug === normMasterSlug ||
-                normDbName === normMasterName ||
-                normDbSlug.includes(normMasterSlug) ||
-                normMasterSlug.includes(normDbSlug)
-              );
-            });
+            // 1º Prioridade: ID exato da categoria mestre
+            // 2º Prioridade: Slug exato
+            // 3º Prioridade: Nome exato normalizado
+            const dbMatch =
+              res.find((dbCat: any) => dbCat.id === master.id) ||
+              res.find((dbCat: any) => normalizeKey(dbCat.slug) === normMasterSlug) ||
+              res.find((dbCat: any) => normalizeKey(dbCat.name) === normMasterName);
 
             const finalImage = (dbMatch?.image && isValidImageUrl(dbMatch.image))
               ? dbMatch.image

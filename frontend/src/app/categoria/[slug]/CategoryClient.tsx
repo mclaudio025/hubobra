@@ -93,7 +93,15 @@ export default function CategoryClient({ slug }: { slug: string }) {
       });
 
       if (found) {
-        setCategory(found);
+        let effectiveCategory = found;
+        // Se a categoria encontrada não tem imagem ou tem fallback antigo, mas o departamento pai tem imagem personalizada, herdar imagem do pai
+        if ((!found.image || found.image.includes('unsplash')) && found.parentId) {
+          const parent = catList.find((p: any) => p.id === found.parentId);
+          if (parent?.image) {
+            effectiveCategory = { ...found, image: parent.image };
+          }
+        }
+        setCategory(effectiveCategory);
         const res = await getProducts({ categoryId: found.id, limit: 100 });
         let prods: any[] = Array.isArray(res?.products)
           ? res.products

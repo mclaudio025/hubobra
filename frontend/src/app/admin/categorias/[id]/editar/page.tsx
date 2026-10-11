@@ -196,7 +196,8 @@ export default function EditarCategoriaPage() {
         setUploadingImage(true);
         const formData = new FormData();
         formData.append('file', file);
-        const res = await fetch('/api/upload', {
+        const apiBase = process.env.NEXT_PUBLIC_API_URL || '';
+        const res = await fetch(`${apiBase}/upload/image`, {
           method: 'POST',
           body: formData,
           headers: {
