@@ -104,6 +104,7 @@ model Product {
   minStock         Int                      @default(5)
   sku              String                   @unique
   barcode          String?
+  ncm              String?
   brand            String?
   model            String?
   weight           Float?

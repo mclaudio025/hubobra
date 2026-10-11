@@ -20,7 +20,8 @@ import {
   CheckCircle2, 
   AlertCircle,
   RefreshCw,
-  Layers
+  Layers,
+  FileText
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -32,6 +33,7 @@ interface ProductForm {
   stock: number;
   sku: string;
   barcode: string;
+  ncm: string;
   categoryId: string;
   brand: string;
   unit: string;
@@ -51,6 +53,7 @@ const defaultProduct: ProductForm = {
   stock: 0,
   sku: '',
   barcode: '',
+  ncm: '',
   categoryId: '',
   brand: '',
   unit: 'UN',
@@ -150,6 +153,7 @@ function NovoProductPageContent() {
         stock: Number(sourceProduct.stock) || 0,
         sku: suggestedSku,
         barcode: '', // Limpo para evitar duplicidade de EAN se for outra variação
+        ncm: sourceProduct.ncm || '',
         categoryId: sourceCategoryId,
         brand: sourceProduct.brand || '',
         unit: sourceProduct.unit || 'UN',
@@ -505,6 +509,20 @@ function NovoProductPageContent() {
                   onChange={(e) => handleInputChange('barcode', e.target.value)}
                   className="w-full px-3.5 py-2.5 text-sm border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-gray-900"
                   placeholder="Ex: 7891435043761 (opcional)"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-1.5 flex items-center gap-1.5">
+                  <FileText className="w-4 h-4 text-emerald-600" />
+                  NCM (Fiscal / Nota Fiscal)
+                </label>
+                <input
+                  type="text"
+                  value={product.ncm}
+                  onChange={(e) => handleInputChange('ncm', e.target.value)}
+                  className="w-full px-3.5 py-2.5 text-sm border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-gray-900"
+                  placeholder="Ex: 39201099 (opcional)"
                 />
               </div>
 

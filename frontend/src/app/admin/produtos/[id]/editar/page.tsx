@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Save, X, Barcode, Copy } from 'lucide-react';
+import { ArrowLeft, Save, X, Barcode, Copy, FileText } from 'lucide-react';
 import AdminBreadcrumb from '@/app/components/admin/AdminBreadcrumb';
 
 interface Category {
@@ -19,6 +19,7 @@ interface Product {
   stock: number;
   sku: string;
   barcode?: string;
+  ncm?: string;
   category: {
     id: string;
     name: string;
@@ -39,6 +40,7 @@ interface ProductFormData {
   stock: number;
   sku: string;
   barcode: string;
+  ncm: string;
   categoryId: string;
   active: boolean;
   brand: string;
@@ -64,6 +66,7 @@ export default function EditarProdutoPage() {
     stock: 0,
     sku: '',
     barcode: '',
+    ncm: '',
     categoryId: '',
     active: true,
     brand: '',
@@ -108,6 +111,7 @@ export default function EditarProdutoPage() {
         stock: data.stock || 0,
         sku: data.sku || '',
         barcode: data.barcode || '',
+        ncm: data.ncm || '',
         categoryId: typeof data.category === 'object' ? data.category.id : data.categoryId || '',
         active: data.active ?? true,
         brand: data.brand || '',
@@ -335,6 +339,21 @@ export default function EditarProdutoPage() {
                   onChange={handleInputChange}
                   className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono"
                   placeholder="Ex: 7891435043761"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-1.5">
+                  <FileText className="w-4 h-4 text-emerald-600" />
+                  NCM (Fiscal / Nota Fiscal)
+                </label>
+                <input
+                  type="text"
+                  name="ncm"
+                  value={formData.ncm}
+                  onChange={handleInputChange}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono"
+                  placeholder="Ex: 39201099"
                 />
               </div>
 

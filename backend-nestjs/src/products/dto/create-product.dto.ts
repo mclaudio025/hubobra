@@ -192,6 +192,15 @@ export class CreateProductDto {
   barcode?: string;
 
   @ApiProperty({
+    description: "NCM (Nomenclatura Comum do Mercosul) do produto",
+    example: "32091010",
+    required: false,
+  })
+  @IsOptional()
+  @IsString({ message: "NCM deve ser uma string" })
+  ncm?: string;
+
+  @ApiProperty({
     description: "Marca do produto",
     example: "Votoran",
     required: false,
