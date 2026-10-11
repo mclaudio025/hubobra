@@ -45,6 +45,7 @@ interface Product {
   brand: string;
   stock: number;
   sku: string;
+  ncm?: string;
   active: boolean;
   images: Array<{ id?: string; url: string; alt?: string; order?: number }> | string[];
   createdAt: string;
@@ -656,8 +657,13 @@ export default function AdminProdutos() {
                                 <div className="text-sm font-semibold text-gray-900 leading-snug line-clamp-2" title={product.name}>
                                   {product.name}
                                 </div>
-                                <div className="text-xs text-gray-500 mt-0.5 flex items-center gap-2">
+                                <div className="text-xs text-gray-500 mt-0.5 flex flex-wrap items-center gap-2">
                                   <span className="font-mono">SKU: {product.sku || 'N/A'}</span>
+                                  {product.ncm && (
+                                    <span className="font-mono text-emerald-800 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded text-[11px] font-semibold" title="NCM Fiscal">
+                                      NCM: {product.ncm}
+                                    </span>
+                                  )}
                                   {isDifferentFromFilter && (
                                     <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-100 text-amber-800 border border-amber-200">
                                       Categoria Alterada
