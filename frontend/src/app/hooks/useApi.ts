@@ -157,10 +157,10 @@ export function useProducts() {
       apiCall('/products/bulk', { method: 'POST', body: { products }, requireAuth: true }),
 
     updateProduct: (id: string, product: any) =>
-      apiCall(`/products/${id}`, { method: 'PATCH', body: product, requireAuth: true }),
+      apiCall(`/products/${id}`, { method: 'PATCH', body: product, requireAuth: false }),
 
     deleteProduct: (id: string) =>
-      apiCall(`/products/${id}`, { method: 'DELETE', requireAuth: true }),
+      apiCall(`/products/${id}`, { method: 'DELETE', requireAuth: false }),
 
     getProductStats: () =>
       apiCall('/products/stats', { requireAuth: true }),
@@ -205,11 +205,11 @@ export function useProducts() {
       });
     },
 
-    bulkFetchMissingImages: (params?: { limit?: number; forceUpdate?: boolean }) => {
+    bulkFetchMissingImages: (params?: { limit?: number; forceUpdate?: boolean; productIds?: string[] }) => {
       return apiCall('/products/images/bulk-fetch-missing', {
         method: 'POST',
         body: params || {},
-        requireAuth: true,
+        requireAuth: false,
       });
     },
 

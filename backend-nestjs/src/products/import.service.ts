@@ -15,6 +15,7 @@ export interface ImportResult {
 export interface ImportedProduct {
   name: string;
   price: number;
+  cost?: number;
   category: string;
   subcategory?: string;
   brand?: string;
@@ -23,6 +24,9 @@ export interface ImportedProduct {
   stock?: number;
   sku: string;
   barcode?: string;
+  ncm?: string;
+  unit?: string;
+  storeId?: string;
   weight?: number;
   dimensions?: string;
   images?: string;
@@ -47,6 +51,7 @@ export class ImportService {
       skipErrors?: boolean;
       batchSize?: number;
       autoFetchImages?: boolean;
+      storeId?: string;
     } = {},
   ): Promise<ImportResult> {
     if (!file) {
@@ -90,8 +95,17 @@ export class ImportService {
     }
   }
 
+  private cleanText(text?: any): string {
+    if (!text) return "";
+    return text
+      .toString()
+      .replace(/\s*\(\d+\)\s*$/g, "") // remove sufixos como (1)
+      .replace(/[*#]/g, "")
+      .trim();
+  }
+
   /**
-   * Normaliza o nome da coluna para mapear sinônimos comuns de ERP
+   * Normaliza o nome da coluna para mapear sinônimos comuns de ERPs brasileiros
    */
   private normalizeHeader(header: string): string {
     const clean = header
@@ -100,13 +114,18 @@ export class ImportService {
       .replace(/[\u0300-\u036f]/g, "") // Remove acentos
       .replace(/[^a-z0-9]/g, "");
 
-    if (["sku", "codigo", "cod", "referencia", "ref", "codigointerno"].includes(clean)) return "sku";
-    if (["barcode", "codigobarras", "codigodebarras", "ean", "ean13", "gtin"].includes(clean)) return "barcode";
+    if (["sku", "codigo", "cod", "referencia", "ref", "codigointerno", "codprod", "item", "coda"].includes(clean)) return "sku";
+    if (["barcode", "codigobarras", "codigodebarras", "ean", "ean13", "gtin", "codbarras", "barras"].includes(clean)) return "barcode";
     if (["name", "nome", "descricao", "desc", "produto", "descricaodoproduto", "titulodoproduto"].includes(clean)) return "name";
-    if (["price", "preco", "valor", "precovenda", "unitario"].includes(clean)) return "price";
-    if (["category", "categoria", "departamento", "secao", "grupo"].includes(clean)) return "category";
-    if (["brand", "marca", "fabricante"].includes(clean)) return "brand";
-    if (["stock", "estoque", "qtd", "quantidade", "saldo"].includes(clean)) return "stock";
+    if (["precomediovenda", "precovenda", "preco", "price", "unitario", "precomedio", "pvenda"].includes(clean)) return "price";
+    if (["customedio", "custo", "cost", "precocusto", "custounitario", "pcusto"].includes(clean)) return "cost";
+    if (["totvenda", "totalvenda"].includes(clean)) return "totvenda";
+    if (["totcusto", "totalcusto"].includes(clean)) return "totcusto";
+    if (["category", "categoria", "departamento", "secao", "grupo", "subgrupo", "familia", "depto"].includes(clean)) return "category";
+    if (["brand", "marca", "fabricante", "fornecedor"].includes(clean)) return "brand";
+    if (["stock", "estoque", "qtd", "quantidade", "saldo", "estoquea", "estoqueatual", "saldoatual", "estq"].includes(clean)) return "stock";
+    if (["ncm", "classfiscal", "classificacaofiscal"].includes(clean)) return "ncm";
+    if (["unit", "unidade", "unid", "medida", "um"].includes(clean)) return "unit";
     if (["images", "imagens", "foto", "fotos", "urlimagem"].includes(clean)) return "images";
     if (["active", "ativo", "status"].includes(clean)) return "active";
 
@@ -127,20 +146,29 @@ export class ImportService {
           }),
         )
         .on("data", (data) => {
-          const rawName = (data.name || data.descricao || data.produto)?.toString().trim() || "";
-          const rawBrand = (data.brand || data.marca)?.toString().trim() || this.extractBrandFromName(rawName);
+          const rawName = this.cleanText(data.name || data.descricao || data.produto);
+          const rawBrand = this.cleanText(data.brand || data.marca) || this.extractBrandFromName(rawName);
+          const rawCategory = this.cleanText(data.category || data.categoria || data.grupo) || this.inferCategoryFromName(rawName);
+          const rawNcm = (data.ncm || data.classfiscal)?.toString().trim() || "";
+          let spec = (data.specifications || data.especificacoes)?.toString().trim() || "";
+          if (rawNcm && !spec.includes("NCM")) {
+            spec = spec ? `${spec} | NCM: ${rawNcm}` : `NCM: ${rawNcm}`;
+          }
 
           const cleanData: ImportedProduct = {
-            name: rawName.replace(/[*#]/g, "").trim(),
-            price: this.parseNumber(data.price || data.preco || data.valor),
-            category: (data.category || data.categoria)?.toString().trim() || this.inferCategoryFromName(rawName),
+            name: rawName,
+            price: this.parseNumber(data.price || data.preco || data.valor || data.precomediovenda),
+            cost: this.parseNumber(data.cost || data.customedio || data.custo),
+            category: rawCategory,
             subcategory: (data.subcategory || data.subcategoria)?.toString().trim(),
             brand: rawBrand,
             description: (data.description || data.descricao)?.toString().trim() || rawName,
-            specifications: (data.specifications || data.especificacoes)?.toString().trim(),
-            stock: this.parseNumber(data.stock || data.estoque || data.qtd, 0),
+            specifications: spec,
+            stock: this.parseNumber(data.stock || data.estoque || data.estoquea || data.qtd, 0),
             sku: (data.sku || data.codigo)?.toString().trim(),
-            barcode: (data.barcode || data.codigobarras || data.ean)?.toString().trim(),
+            barcode: (data.barcode || data.codbarras || data.codigobarras || data.ean)?.toString().trim(),
+            ncm: rawNcm,
+            unit: (data.unit || data.unidade)?.toString().trim() || "UN",
             weight: this.parseNumber(data.weight || data.peso),
             dimensions: (data.dimensions || data.dimensoes)?.toString().trim(),
             images: (data.images || data.imagens)?.toString().trim(),
@@ -180,20 +208,29 @@ export class ImportService {
             }
           });
 
-          const rawName = (obj.name || obj.descricao || obj.produto)?.toString().trim() || "";
-          const rawBrand = (obj.brand || obj.marca)?.toString().trim() || this.extractBrandFromName(rawName);
+          const rawName = this.cleanText(obj.name || obj.descricao || obj.produto);
+          const rawBrand = this.cleanText(obj.brand || obj.marca) || this.extractBrandFromName(rawName);
+          const rawCategory = this.cleanText(obj.category || obj.categoria || obj.grupo) || this.inferCategoryFromName(rawName);
+          const rawNcm = (obj.ncm || obj.classfiscal)?.toString().trim() || "";
+          let spec = (obj.specifications || obj.especificacoes)?.toString().trim() || "";
+          if (rawNcm && !spec.includes("NCM")) {
+            spec = spec ? `${spec} | NCM: ${rawNcm}` : `NCM: ${rawNcm}`;
+          }
 
           return {
-            name: rawName.replace(/[*#]/g, "").trim(),
-            price: this.parseNumber(obj.price || obj.preco || obj.valor),
-            category: (obj.category || obj.categoria)?.toString().trim() || this.inferCategoryFromName(rawName),
+            name: rawName,
+            price: this.parseNumber(obj.price || obj.preco || obj.valor || obj.precomediovenda),
+            cost: this.parseNumber(obj.cost || obj.customedio || obj.custo),
+            category: rawCategory,
             subcategory: (obj.subcategory || obj.subcategoria)?.toString().trim(),
             brand: rawBrand,
             description: (obj.description || obj.descricao)?.toString().trim() || rawName,
-            specifications: (obj.specifications || obj.especificacoes)?.toString().trim(),
-            stock: this.parseNumber(obj.stock || obj.estoque || obj.qtd, 0),
+            specifications: spec,
+            stock: this.parseNumber(obj.stock || obj.estoque || obj.estoquea || obj.qtd, 0),
             sku: (obj.sku || obj.codigo)?.toString().trim(),
-            barcode: (obj.barcode || obj.codigobarras || obj.ean)?.toString().trim(),
+            barcode: (obj.barcode || obj.codbarras || obj.codigobarras || obj.ean)?.toString().trim(),
+            ncm: rawNcm,
+            unit: (obj.unit || obj.unidade)?.toString().trim() || "UN",
             weight: this.parseNumber(obj.weight || obj.peso),
             dimensions: (obj.dimensions || obj.dimensoes)?.toString().trim(),
             images: (obj.images || obj.imagens)?.toString().trim(),
@@ -305,8 +342,9 @@ export class ImportService {
           continue;
         }
 
-        // Verificar SKU duplicado no banco
-        if (existingSkuSet.has(product.sku)) {
+        // Verificar se SKU já existe no banco
+        const isExistingInDb = existingSkuSet.has(product.sku);
+        if (isExistingInDb && !options.updateExisting) {
           errors.push({
             row,
             message: `SKU ${product.sku} já existe no sistema`,
@@ -319,7 +357,7 @@ export class ImportService {
         if (skuSet.has(product.sku)) {
           errors.push({
             row,
-            message: `SKU ${product.sku} duplicado no arquivo`,
+            message: `SKU ${product.sku} duplicado no próprio arquivo`,
             data: product,
           });
           continue;
@@ -386,20 +424,19 @@ export class ImportService {
           warnings.push({ row, message: "Produto sem estoque", data: product });
         }
 
-        if (images.length === 0) {
-          warnings.push({ row, message: "Produto sem imagens", data: product });
-        }
-
         // Produto válido
         validProducts.push({
           name: product.name,
           description: product.description || "",
           specifications: product.specifications || "",
           price: product.price,
+          cost: product.cost || undefined,
           stock: product.stock || 0,
           sku: product.sku,
           barcode: product.barcode || "",
           brand: product.brand || "",
+          unit: product.unit || "UN",
+          storeId: options.storeId || undefined,
           weight: product.weight || 0,
           dimensions: product.dimensions || "",
           categoryId,
@@ -407,6 +444,7 @@ export class ImportService {
           featured: false,
           images,
           tags,
+          isUpdate: isExistingInDb,
         });
       } catch (error) {
         errors.push({
@@ -423,7 +461,7 @@ export class ImportService {
         success: 0,
         errors,
         warnings,
-        message: `${errors.length} erros encontrados. Nenhum produto foi criado. Corrija os erros ou use a opção de ignorar erros.`,
+        message: `${errors.length} erros encontrados. Nenhum produto foi criado/atualizado. Corrija os erros ou use a opção de ignorar erros.`,
       };
     }
 
@@ -436,94 +474,128 @@ export class ImportService {
       };
     }
 
-    // Criar produtos válidos
+    // Criar ou atualizar produtos válidos
     let successCount = 0;
+    let updatedCount = 0;
+
     for (const product of validProducts) {
       try {
-        let productImages = [...product.images];
+        const { isUpdate, images: productImagesList, tags: productTagsList, ...productData } = product;
 
-        // Se o produto não tem imagens e a opção de auto-download estiver ativa
-        if (productImages.length === 0 && options.autoFetchImages) {
-          try {
-            this.logger.log(
-              `Buscando imagem automaticamente para o produto importado: "${product.name}"`,
-            );
-            const searchResults = await this.imageSearchService.searchImages({
-              query: product.name,
-              ean: product.barcode || undefined,
+        if (isUpdate) {
+          // Atualizar produto existente (preço, custo, estoque, etc.)
+          await this.prisma.product.update({
+            where: { sku: product.sku },
+            data: {
+              price: product.price,
+              cost: product.cost,
+              stock: product.stock,
+              barcode: product.barcode || undefined,
               brand: product.brand || undefined,
-              limit: 1,
-            });
-
-            if (searchResults.length > 0) {
-              const { uploadResult } =
-                await this.imageSearchService.downloadAndSaveProductImage(
-                  searchResults[0].url,
-                  { alt: product.name },
-                );
-
-              productImages = [
-                {
-                  url: uploadResult.url,
-                  alt: product.name,
-                  order: 0,
-                },
-              ];
-            }
-          } catch (imgErr: any) {
-            this.logger.warn(
-              `Não foi possível obter imagem automática para "${product.name}": ${imgErr.message}`,
-            );
-          }
-        }
-
-        await this.prisma.product.create({
-          data: {
-            ...product,
-            images: {
-              create: productImages,
+              unit: product.unit || undefined,
+              specifications: product.specifications || undefined,
+              updatedAt: new Date(),
             },
-            tags: {
-              create: product.tags.map((tagName: string) => ({
-                tag: {
-                  connectOrCreate: {
-                    where: { name: tagName },
-                    create: {
-                      name: tagName,
-                      slug: this.generateSlug(tagName),
+          });
+          updatedCount++;
+        } else {
+          // Criar novo produto
+          let productImages = [...productImagesList];
+
+          // Se o produto não tem imagens e a opção de auto-download estiver ativa
+          if (productImages.length === 0 && options.autoFetchImages) {
+            try {
+              this.logger.log(
+                `Buscando imagem automaticamente para o produto importado: "${product.name}"`,
+              );
+              const searchResults = await this.imageSearchService.searchImages({
+                query: product.name,
+                ean: product.barcode || undefined,
+                brand: product.brand || undefined,
+                limit: 1,
+              });
+
+              if (searchResults.length > 0) {
+                const { uploadResult } =
+                  await this.imageSearchService.downloadAndSaveProductImage(
+                    searchResults[0].url,
+                    { alt: product.name },
+                  );
+
+                productImages = [
+                  {
+                    url: uploadResult.url,
+                    alt: product.name,
+                    order: 0,
+                  },
+                ];
+              }
+            } catch (imgErr: any) {
+              this.logger.warn(
+                `Não foi possível obter imagem automática para "${product.name}": ${imgErr.message}`,
+              );
+            }
+          }
+
+          await this.prisma.product.create({
+            data: {
+              ...productData,
+              images: {
+                create: productImages,
+              },
+              tags: {
+                create: productTagsList.map((tagName: string) => ({
+                  tag: {
+                    connectOrCreate: {
+                      where: { name: tagName },
+                      create: {
+                        name: tagName,
+                        slug: this.generateSlug(tagName),
+                      },
                     },
                   },
-                },
-              })),
+                })),
+              },
             },
-          },
-        });
-        successCount++;
-      } catch (error) {
+          });
+          successCount++;
+        }
+      } catch (error: any) {
         const rowIndex = validProducts.indexOf(product) + 2;
         errors.push({
           row: rowIndex,
-          message: `Erro ao criar produto: ${error.message}`,
+          message: `Erro ao processar produto (${product.sku}): ${error.message}`,
           data: product,
         });
       }
     }
 
+    const totalProcessed = successCount + updatedCount;
     return {
-      success: successCount,
+      success: totalProcessed,
       errors,
       warnings,
-      message: `${successCount} produtos importados com sucesso${errors.length > 0 ? `, ${errors.length} falharam` : ""}`,
+      message: `${successCount} produtos novos criados, ${updatedCount} produtos atualizados${errors.length > 0 ? `, ${errors.length} falharam` : ""}`,
     };
   }
 
   private parseNumber(value: any, defaultValue?: number): number {
     if (value === null || value === undefined || value === "") {
-      return defaultValue || 0;
+      return defaultValue ?? 0;
+    }
+    if (typeof value === "number") {
+      return isNaN(value) ? (defaultValue ?? 0) : value;
     }
 
-    const parsed = parseFloat(value.toString().replace(",", "."));
-    return isNaN(parsed) ? defaultValue || 0 : parsed;
+    // Tratamento robusto para formatos BR: "R$ 1.250,50", "38,50" ou "25.90"
+    let str = value.toString().replace(/[R$\s]/gi, "").trim();
+    if (str.includes(".") && str.includes(",")) {
+      str = str.replace(/\./g, "").replace(",", ".");
+    } else if (str.includes(",")) {
+      str = str.replace(",", ".");
+    }
+    const parsed = parseFloat(str);
+    return isNaN(parsed) ? (defaultValue ?? 0) : parsed;
   }
 
   private parseBoolean(value: any, defaultValue: boolean = false): boolean {

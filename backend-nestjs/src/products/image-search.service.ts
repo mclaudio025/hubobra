@@ -457,11 +457,12 @@ export class ImageSearchService {
   }
 
   /**
-   * Varredura em lote: busca e adiciona fotos automaticamente para produtos sem imagem
+   * Varredura em lote: busca e adiciona fotos automaticamente para produtos sem imagem ou para lista selecionada
    */
   async bulkFetchImagesForMissing(options: {
     limit?: number;
     forceUpdate?: boolean;
+    productIds?: string[];
   } = {}): Promise<{
     totalProcessed: number;
     success: number;
@@ -470,15 +471,16 @@ export class ImageSearchService {
   }> {
     const limit = Math.min(options.limit || 50, 200);
 
-    // Buscar produtos com 0 imagens
+    const whereClause: any = {};
+    if (options.productIds && options.productIds.length > 0) {
+      whereClause.id = { in: options.productIds };
+    } else if (!options.forceUpdate) {
+      whereClause.images = { none: {} };
+    }
+
+    // Buscar produtos elegíveis
     const productsWithoutImages = await this.prisma.product.findMany({
-      where: options.forceUpdate
-        ? {}
-        : {
-            images: {
-              none: {},
-            },
-          },
+      where: whereClause,
       take: limit,
       include: {
         images: true,

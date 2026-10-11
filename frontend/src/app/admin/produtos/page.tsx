@@ -384,7 +384,12 @@ export default function AdminProdutos() {
   const [bulkFetchMessage, setBulkFetchMessage] = useState<{ type: 'success' | 'info' | 'error'; text: string } | null>(null);
 
   const handleBulkFetchImages = async () => {
-    if (!confirm('Deseja iniciar a busca automática de fotos na internet para os produtos que estão sem imagem?')) {
+    const hasSelection = selectedProductIds.length > 0;
+    const confirmText = hasSelection
+      ? `Deseja buscar fotos na internet para os ${selectedProductIds.length} produto(s) selecionado(s)?`
+      : 'Deseja iniciar a busca automática de fotos na internet para os produtos que estão sem imagem?';
+
+    if (!confirm(confirmText)) {
       return;
     }
 
@@ -392,16 +397,22 @@ export default function AdminProdutos() {
       setIsBulkFetching(true);
       setBulkFetchMessage({
         type: 'info',
-        text: 'Buscando fotos oficiais na internet e otimizando imagens em segundo plano...'
+        text: hasSelection
+          ? `Buscando fotos oficiais na internet para ${selectedProductIds.length} produto(s) selecionado(s)...`
+          : 'Buscando fotos oficiais na internet e otimizando imagens em segundo plano...'
       });
 
-      const res = await bulkFetchMissingImages({ limit: 50 });
+      const res = await bulkFetchMissingImages({
+        limit: hasSelection ? selectedProductIds.length : 50,
+        productIds: hasSelection ? selectedProductIds : undefined,
+      });
 
       if (res) {
         setBulkFetchMessage({
           type: 'success',
           text: `Varredura concluída! ${res.success} produto(s) atualizado(s) com fotos oficiais.`
         });
+        setSelectedProductIds([]);
         fetchProducts();
       }
     } catch (err: any) {

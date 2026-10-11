@@ -162,3 +162,8 @@ celerybeat.pid
 .mypy_cache/
 .dmypy.json
 dmypy.json
+
+# Planilhas e relatórios locais
+*.xlsx
+*.xls
+infra/diagnostico/

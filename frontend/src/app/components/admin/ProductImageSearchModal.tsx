@@ -74,16 +74,20 @@ export default function ProductImageSearchModal({
   // Sincronizar dados iniciais ao abrir o modal
   useEffect(() => {
     if (isOpen) {
-      setQuery(initialQuery);
-      setEan(initialEan);
-      setBrand(initialBrand);
+      const safeQuery = (initialQuery || '').toString();
+      const safeEan = (initialEan || '').toString();
+      const safeBrand = (initialBrand || '').toString();
+
+      setQuery(safeQuery);
+      setEan(safeEan);
+      setBrand(safeBrand);
       setSelectedUrls(new Set());
       setError(null);
       setPreviewImage(null);
 
       // Se tiver termo ou EAN, faz a busca automaticamente na abertura
-      if (initialQuery.trim() || initialEan.trim()) {
-        executeSearch(initialQuery, initialEan, initialBrand);
+      if (safeQuery.trim() || safeEan.trim()) {
+        executeSearch(safeQuery, safeEan, safeBrand);
       } else {
         setResults([]);
         setHasSearched(false);
@@ -92,7 +96,11 @@ export default function ProductImageSearchModal({
   }, [isOpen, initialQuery, initialEan, initialBrand]);
 
   const executeSearch = async (searchQuery: string, searchEan: string, searchBrand: string) => {
-    if (!searchQuery.trim() && !searchEan.trim()) {
+    const q = (searchQuery || '').toString().trim();
+    const e = (searchEan || '').toString().trim();
+    const b = (searchBrand || '').toString().trim();
+
+    if (!q && !e) {
       setError('Informe o nome do produto ou o código de barras para pesquisar.');
       return;
     }
@@ -104,9 +112,9 @@ export default function ProductImageSearchModal({
 
     try {
       const data = await searchProductImages({
-        query: searchQuery.trim(),
-        ean: searchEan.trim(),
-        brand: searchBrand.trim(),
+        query: q,
+        ean: e,
+        brand: b,
         limit: 20,
       });
 

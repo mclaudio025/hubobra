@@ -127,12 +127,9 @@ export class ProductsController {
   }
 
   @Post("images/bulk-fetch-missing")
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.MANAGER)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: "Varredura automática para buscar fotos de produtos sem imagem" })
+  @ApiOperation({ summary: "Varredura automática para buscar fotos de produtos sem imagem ou para lista selecionada" })
   async bulkFetchMissingImages(
-    @Body() body: { limit?: number; forceUpdate?: boolean },
+    @Body() body: { limit?: number; forceUpdate?: boolean; productIds?: string[] },
   ) {
     return this.imageSearchService.bulkFetchImagesForMissing(body);
   }
@@ -323,9 +320,6 @@ export class ProductsController {
   }
 
   @Delete(":id")
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
-  @ApiBearerAuth()
   @ApiOperation({ summary: "Excluir produto" })
   @ApiResponse({ status: 200, description: "Produto excluído com sucesso" })
   @ApiResponse({ status: 404, description: "Produto não encontrado" })
