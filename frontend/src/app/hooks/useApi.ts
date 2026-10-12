@@ -359,51 +359,126 @@ export function useOrders() {
 
 export function useUpload() {
   const { apiCall } = useApi();
+  const { token } = useAuth();
+
+  const getActiveToken = () => {
+    return (
+      token ||
+      (typeof window !== 'undefined'
+        ? localStorage.getItem('token') ||
+          localStorage.getItem('access_token') ||
+          sessionStorage.getItem('token')
+        : null)
+    );
+  };
 
   return {
     // Upload de uma imagem
-    uploadImage: (file: File, variants?: string[]) => {
+    uploadImage: async (file: File, variants?: string[]) => {
+      const activeToken = getActiveToken();
+      if (!activeToken) {
+        throw new Error('Sessão não encontrada. Por favor, faça login novamente no painel.');
+      }
+
       const formData = new FormData();
       formData.append('file', file);
       if (variants) {
         formData.append('variants', variants.join(','));
       }
-      
-      return fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8081'}/upload/image`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
-        body: formData,
-      }).then(async (response) => {
-        if (!response.ok) {
-          const error = await response.json();
-          throw new Error(error.message || 'Erro no upload');
+
+      const headers: Record<string, string> = {
+        Authorization: `Bearer ${activeToken}`,
+      };
+
+      // Tentar via proxy local Next.js (/api/upload/image) primeiro, com fallback direto para a API
+      const directUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8081'}/upload/image`;
+      let response: Response;
+
+      try {
+        response = await fetch('/api/upload/image', {
+          method: 'POST',
+          headers,
+          body: formData,
+        });
+
+        if (response.status === 404) {
+          // Se o proxy Next.js não estiver disponível, tenta a URL direta
+          response = await fetch(directUrl, {
+            method: 'POST',
+            headers,
+            body: formData,
+          });
         }
-        return response.json();
-      });
+      } catch (networkErr) {
+        // Fallback direto em caso de falha no proxy
+        response = await fetch(directUrl, {
+          method: 'POST',
+          headers,
+          body: formData,
+        });
+      }
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error('Sua sessão de administrador expirou. Por favor, saia e faça login novamente no painel.');
+        }
+        const error = await response.json().catch(() => ({ message: 'Erro no upload' }));
+        throw new Error(error.message || error.error || `Erro ${response.status} no upload da imagem`);
+      }
+
+      return response.json();
     },
 
     // Upload de múltiplas imagens
-    uploadMultipleImages: (files: File[]) => {
+    uploadMultipleImages: async (files: File[]) => {
+      const activeToken = getActiveToken();
+      if (!activeToken) {
+        throw new Error('Sessão não encontrada. Por favor, faça login novamente no painel.');
+      }
+
       const formData = new FormData();
-      files.forEach(file => {
+      files.forEach((file) => {
         formData.append('files', file);
       });
-      
-      return fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8081'}/upload/images/multiple`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
-        body: formData,
-      }).then(async (response) => {
-        if (!response.ok) {
-          const error = await response.json();
-          throw new Error(error.message || 'Erro no upload');
+
+      const headers: Record<string, string> = {
+        Authorization: `Bearer ${activeToken}`,
+      };
+
+      const directUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8081'}/upload/images/multiple`;
+      let response: Response;
+
+      try {
+        response = await fetch('/api/upload/images/multiple', {
+          method: 'POST',
+          headers,
+          body: formData,
+        });
+
+        if (response.status === 404) {
+          response = await fetch(directUrl, {
+            method: 'POST',
+            headers,
+            body: formData,
+          });
         }
-        return response.json();
-      });
+      } catch (networkErr) {
+        response = await fetch(directUrl, {
+          method: 'POST',
+          headers,
+          body: formData,
+        });
+      }
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error('Sua sessão de administrador expirou. Por favor, saia e faça login novamente no painel.');
+        }
+        const error = await response.json().catch(() => ({ message: 'Erro no upload' }));
+        throw new Error(error.message || error.error || `Erro ${response.status} no upload das imagens`);
+      }
+
+      return response.json();
     },
 
     // Obter variantes de uma imagem
