@@ -236,11 +236,20 @@ export default function AdminCategorias() {
             )}
 
             <div className="flex items-center gap-3">
-              {category.image ? (
+              {(category.image || category.slug) ? (
                 <img
-                  src={category.image}
+                  src={category.image || `/categories/${category.slug}.png`}
                   alt={category.name}
-                  className="w-10 h-10 rounded-lg object-cover border border-gray-200 shadow-sm flex-shrink-0"
+                  className="w-10 h-10 rounded-lg object-cover border border-gray-200 shadow-sm flex-shrink-0 bg-gray-50"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    const fallback = `/categories/${category.slug}.png`;
+                    if (!target.src.endsWith(fallback)) {
+                      target.src = fallback;
+                    } else {
+                      target.style.display = 'none';
+                    }
+                  }}
                 />
               ) : category.icon ? (
                 <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">

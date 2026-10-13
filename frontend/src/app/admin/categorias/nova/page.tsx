@@ -324,6 +324,9 @@ export default function NovaCategoriaPage() {
                             src={formData.image}
                             alt="Preview"
                             className="w-20 h-20 object-cover rounded-lg border border-gray-200 shadow-sm"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = '/placeholder-product.svg';
+                            }}
                           />
                           <button
                             type="button"

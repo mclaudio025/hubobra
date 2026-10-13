@@ -37,7 +37,7 @@ export const MASTER_CATEGORIES_DATA: CategoryCardData[] = [
     slug: 'construcao-e-alvenaria',
     tagline: 'Materiais brutos de fundação, elevação, vedação e cobertura para obras.',
     iconType: 'alvenaria',
-    image: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=600&auto=format&fit=crop&q=80',
+    image: '/categories/construcao-e-alvenaria.png',
   },
   {
     id: '3ac44b11-fd8e-4a95-968e-12b2972f8daf',
@@ -45,7 +45,7 @@ export const MASTER_CATEGORIES_DATA: CategoryCardData[] = [
     slug: 'hidraulica-e-encanamento',
     tagline: 'Tubulações, registros, conexões e reservatórios para instalações prediais de água e esgoto.',
     iconType: 'hidraulica',
-    image: 'https://images.unsplash.com/photo-1585704032915-c3400ca199e7?w=600&auto=format&fit=crop&q=80',
+    image: '/categories/hidraulica-e-encanamento.png',
   },
   {
     id: 'd4edbf01-2d38-40a5-985d-21593b8f67d3',
@@ -53,7 +53,7 @@ export const MASTER_CATEGORIES_DATA: CategoryCardData[] = [
     slug: 'eletrica-e-energia',
     tagline: 'Condutores, proteção elétrica, acionamentos e cabeamento para instalações elétricas.',
     iconType: 'eletrica',
-    image: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=600&auto=format&fit=crop&q=80',
+    image: '/categories/eletrica-e-energia.png',
   },
   {
     id: '6722e47f-e883-459e-93f1-025decf5de3a',
@@ -61,7 +61,7 @@ export const MASTER_CATEGORIES_DATA: CategoryCardData[] = [
     slug: 'tintas-e-pintura',
     tagline: 'Tintas imobiliárias, esmaltes, vernizes e ferramentas de aplicação de pintura.',
     iconType: 'tintas',
-    image: 'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=600&auto=format&fit=crop&q=80',
+    image: '/categories/tintas-e-pintura.png',
   },
   {
     id: 'e2a77501-bedf-4193-8824-a210a60367a1',
@@ -69,7 +69,7 @@ export const MASTER_CATEGORIES_DATA: CategoryCardData[] = [
     slug: 'ferramentas-maquinas-e-abrasivos',
     tagline: 'Equipamentos profissionais, manuais, corte, desbaste, lixamento e proteção.',
     iconType: 'ferramentas',
-    image: 'https://images.unsplash.com/photo-1504148455328-c376907d081c?w=600&auto=format&fit=crop&q=80',
+    image: '/categories/ferramentas-maquinas-e-abrasivos.png',
   },
   {
     id: '224ae6c0-6be4-4392-841c-f56ee381cf42',
@@ -77,7 +77,7 @@ export const MASTER_CATEGORIES_DATA: CategoryCardData[] = [
     slug: 'pisos-revestimentos-e-acabamentos',
     tagline: 'Pisos cerâmicos, porcelanatos, revestimentos de parede, rejuntes e rodapés.',
     iconType: 'pisos',
-    image: 'https://images.unsplash.com/photo-1581858726788-75bc0f6a952d?w=600&auto=format&fit=crop&q=80',
+    image: '/categories/pisos-revestimentos-e-acabamentos.png',
   },
   {
     id: '9984a29a-2a47-41e7-a1bd-349e7a1f37f6',
@@ -85,7 +85,7 @@ export const MASTER_CATEGORIES_DATA: CategoryCardData[] = [
     slug: 'portas-janelas-e-ferragens',
     tagline: 'Esquadrias, fechaduras residenciais, cadeados, dobradiças e fixadores mecânicos.',
     iconType: 'portas',
-    image: 'https://images.unsplash.com/photo-1513694203232-719a280e022f?w=600&auto=format&fit=crop&q=80',
+    image: '/categories/portas-janelas-e-ferragens.png',
   },
   {
     id: '39f7ecc1-90ec-4ca4-908b-6014b0365e22',
@@ -93,7 +93,7 @@ export const MASTER_CATEGORIES_DATA: CategoryCardData[] = [
     slug: 'iluminacao-e-lustres',
     tagline: 'Soluções de iluminação técnica e decorativa para ambientes internos e externos.',
     iconType: 'iluminacao',
-    image: 'https://images.unsplash.com/photo-1513506003901-1e6a229e2d15?w=600&auto=format&fit=crop&q=80',
+    image: '/categories/iluminacao-e-lustres.png',
   },
   {
     id: '63c4869d-72e8-499e-8870-56a41992fc24',
@@ -101,7 +101,7 @@ export const MASTER_CATEGORIES_DATA: CategoryCardData[] = [
     slug: 'utilidades-casa-e-jardim',
     tagline: 'Suportes de TV e eletrodomésticos, mangueiras, escadas, organização e limpeza pós-obra.',
     iconType: 'utilidades',
-    image: 'https://images.unsplash.com/photo-1585338107529-13afc5f02586?w=600&auto=format&fit=crop&q=80',
+    image: '/categories/utilidades-casa-e-jardim.png',
   },
 ];
 
@@ -260,22 +260,22 @@ function getCategoryFallbackImage(name: string, slug: string): string {
   const n = (name || '').toLowerCase();
 
   if (s.includes('alvenaria') || s.includes('construc') || n.includes('alvenaria') || n.includes('construção') || n.includes('cimento') || n.includes('obra')) 
-    return 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=600&auto=format&fit=crop&q=80';
+    return '/categories/construcao-e-alvenaria.png';
   if (s.includes('hidraul') || n.includes('hidráulica') || s.includes('encanamento') || n.includes('encanamento') || s.includes('tubo') || s.includes('esgoto')) 
-    return 'https://images.unsplash.com/photo-1585704032915-c3400ca199e7?w=600&auto=format&fit=crop&q=80';
+    return '/categories/hidraulica-e-encanamento.png';
   if (s.includes('eletric') || n.includes('elétrica') || s.includes('energia') || n.includes('energia') || s.includes('fio') || s.includes('cabo')) 
-    return 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=600&auto=format&fit=crop&q=80';
+    return '/categories/eletrica-e-energia.png';
   if (s.includes('tinta') || n.includes('tinta') || s.includes('pintura') || n.includes('pintura') || s.includes('verniz')) 
-    return 'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=600&auto=format&fit=crop&q=80';
+    return '/categories/tintas-e-pintura.png';
   if (s.includes('ferramenta') || n.includes('ferramenta') || s.includes('maquina') || s.includes('abrasivo') || s.includes('disco')) 
-    return 'https://images.unsplash.com/photo-1504148455328-c376907d081c?w=600&auto=format&fit=crop&q=80';
+    return '/categories/ferramentas-maquinas-e-abrasivos.png';
   if (s.includes('piso') || n.includes('piso') || s.includes('revestimento') || n.includes('revestimento') || s.includes('ceramica') || n.includes('porcelanato')) 
-    return 'https://images.unsplash.com/photo-1581858726788-75bc0f6a952d?w=600&auto=format&fit=crop&q=80';
+    return '/categories/pisos-revestimentos-e-acabamentos.png';
   if (s.includes('porta') || n.includes('porta') || s.includes('janela') || n.includes('janela') || s.includes('ferrag') || s.includes('fechadura')) 
-    return 'https://images.unsplash.com/photo-1513694203232-719a280e022f?w=600&auto=format&fit=crop&q=80';
+    return '/categories/portas-janelas-e-ferragens.png';
   if (s.includes('ilumina') || n.includes('iluminação') || s.includes('lustre') || n.includes('lustre') || s.includes('lampada') || s.includes('led')) 
-    return 'https://images.unsplash.com/photo-1513506003901-1e6a229e2d15?w=600&auto=format&fit=crop&q=80';
-  return 'https://images.unsplash.com/photo-1585338107529-13afc5f02586?w=600&auto=format&fit=crop&q=80';
+    return '/categories/iluminacao-e-lustres.png';
+  return '/categories/utilidades-casa-e-jardim.png';
 }
 
 function normalizeKey(str: string): string {
@@ -286,7 +286,7 @@ function normalizeKey(str: string): string {
     .replace(/[^a-z0-9]/g, '');
 }
 
-const CATEGORIES_CACHE_KEY = 'hubobra_cached_department_shortcuts_v7';
+const CATEGORIES_CACHE_KEY = 'hubobra_cached_department_shortcuts_v8';
 
 export default function DepartmentShortcuts() {
   const [categoriesList, setCategoriesList] = useState<CategoryCardData[]>(() => {
@@ -349,11 +349,13 @@ export default function DepartmentShortcuts() {
     // Limpar chaves antigas de cache para evitar fotos desatualizadas
     if (typeof window !== 'undefined') {
       try {
+        localStorage.removeItem('hubobra_cached_department_shortcuts_v7');
         localStorage.removeItem('hubobra_cached_department_shortcuts_v6');
         localStorage.removeItem('hubobra_cached_department_shortcuts_v5');
         localStorage.removeItem('hubobra_cached_department_shortcuts_v4');
         localStorage.removeItem('hubobra_cached_department_shortcuts_v3');
         localStorage.removeItem('hubobra_cached_department_shortcuts_v2');
+        sessionStorage.removeItem('hubobra_cached_department_shortcuts_v7');
         sessionStorage.removeItem('hubobra_cached_department_shortcuts_v6');
         sessionStorage.removeItem('hubobra_cached_department_shortcuts_v5');
         sessionStorage.removeItem('hubobra_cached_department_shortcuts_v4');
@@ -521,8 +523,10 @@ export default function DepartmentShortcuts() {
                           decoding="async"
                           onError={(e) => {
                             const target = e.target as HTMLImageElement;
-                            if (target.src !== fallbackImg) {
+                            if (!target.src.endsWith(fallbackImg)) {
                               target.src = fallbackImg;
+                            } else if (!target.src.endsWith('/placeholder-product.svg')) {
+                              target.src = '/placeholder-product.svg';
                             }
                           }}
                         />

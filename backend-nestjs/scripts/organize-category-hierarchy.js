@@ -12,13 +12,13 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
-// Mapeamento das 9 Categorias Mestres Oficiais (com imagens HD e ícones neon)
+// Mapeamento das 9 Categorias Mestres Oficiais (com imagens locais e Supabase)
 const MASTER_DEPARTMENTS = [
   {
     name: 'Construção e Alvenaria',
     slug: 'construcao-e-alvenaria',
     description: 'Materiais brutos de fundação, elevação, vedação e cobertura para obras.',
-    image: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=600&auto=format&fit=crop&q=80',
+    image: '/categories/construcao-e-alvenaria.png',
     icon: 'alvenaria',
     childrenPatterns: [
       'construcao', 'alvenaria', 'cimento', 'argamassa', 'tijolo', 'bloco', 
@@ -29,7 +29,7 @@ const MASTER_DEPARTMENTS = [
     name: 'Hidráulica e Encanamento',
     slug: 'hidraulica-e-encanamento',
     description: 'Tubulações, registros, conexões e reservatórios para instalações prediais de água e esgoto.',
-    image: 'https://images.unsplash.com/photo-1585704032915-c3400ca199e7?w=600&auto=format&fit=crop&q=80',
+    image: '/categories/hidraulica-e-encanamento.png',
     icon: 'hidraulica',
     childrenPatterns: [
       'hidraulica', 'tubo', 'conex', 'esgoto', 'cisterna', 'caixa d', 'banheiro', 
@@ -40,7 +40,7 @@ const MASTER_DEPARTMENTS = [
     name: 'Elétrica e Energia',
     slug: 'eletrica-e-energia',
     description: 'Condutores, proteção elétrica, acionamentos e cabeamento para instalações elétricas.',
-    image: 'https://images.unsplash.com/photo-1555664424-778a1e5e1b48?w=600&auto=format&fit=crop&q=80',
+    image: '/categories/eletrica-e-energia.png',
     icon: 'eletrica',
     childrenPatterns: [
       'eletric', 'fio', 'cabo', 'conduit', 'eletroduto', 'energia'
@@ -50,7 +50,7 @@ const MASTER_DEPARTMENTS = [
     name: 'Tintas e Pintura',
     slug: 'tintas-e-pintura',
     description: 'Tintas imobiliárias, esmaltes, vernizes e ferramentas de aplicação de pintura.',
-    image: 'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=600&auto=format&fit=crop&q=80',
+    image: '/categories/tintas-e-pintura.png',
     icon: 'tintas',
     childrenPatterns: [
       'tinta', 'pintura', 'verniz', 'esmalte', 'massa', 'selador', 'solvente', 'acessorios de pintura'
@@ -60,7 +60,7 @@ const MASTER_DEPARTMENTS = [
     name: 'Ferramentas, Máquinas e Abrasivos',
     slug: 'ferramentas-maquinas-e-abrasivos',
     description: 'Equipamentos profissionais, manuais, corte, desbaste, lixamento e proteção.',
-    image: 'https://images.unsplash.com/photo-1504148455328-c376907d081c?w=600&auto=format&fit=crop&q=80',
+    image: '/categories/ferramentas-maquinas-e-abrasivos.png',
     icon: 'ferramentas',
     childrenPatterns: [
       'ferramenta', 'maquina', 'abrasiv', 'lixa', 'corte', 'disco', 'cola', 'silicone', 'adesiv'
@@ -70,7 +70,7 @@ const MASTER_DEPARTMENTS = [
     name: 'Pisos, Revestimentos e Acabamentos',
     slug: 'pisos-revestimentos-e-acabamentos',
     description: 'Pisos cerâmicos, porcelanatos, revestimentos de parede, rejuntes e rodapés.',
-    image: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=600&auto=format&fit=crop&q=80',
+    image: '/categories/pisos-revestimentos-e-acabamentos.png',
     icon: 'pisos',
     childrenPatterns: [
       'piso', 'revestimento', 'acabamento', 'ceramica', 'porcelanato', 'marmore', 'granito'
@@ -80,7 +80,7 @@ const MASTER_DEPARTMENTS = [
     name: 'Portas, Janelas e Ferragens',
     slug: 'portas-janelas-e-ferragens',
     description: 'Esquadrias, fechaduras residenciais, cadeados, dobradiças e fixadores mecânicos.',
-    image: 'https://images.unsplash.com/photo-1534237710431-e2fc698436d0?w=600&auto=format&fit=crop&q=80',
+    image: '/categories/portas-janelas-e-ferragens.png',
     icon: 'portas',
     childrenPatterns: [
       'porta', 'janela', 'ferrag', 'fechadur', 'cadeado', 'parafuso', 'prego', 'bucha'
@@ -90,7 +90,7 @@ const MASTER_DEPARTMENTS = [
     name: 'Iluminação e Lustres',
     slug: 'iluminacao-e-lustres',
     description: 'Soluções de iluminação técnica e decorativa para ambientes internos e externos.',
-    image: 'https://images.unsplash.com/photo-1513506003901-1e6a229e2d15?w=600&auto=format&fit=crop&q=80',
+    image: '/categories/iluminacao-e-lustres.png',
     icon: 'iluminacao',
     childrenPatterns: [
       'ilumin', 'lustre', 'lampada', 'led', 'refletor', 'spot'
@@ -100,7 +100,7 @@ const MASTER_DEPARTMENTS = [
     name: 'Utilidades, Casa e Jardim',
     slug: 'utilidades-casa-e-jardim',
     description: 'Suportes de TV e eletrodomésticos, mangueiras, escadas, organização e limpeza pós-obra.',
-    image: 'https://images.unsplash.com/photo-1585338107529-13afc5f02586?w=600&auto=format&fit=crop&q=80',
+    image: '/categories/utilidades-casa-e-jardim.png',
     icon: 'utilidades',
     childrenPatterns: [
       'utilidade', 'casa', 'jardim', 'variedades', 'limpeza', 'forro', 'gesso', 
@@ -135,15 +135,19 @@ async function main() {
       }
     });
 
+    const definitiveImage = (cat?.image && !cat.image.includes('unsplash') && !cat.image.startsWith('data:')) 
+      ? cat.image 
+      : master.image;
+
     if (cat) {
-      // Atualizar como raiz com imagem HD e descrição oficial
+      // Atualizar como raiz com imagem definitiva e descrição oficial
       cat = await prisma.category.update({
         where: { id: cat.id },
         data: {
           name: master.name,
           slug: master.slug,
           description: master.description,
-          image: master.image,
+          image: definitiveImage,
           icon: master.icon,
           parentId: null,
           active: true,

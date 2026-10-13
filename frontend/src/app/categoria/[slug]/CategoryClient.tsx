@@ -518,14 +518,23 @@ export default function CategoryClient({ slug }: { slug: string }) {
 
           <main className="flex-1 w-full">
             {/* Banner com a imagem personalizada da Categoria */}
-            {category?.image && (
-              <div className="relative mb-6 w-full h-36 sm:h-48 md:h-56 rounded-2xl overflow-hidden shadow-md border border-gray-200">
+            {category && (
+              <div className="relative mb-6 w-full h-36 sm:h-48 md:h-56 rounded-2xl overflow-hidden shadow-md border border-gray-200 bg-slate-900">
                 <img
-                  src={category.image}
+                  src={category.image || `/categories/${category.slug || slug}.png`}
                   alt={categoryTitle}
                   className="w-full h-full object-cover"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    const fallback = `/categories/${category.slug || slug}.png`;
+                    if (!target.src.endsWith(fallback)) {
+                      target.src = fallback;
+                    } else if (!target.src.endsWith('/placeholder-product.svg')) {
+                      target.src = '/placeholder-product.svg';
+                    }
+                  }}
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/30 to-transparent flex items-end p-5 sm:p-6">
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent flex items-end p-5 sm:p-6">
                   <div>
                     <h2 className="text-xl sm:text-2xl md:text-3xl font-black text-white drop-shadow">
                       {categoryTitle}
