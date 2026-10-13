@@ -78,6 +78,12 @@ if not exist "dist\index.html" (
 
 echo.
 echo [3/3] Iniciando Servidor Central Local (API + SQLite + WebSockets na porta 3005)...
+:: Liberar porta 3005 caso tenha ficado algum processo anterior orfao aberto
+for /f "tokens=5" %%p in ('netstat -aon ^| findstr :3005 ^| findstr LISTENING 2^>nul') do (
+    echo [AVISO] Finalizando processo anterior (PID %%p) na porta 3005...
+    taskkill /F /PID %%p >nul 2>&1
+)
+
 if not exist "server\node_modules\ws" (
     echo Instalando dependencias do servidor local...
     pushd server

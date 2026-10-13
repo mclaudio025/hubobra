@@ -227,8 +227,16 @@ const server = http.createServer(async (req, res) => {
   if (fs.existsSync(filePath)) {
     const ext = path.extname(filePath).toLowerCase();
     const contentType = MIME_TYPES[ext] || 'application/octet-stream';
+    const isHtml = ext === '.html';
 
-    res.writeHead(200, { 'Content-Type': contentType });
+    const headers = {
+      'Content-Type': contentType,
+      'Cache-Control': isHtml
+        ? 'no-cache, no-store, must-revalidate'
+        : 'public, max-age=31536000, immutable',
+    };
+
+    res.writeHead(200, headers);
     fs.createReadStream(filePath).pipe(res);
   } else {
     res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
