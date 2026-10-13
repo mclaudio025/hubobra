@@ -17,6 +17,7 @@ import { PrintDispatcher } from './components/PrintDispatcher';
 import { MaterialsCalculatorModal } from './components/MaterialsCalculatorModal';
 import { seedLocalDatabase } from './db/seed';
 import { LocalOrder, db } from './db/db';
+import { syncService } from './services/syncService';
 import { Database, ShieldCheck, Server, MessageSquare } from 'lucide-react';
 
 export function App() {
@@ -42,7 +43,13 @@ export function App() {
 
   useEffect(() => {
     // Inicializar banco local e dados
-    seedLocalDatabase().then(updatePendingCount);
+    seedLocalDatabase().then(() => {
+      updatePendingCount();
+      // Auto-sincronizar catalogo com imagens do Supabase em segundo plano
+      if (typeof navigator !== 'undefined' && navigator.onLine) {
+        syncService.syncProductsFromSupabase().catch(() => {});
+      }
+    });
 
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);

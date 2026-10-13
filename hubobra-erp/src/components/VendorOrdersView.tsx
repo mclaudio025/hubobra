@@ -689,7 +689,7 @@ export const VendorOrdersView: React.FC<VendorOrdersViewProps> = ({
                           {prod.sku}
                         </span>
                         <span className="font-bold text-white truncate">{prod.name}</span>
-                        {prod.image && (
+                        {prod.image ? (
                           <span
                             onClick={(e) => {
                               e.stopPropagation();
@@ -699,6 +699,17 @@ export const VendorOrdersView: React.FC<VendorOrdersViewProps> = ({
                             className="inline-flex items-center gap-1 text-[10px] bg-amber-500/10 hover:bg-amber-500 hover:text-slate-950 text-amber-400 border border-amber-500/30 px-1.5 py-0.5 rounded transition-colors shrink-0 cursor-pointer"
                           >
                             <Eye className="w-3 h-3" /> Foto
+                          </span>
+                        ) : (
+                          <span
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleOpenProductPhoto(prod);
+                            }}
+                            title="Ver Ficha / Detalhes do Produto [Alt+I]"
+                            className="inline-flex items-center gap-1 text-[10px] bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white px-1.5 py-0.5 rounded transition-colors shrink-0 cursor-pointer"
+                          >
+                            <Eye className="w-3 h-3" /> Ficha
                           </span>
                         )}
                       </div>
