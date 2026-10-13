@@ -76,7 +76,7 @@ class SyncService {
 
       while (true) {
         const offset = page * pageSize;
-        const url = `${SUPABASE_URL}/rest/v1/products?select=id,name,sku,barcode,price,comparePrice,cost,stock,minStock,unit,ncm,brand,description,category:categories(name)&order=name.asc&limit=${pageSize}&offset=${offset}`;
+        const url = `${SUPABASE_URL}/rest/v1/products?select=id,name,sku,barcode,price,comparePrice,cost,stock,minStock,unit,ncm,brand,description,category:categories(name),images:product_images(url,order)&order=name.asc&limit=${pageSize}&offset=${offset}`;
 
         const res = await fetch(url, {
           headers: {
@@ -115,6 +115,9 @@ class SyncService {
           ncm: p.ncm || '',
           brand: p.brand || '',
           description: p.description || '',
+          image: (p.images && Array.isArray(p.images) && p.images.length > 0)
+            ? (p.images.slice().sort((a: any, b: any) => (a.order || 0) - (b.order || 0))[0]?.url)
+            : (p.image || ''),
           updatedAt: new Date().toISOString(),
           synced: true,
         }));

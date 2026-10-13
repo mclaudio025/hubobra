@@ -69,6 +69,7 @@ export interface SaleItem {
   total: number;
   location?: string;
   packaging?: string;
+  image?: string;
   observations?: string;
 }
 

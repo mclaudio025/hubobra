@@ -23,10 +23,13 @@ import {
   Users,
   Mic,
   Headphones,
+  Eye,
+  Image as ImageIcon,
 } from 'lucide-react';
 import { db, LocalProduct, LocalCustomer, SaleItem, LocalOrder, SellerUser, DEFAULT_SELLERS } from '../db/db';
 import { MaterialsCalculatorModal } from './MaterialsCalculatorModal';
 import { VoiceOrderModal } from './VoiceOrderModal';
+import { ProductPhotoModal, ProductPhotoData } from './ProductPhotoModal';
 
 interface VendorOrdersViewProps {
   onOrderSentToCashier: (order: LocalOrder) => void;
@@ -79,9 +82,29 @@ export const VendorOrdersView: React.FC<VendorOrdersViewProps> = ({
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState<boolean>(false);
   const [isSellerSwitcherOpen, setIsSellerSwitcherOpen] = useState<boolean>(false);
   const [isVoiceOrderModalOpen, setIsVoiceOrderModalOpen] = useState<boolean>(false);
+  const [photoModalProduct, setPhotoModalProduct] = useState<ProductPhotoData | null>(null);
+  const [isPhotoModalOpen, setIsPhotoModalOpen] = useState<boolean>(false);
 
   const searchInputRef = useRef<HTMLInputElement>(null);
   const qtyInputRef = useRef<HTMLInputElement>(null);
+
+  const handleOpenProductPhoto = (prod: LocalProduct | SaleItem) => {
+    setPhotoModalProduct({
+      id: 'productId' in prod ? prod.productId : prod.id,
+      name: prod.name,
+      sku: prod.sku,
+      brand: 'brand' in prod ? prod.brand : undefined,
+      category: 'category' in prod ? prod.category : undefined,
+      price: 'unitPrice' in prod ? prod.unitPrice : prod.price,
+      stock: 'stock' in prod ? prod.stock : undefined,
+      unit: prod.unit,
+      location: prod.location,
+      packaging: prod.packaging,
+      description: 'description' in prod ? prod.description : undefined,
+      image: prod.image,
+    });
+    setIsPhotoModalOpen(true);
+  };
 
   // Carregar dados locais
   useEffect(() => {
@@ -278,6 +301,13 @@ export const VendorOrdersView: React.FC<VendorOrdersViewProps> = ({
       } else if (e.altKey && (e.key === 'v' || e.key === 'V')) {
         e.preventDefault();
         setIsVoiceOrderModalOpen(true);
+      } else if (e.altKey && (e.key === 'i' || e.key === 'I')) {
+        e.preventDefault();
+        if (selectedProduct) {
+          handleOpenProductPhoto(selectedProduct);
+        } else if (orderItems.length > 0) {
+          handleOpenProductPhoto(orderItems[orderItems.length - 1]);
+        }
       } else if (e.key === 'Insert') {
         e.preventDefault();
         handleInsertCurrentItem();
@@ -287,6 +317,7 @@ export const VendorOrdersView: React.FC<VendorOrdersViewProps> = ({
         setIsCustomerModalOpen(false);
         setIsSellerSwitcherOpen(false);
         setIsVoiceOrderModalOpen(false);
+        setIsPhotoModalOpen(false);
         setProductSearchResults([]);
       }
     };
@@ -352,6 +383,7 @@ export const VendorOrdersView: React.FC<VendorOrdersViewProps> = ({
       total: lineTotal,
       location: selectedProduct.location,
       packaging: selectedProduct.packaging,
+      image: selectedProduct.image,
     };
 
     setOrderItems([...orderItems, newItem]);
@@ -649,20 +681,49 @@ export const VendorOrdersView: React.FC<VendorOrdersViewProps> = ({
                   <div
                     key={prod.id}
                     onClick={() => handleSelectProduct(prod)}
-                    className="p-2.5 hover:bg-slate-800 cursor-pointer flex items-center justify-between text-xs transition-colors"
+                    className="p-2.5 hover:bg-slate-800 cursor-pointer flex items-center justify-between text-xs transition-colors group"
                   >
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono text-[10px] text-amber-400 bg-amber-500/10 px-1.5 rounded">
-                          {prod.sku}
+                    <div className="flex items-center gap-3 min-w-0">
+                      {/* Miniatura da Foto do Produto */}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleOpenProductPhoto(prod);
+                        }}
+                        title="Ampliar foto do produto"
+                        className="w-10 h-10 rounded-lg bg-slate-950 border border-slate-700 flex items-center justify-center overflow-hidden shrink-0 group-hover:border-amber-500/60 transition-colors relative"
+                      >
+                        {prod.image ? (
+                          <img
+                            src={prod.image}
+                            alt={prod.name}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              (e.target as HTMLElement).style.display = 'none';
+                            }}
+                          />
+                        ) : (
+                          <ImageIcon className="w-4 h-4 text-slate-600" />
+                        )}
+                        <span className="absolute inset-0 bg-slate-950/60 opacity-0 group-hover:opacity-100 flex items-center justify-center text-amber-400 transition-opacity">
+                          <Eye className="w-3.5 h-3.5" />
                         </span>
-                        <span className="font-bold text-white">{prod.name}</span>
+                      </button>
+
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-[10px] text-amber-400 bg-amber-500/10 px-1.5 rounded shrink-0">
+                            {prod.sku}
+                          </span>
+                          <span className="font-bold text-white truncate">{prod.name}</span>
+                        </div>
+                        <span className="text-[10px] text-slate-400 block truncate">
+                          {prod.location || 'Sem localização'} • Un: {prod.unit}
+                        </span>
                       </div>
-                      <span className="text-[10px] text-slate-400">
-                        {prod.location || 'Sem localização'} • Un: {prod.unit}
-                      </span>
                     </div>
-                    <div className="text-right">
+                    <div className="text-right shrink-0 ml-3">
                       <span className="font-black text-emerald-400">R$ {prod.price.toFixed(2)}</span>
                       <span className="text-[10px] text-slate-400 block">Estoque: {prod.stock}</span>
                     </div>
@@ -746,9 +807,45 @@ export const VendorOrdersView: React.FC<VendorOrdersViewProps> = ({
           </div>
         </div>
 
-        {/* Faixa de Informações Avançadas do Produto Selecionado (Localização, Estoque Físico e Reservado) */}
+        {/* Faixa de Informações Avançadas do Produto Selecionado (Foto, Localização, Estoque Físico e Reservado) */}
         {selectedProduct && (
-          <div className="mt-2.5 pt-2 border-t border-slate-800 grid grid-cols-2 md:grid-cols-6 gap-2 text-[11px] items-center bg-slate-950/80 p-2 rounded-xl">
+          <div className="mt-2.5 pt-2 border-t border-slate-800 grid grid-cols-2 md:grid-cols-7 gap-2 text-[11px] items-center bg-slate-950/80 p-2 rounded-xl">
+            {/* Foto do Produto Selecionado */}
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => handleOpenProductPhoto(selectedProduct)}
+                className="w-10 h-10 rounded-lg bg-slate-900 border border-slate-700 hover:border-amber-500 flex items-center justify-center overflow-hidden shrink-0 group relative shadow-md transition-all cursor-pointer"
+                title="Visualizar Foto do Produto para o Cliente [Alt + I]"
+              >
+                {selectedProduct.image ? (
+                  <img
+                    src={selectedProduct.image}
+                    alt={selectedProduct.name}
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform"
+                    onError={(e) => {
+                      (e.target as HTMLElement).style.display = 'none';
+                    }}
+                  />
+                ) : (
+                  <ImageIcon className="w-5 h-5 text-slate-500" />
+                )}
+                <span className="absolute inset-0 bg-slate-950/60 opacity-0 group-hover:opacity-100 flex items-center justify-center text-amber-400 transition-opacity">
+                  <Eye className="w-4 h-4" />
+                </span>
+              </button>
+              <div>
+                <span className="text-slate-400 block text-[9px] uppercase font-bold">Foto</span>
+                <button
+                  type="button"
+                  onClick={() => handleOpenProductPhoto(selectedProduct)}
+                  className="text-amber-400 hover:text-amber-300 font-bold text-[10px] flex items-center gap-0.5 underline decoration-dotted cursor-pointer"
+                >
+                  <Eye className="w-3 h-3" /> Ver [Alt+I]
+                </button>
+              </div>
+            </div>
+
             <div>
               <span className="text-slate-400 block text-[9px] uppercase font-bold">Estoque Físico</span>
               <span className="font-mono font-bold text-cyan-400">{selectedProduct.stock} {selectedProduct.unit}</span>
@@ -812,7 +909,33 @@ export const VendorOrdersView: React.FC<VendorOrdersViewProps> = ({
                   <td className="p-3 font-mono text-slate-500">{idx + 1}</td>
                   <td className="p-3 font-mono font-bold text-amber-400">{item.sku}</td>
                   <td className="p-3 font-mono text-slate-400">{item.reference || '-'}</td>
-                  <td className="p-3 font-bold text-white">{item.name}</td>
+                  <td className="p-3">
+                    <div className="flex items-center gap-2.5">
+                      <button
+                        type="button"
+                        onClick={() => handleOpenProductPhoto(item)}
+                        className="w-9 h-9 rounded-lg bg-slate-950 border border-slate-700/80 hover:border-amber-500 flex items-center justify-center overflow-hidden shrink-0 group relative transition-colors cursor-pointer"
+                        title="Ver foto do produto para o cliente"
+                      >
+                        {item.image ? (
+                          <img
+                            src={item.image}
+                            alt={item.name}
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform"
+                            onError={(e) => {
+                              (e.target as HTMLElement).style.display = 'none';
+                            }}
+                          />
+                        ) : (
+                          <ImageIcon className="w-4 h-4 text-slate-600" />
+                        )}
+                        <span className="absolute inset-0 bg-slate-950/60 opacity-0 group-hover:opacity-100 flex items-center justify-center text-amber-400 transition-opacity">
+                          <Eye className="w-3.5 h-3.5" />
+                        </span>
+                      </button>
+                      <span className="font-bold text-white leading-tight">{item.name}</span>
+                    </div>
+                  </td>
                   <td className="p-3 text-slate-400 text-[11px]">{item.location || 'Pátio Central'}</td>
                   <td className="p-3 text-center font-bold text-slate-300">{item.unit}</td>
                   <td className="p-2 text-center">
@@ -855,13 +978,23 @@ export const VendorOrdersView: React.FC<VendorOrdersViewProps> = ({
                     R$ {item.total.toFixed(2)}
                   </td>
                   <td className="p-3 text-center">
-                    <button
-                      onClick={() => handleRemoveItem(idx)}
-                      className="p-1 text-slate-500 hover:text-red-400 transition-colors"
-                      title="Excluir item [DEL]"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    <div className="flex items-center justify-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => handleOpenProductPhoto(item)}
+                        className="p-1.5 text-slate-400 hover:text-amber-400 hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
+                        title="Visualizar foto para o cliente"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleRemoveItem(idx)}
+                        className="p-1.5 text-slate-500 hover:text-red-400 hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
+                        title="Excluir item [DEL]"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -1088,6 +1221,13 @@ export const VendorOrdersView: React.FC<VendorOrdersViewProps> = ({
           setImportNotification(`🎙️ ${items.length} material(is) inseridos por comando de voz no fone!`);
           setTimeout(() => setImportNotification(null), 6000);
         }}
+      />
+
+      {/* MODAL HD DE VISUALIZAÇÃO DE FOTO DO PRODUTO (PARA O CLIENTE) */}
+      <ProductPhotoModal
+        isOpen={isPhotoModalOpen}
+        onClose={() => setIsPhotoModalOpen(false)}
+        product={photoModalProduct}
       />
     </div>
   );
