@@ -681,49 +681,32 @@ export const VendorOrdersView: React.FC<VendorOrdersViewProps> = ({
                   <div
                     key={prod.id}
                     onClick={() => handleSelectProduct(prod)}
-                    className="p-2.5 hover:bg-slate-800 cursor-pointer flex items-center justify-between text-xs transition-colors group"
+                    className="p-2.5 hover:bg-slate-800 cursor-pointer flex items-center justify-between text-xs transition-colors"
                   >
-                    <div className="flex items-center gap-3 min-w-0">
-                      {/* Miniatura da Foto do Produto */}
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleOpenProductPhoto(prod);
-                        }}
-                        title="Ampliar foto do produto"
-                        className="w-10 h-10 rounded-lg bg-slate-950 border border-slate-700 flex items-center justify-center overflow-hidden shrink-0 group-hover:border-amber-500/60 transition-colors relative"
-                      >
-                        {prod.image ? (
-                          <img
-                            src={prod.image}
-                            alt={prod.name}
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              (e.target as HTMLElement).style.display = 'none';
+                    <div className="min-w-0 pr-3">
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-[10px] text-amber-400 bg-amber-500/10 px-1.5 rounded shrink-0">
+                          {prod.sku}
+                        </span>
+                        <span className="font-bold text-white truncate">{prod.name}</span>
+                        {prod.image && (
+                          <span
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleOpenProductPhoto(prod);
                             }}
-                          />
-                        ) : (
-                          <ImageIcon className="w-4 h-4 text-slate-600" />
-                        )}
-                        <span className="absolute inset-0 bg-slate-950/60 opacity-0 group-hover:opacity-100 flex items-center justify-center text-amber-400 transition-opacity">
-                          <Eye className="w-3.5 h-3.5" />
-                        </span>
-                      </button>
-
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono text-[10px] text-amber-400 bg-amber-500/10 px-1.5 rounded shrink-0">
-                            {prod.sku}
+                            title="Ver Foto do Produto [Alt+I]"
+                            className="inline-flex items-center gap-1 text-[10px] bg-amber-500/10 hover:bg-amber-500 hover:text-slate-950 text-amber-400 border border-amber-500/30 px-1.5 py-0.5 rounded transition-colors shrink-0 cursor-pointer"
+                          >
+                            <Eye className="w-3 h-3" /> Foto
                           </span>
-                          <span className="font-bold text-white truncate">{prod.name}</span>
-                        </div>
-                        <span className="text-[10px] text-slate-400 block truncate">
-                          {prod.location || 'Sem localização'} • Un: {prod.unit}
-                        </span>
+                        )}
                       </div>
+                      <span className="text-[10px] text-slate-400 block truncate">
+                        {prod.location || 'Sem localização'} • Un: {prod.unit}
+                      </span>
                     </div>
-                    <div className="text-right shrink-0 ml-3">
+                    <div className="text-right shrink-0">
                       <span className="font-black text-emerald-400">R$ {prod.price.toFixed(2)}</span>
                       <span className="text-[10px] text-slate-400 block">Estoque: {prod.stock}</span>
                     </div>
@@ -810,40 +793,21 @@ export const VendorOrdersView: React.FC<VendorOrdersViewProps> = ({
         {/* Faixa de Informações Avançadas do Produto Selecionado (Foto, Localização, Estoque Físico e Reservado) */}
         {selectedProduct && (
           <div className="mt-2.5 pt-2 border-t border-slate-800 grid grid-cols-2 md:grid-cols-7 gap-2 text-[11px] items-center bg-slate-950/80 p-2 rounded-xl">
-            {/* Foto do Produto Selecionado */}
-            <div className="flex items-center gap-2">
+            {/* Botão Sob Demanda para Ver Foto / Ficha no Card Grande */}
+            <div className="flex items-center">
               <button
                 type="button"
                 onClick={() => handleOpenProductPhoto(selectedProduct)}
-                className="w-10 h-10 rounded-lg bg-slate-900 border border-slate-700 hover:border-amber-500 flex items-center justify-center overflow-hidden shrink-0 group relative shadow-md transition-all cursor-pointer"
-                title="Visualizar Foto do Produto para o Cliente [Alt + I]"
+                className={`px-3 py-1.5 rounded-lg border text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                  selectedProduct.image
+                    ? 'bg-amber-500/10 border-amber-500/50 hover:bg-amber-500 hover:text-slate-950 text-amber-400 shadow-sm shadow-amber-500/20'
+                    : 'bg-slate-900 border-slate-700 text-slate-400 hover:border-slate-500 hover:text-white'
+                }`}
+                title="Visualizar Foto e Ficha em Alta Definição para o Cliente [Alt + I]"
               >
-                {selectedProduct.image ? (
-                  <img
-                    src={selectedProduct.image}
-                    alt={selectedProduct.name}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform"
-                    onError={(e) => {
-                      (e.target as HTMLElement).style.display = 'none';
-                    }}
-                  />
-                ) : (
-                  <ImageIcon className="w-5 h-5 text-slate-500" />
-                )}
-                <span className="absolute inset-0 bg-slate-950/60 opacity-0 group-hover:opacity-100 flex items-center justify-center text-amber-400 transition-opacity">
-                  <Eye className="w-4 h-4" />
-                </span>
+                <Eye className="w-3.5 h-3.5 shrink-0" />
+                <span>{selectedProduct.image ? 'Ver Foto [Alt+I]' : 'Consultar [Alt+I]'}</span>
               </button>
-              <div>
-                <span className="text-slate-400 block text-[9px] uppercase font-bold">Foto</span>
-                <button
-                  type="button"
-                  onClick={() => handleOpenProductPhoto(selectedProduct)}
-                  className="text-amber-400 hover:text-amber-300 font-bold text-[10px] flex items-center gap-0.5 underline decoration-dotted cursor-pointer"
-                >
-                  <Eye className="w-3 h-3" /> Ver [Alt+I]
-                </button>
-              </div>
             </div>
 
             <div>
@@ -910,30 +874,18 @@ export const VendorOrdersView: React.FC<VendorOrdersViewProps> = ({
                   <td className="p-3 font-mono font-bold text-amber-400">{item.sku}</td>
                   <td className="p-3 font-mono text-slate-400">{item.reference || '-'}</td>
                   <td className="p-3">
-                    <div className="flex items-center gap-2.5">
-                      <button
-                        type="button"
-                        onClick={() => handleOpenProductPhoto(item)}
-                        className="w-9 h-9 rounded-lg bg-slate-950 border border-slate-700/80 hover:border-amber-500 flex items-center justify-center overflow-hidden shrink-0 group relative transition-colors cursor-pointer"
-                        title="Ver foto do produto para o cliente"
-                      >
-                        {item.image ? (
-                          <img
-                            src={item.image}
-                            alt={item.name}
-                            className="w-full h-full object-cover group-hover:scale-110 transition-transform"
-                            onError={(e) => {
-                              (e.target as HTMLElement).style.display = 'none';
-                            }}
-                          />
-                        ) : (
-                          <ImageIcon className="w-4 h-4 text-slate-600" />
-                        )}
-                        <span className="absolute inset-0 bg-slate-950/60 opacity-0 group-hover:opacity-100 flex items-center justify-center text-amber-400 transition-opacity">
-                          <Eye className="w-3.5 h-3.5" />
-                        </span>
-                      </button>
+                    <div className="flex items-center gap-2">
                       <span className="font-bold text-white leading-tight">{item.name}</span>
+                      {item.image && (
+                        <button
+                          type="button"
+                          onClick={() => handleOpenProductPhoto(item)}
+                          className="px-1.5 py-0.5 rounded bg-amber-500/10 hover:bg-amber-500 hover:text-slate-950 text-amber-400 text-[10px] font-semibold border border-amber-500/20 inline-flex items-center gap-1 transition-colors cursor-pointer shrink-0"
+                          title="Ver foto do material para o cliente"
+                        >
+                          <Eye className="w-3 h-3" /> Foto
+                        </button>
+                      )}
                     </div>
                   </td>
                   <td className="p-3 text-slate-400 text-[11px]">{item.location || 'Pátio Central'}</td>
