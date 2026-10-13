@@ -1,7 +1,7 @@
 @echo off
 setlocal EnableDelayedExpansion
 
-:: 0. Deteccao automatica do diretorio raiz (funciona na raiz ou se executado dentro da pasta installer)
+REM 0. Deteccao automatica do diretorio raiz (funciona na raiz ou se executado dentro da pasta installer)
 if exist "%~dp0server\index.js" (
     cd /d "%~dp0"
 ) else if exist "%~dp0..\server\index.js" (
@@ -22,7 +22,7 @@ echo           HUBOBRA ERP - SERVIDOR LOCAL CENTRAL DA LOJA
 echo ================================================================
 echo.
 
-:: 1. Verificacao e deteccao inteligente do Node.js
+REM 1. Verificacao e deteccao inteligente do Node.js
 where node >nul 2>&1
 if not errorlevel 1 goto NODE_OK
 
@@ -78,11 +78,8 @@ if not exist "dist\index.html" (
 
 echo.
 echo [3/3] Iniciando Servidor Central Local (API + SQLite + WebSockets na porta 3005)...
-:: Liberar porta 3005 caso tenha ficado algum processo anterior orfao aberto
-for /f "tokens=5" %%p in ('netstat -aon ^| findstr :3005 ^| findstr LISTENING 2^>nul') do (
-    echo [AVISO] Finalizando processo anterior (PID %%p) na porta 3005...
-    taskkill /F /PID %%p >nul 2>&1
-)
+REM Liberar porta 3005 caso tenha ficado algum processo anterior orfao aberto
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Get-NetTCPConnection -LocalPort 3005 -State Listen -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }" >nul 2>&1
 
 if not exist "server\node_modules\ws" (
     echo Instalando dependencias do servidor local...
@@ -96,6 +93,9 @@ echo Iniciando processo do servidor...
 call node server/index.js
 if errorlevel 1 (
     echo.
-    echo [ERRO] O servidor foi encerrado inesperadamente.
-    pause
+    echo [ERRO] O servidor foi encerrado com erro.
 )
+
+echo.
+echo Servidor finalizado.
+pause
